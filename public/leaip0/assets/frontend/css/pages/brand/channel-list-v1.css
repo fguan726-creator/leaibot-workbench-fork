@@ -27,10 +27,11 @@ html body[data-page="brand"] .content[data-view="list"]>.lx-brand-home{display:b
 @container(max-width:360px){.lx-brand-home .lxbrand-grid{grid-template-columns:minmax(0,1fr)}.lx-brand-home .lxbrand-about-links{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.lx-brand-home a,.lx-brand-home img{transition:none!important}}
 
+.lx-brand-home{container-type:inline-size;container-name:lx-brand-floors}
 /* News and cases follow solution-list container widths: 4 / 5 / 6 visible cards. */
 .lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(n+5){display:none}
-@container(min-width:1100px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(5){display:flex}}
-@container(min-width:1320px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(6){display:flex}}
-@container(max-width:600px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@container(max-width:360px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:minmax(0,1fr)}}
+@container lx-brand-floors (min-width:1100px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(5){display:flex}}
+@container lx-brand-floors (min-width:1320px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(6){display:flex}}
+@container lx-brand-floors (max-width:600px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container lx-brand-floors (max-width:360px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:minmax(0,1fr)}}
