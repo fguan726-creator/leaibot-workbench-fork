@@ -153,6 +153,7 @@ if (!window.__lxCreateTypewriter) {
           localArchiveId: null // 件3：当前对话在共享历史侧栏(lexiang.lxfd.convs.v1)里的稳定条目id，反复覆盖同一条不新增
         };
         window.__lxState = state;
+        const lxPageRenderers = new Map();
         // 多步任务链框架（app-agent.js，独立 IIFE）跨文件调用的操作原子桥接——只暴露必要函数，不暴露整个闭包
         window.__lxAgentAPI = {
           openProduct, addCart, lxBuyWithIntro, lxClaimBenefits, lxUpsertCompareTab, openStudentAuth,
@@ -217,6 +218,14 @@ if (!window.__lxCreateTypewriter) {
 
         // ── 双对话桥接接口（lxfd IIFE ↔ 主面板 IIFE 跨作用域通信） ────────────
         window.__lxBridge = {
+          registerPageRenderer: function(kind, render) {
+            lxPageRenderers.set(kind, render);
+          },
+          openPage: function(tab) {
+            lxRevealContent();
+            lxUpsertTab(tab);
+            lxRunTab(tab);
+          },
           // 全屏欢迎态首问=新对话：清掉 boot 时 restore 的旧对话上下文（DOM/convId/持久化键/
           // 提问历史/归档id），否则首问桥接进分屏带着"以上为历史对话"的旧账（真机反馈）。
           // 旧对话已被归档进侧栏历史（convs.v1），随时可找回；归档id一并重置防新对话覆盖旧条目。
@@ -6393,7 +6402,15 @@ function openOrderDetail(orderId) {
         function lxRunTab(tab) {
           if (!tab) return;
           const genToken = lxBeginTabGeneration(tab);
-          if (tab.kind === "site") {
+          const registeredRenderer = lxPageRenderers.get(tab.kind);
+          if (registeredRenderer) {
+            const pageBox = lxEnsureInfoPage();
+            pageBox.classList.add("is-wide");
+            registeredRenderer(tab, pageBox);
+            const content = document.querySelector(".content");
+            content?.setAttribute("data-view", "info");
+            content?.scrollTo({ top: 0, behavior: "auto" });
+          } else if (tab.kind === "site") {
             document.querySelector(".content")?.setAttribute("data-view", "list");
             routeTo(tab.page);
             if (tab.page === "enterprise") {

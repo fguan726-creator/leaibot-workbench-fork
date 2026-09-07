@@ -99,6 +99,7 @@
     <link rel="preload" as="image" href="/assets/img/lxfd-gallery-1-3.webp">
     <link rel="stylesheet" href="/css/main.css?v=202608181900">
     <link rel="stylesheet" href="/css/brand-home.css?v=20260907-4">
+    <link rel="stylesheet" href="/css/brand-lists.css?v=20260907-2">
     <link rel="stylesheet" href="/css/assistant-panel-ng-skin.css?v=202606222610">
   </head>
   <body data-state="default">
@@ -213,6 +214,10 @@
         </div>
 
         <div class="assistant-bottom">
+          <div class="brand-list-prompts" aria-label="品牌资讯">
+            <button type="button" data-brand-list="news"><span>查看更多新闻</span><img src="/assets/icons/chevron-right.svg" alt="" /></button>
+            <button type="button" data-brand-list="cases"><span>查看更多案例</span><img src="/assets/icons/chevron-right.svg" alt="" /></button>
+          </div>
           <div class="hover-prompt-panel" data-hover-prompt-panel aria-label="商品停留推荐问题">
             <button class="hover-prompt-close" type="button" aria-label="关闭商品推荐问题">×</button>
             <div class="hover-prompt-list" data-hover-prompt-list></div>
@@ -676,7 +681,8 @@
     <script src="/js/app-intent.js?v=202607151558"></script>
     <script src="/js/app-conv.js?v=202607101745"></script>
     <script src="/js/smb-config-selector.js?v=2026082001"></script>
-    <script src="/js/app.js?v=2026082001"></script>
+    <script src="/js/app.js?v=20260907-brand-lists-2"></script>
+    <script src="/js/brand-lists.js?v=20260907-2"></script>
     <script src="/js/app-lxfd.js?v=202608181900"></script>
     <script src="/js/app-voice.js?v=202607142230"></script>
     <script src="/js/app-agent.js?v=202607131544"></script>
