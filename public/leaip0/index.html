@@ -498,6 +498,31 @@ html body[data-page] .page-dots .prompt-menu .menu-row,html body[data-page] .pag
 html body[data-page] .assistant-panel .page-dots.page-dots i{width:5px!important;height:5px!important;min-width:5px!important;min-height:5px!important;border-radius:50%!important}
 html body[data-page] .assistant-panel .page-dots.page-dots i.active{background:#4d144a!important}
 </style>
+<style id="lx-match-modal-size">
+html #lx-reco-match-dialog{width:min(720px,calc(100vw - 48px));height:fit-content;max-height:min(760px,88dvh);padding:24px;border:1px solid #e2ddeb;border-radius:8px;box-shadow:0 24px 70px rgba(155,142,182,.62),0 4px 14px rgba(50,29,57,.08);overflow:hidden;color:#252525}
+html #lx-reco-match-dialog[open]{display:flex;flex-direction:column}
+html #lx-reco-match-dialog .lx-match-layout{height:auto;max-height:calc(min(760px,88dvh) - 50px);gap:20px;flex:0 1 auto;min-height:0}
+html #lx-reco-match-dialog h2{font-size:20px;line-height:28px;font-weight:600;padding-right:36px}
+html #lx-reco-match-dialog .lx-match-close{right:18px;top:20px;width:28px;height:28px;border-radius:50%;color:#979797}
+html #lx-reco-match-dialog .lx-match-close:hover{background:#f3f0f7}
+html #lx-reco-match-dialog .lx-match-scroll{flex:0 1 auto;min-height:0;overflow:auto}
+html #lx-reco-match-dialog .lx-match-product{gap:16px;padding:16px;margin-bottom:16px;border:1px solid #e2ddeb;border-radius:8px;background:#faf8fc}
+html #lx-reco-match-dialog .lx-match-product img{width:88px;height:88px;border-radius:8px}
+html #lx-reco-match-dialog h3{font-size:16px;line-height:24px;font-weight:600;margin:0 0 8px;overflow-wrap:anywhere;color:#252525}
+html #lx-reco-match-dialog .lx-match-price{font-size:18px;line-height:26px;font-weight:600;color:#252525}
+html #lx-reco-match-dialog .lx-match-table-wrap{border:1px solid #e2ddeb;border-radius:8px;background:#fff}
+html #lx-reco-match-dialog table{font-size:14px;line-height:22px;table-layout:fixed}
+html #lx-reco-match-dialog th,html #lx-reco-match-dialog td{padding:12px;overflow-wrap:anywhere;border-color:#e2ddeb}
+html #lx-reco-match-dialog th{background:#f3f0f7;font-weight:600}
+html #lx-reco-match-dialog th:first-child,html #lx-reco-match-dialog td:first-child{width:88px}
+html #lx-reco-match-dialog th:nth-child(2){width:124px}
+html #lx-reco-match-dialog .lx-match-status{width:20px;height:20px;font-size:14px;background:#4d144a}
+html #lx-reco-match-dialog .lx-match-status.pending{background:#f3f0f7;color:#979797}
+html #lx-reco-match-dialog .lx-match-footer{padding-top:16px;border-top:1px solid #e2ddeb;flex:none}
+html #lx-reco-match-dialog .lx-match-buy{min-width:104px;height:40px;padding:0 24px;border-radius:8px;font-size:14px;line-height:20px;font-weight:500;background:#4d144a}
+html #lx-reco-match-dialog .lx-match-buy:hover{filter:brightness(1.12)}
+@media(max-width:600px){html #lx-reco-match-dialog{width:calc(100vw - 24px);padding:20px}html #lx-reco-match-dialog .lx-match-layout{max-height:calc(88dvh - 42px)}html #lx-reco-match-dialog th:first-child,html #lx-reco-match-dialog td:first-child{width:72px}html #lx-reco-match-dialog th:nth-child(2){width:92px}html #lx-reco-match-dialog .lx-match-product img{width:64px;height:64px}}
+</style>
 </head>
   <body data-state="default">
     <script  data-p0-inline-source="/assets/frontend/js/pages/home/inline-08.js">
