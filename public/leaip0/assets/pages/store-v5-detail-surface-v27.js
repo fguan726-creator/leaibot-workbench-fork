@@ -107,7 +107,7 @@
     const shadow = host.shadowRoot || host.attachShadow({ mode: "open" });
     shadow.replaceChildren();
     const style = document.createElement("style");
-    style.textContent = ".lx-store-poc:has(.lx-store-detail-page.is-active),.lx-store-poc:has(.lx-store-detail-page.is-active)>.content,.lx-store-poc .lx-store-detail-page,.lx-store-poc .lx-store-detail-body,.lx-store-poc .lx-store-detail-section{background:transparent!important}" + STORE_CSS + STORE_OVERLAY_CSS + STORE_PRODUCT_WHITE_CSS + STORE_RESPONSIVE_CSS + STORE_DETAIL_COUPON_CARD_CSS + STORE_CARD_CONTEXT_CSS + STORE_PRODUCT_SHOWCASE_CSS + STORE_PHONE_BIND_CSS;
+    style.textContent = ".lx-store-poc:has(.lx-store-detail-page.is-active) .lx-store-page,.lx-store-poc:has(.lx-store-detail-page.is-active) .lx-channel-page{visibility:hidden!important}" + ".lx-store-poc:has(.lx-store-detail-page.is-active),.lx-store-poc:has(.lx-store-detail-page.is-active)>.content,.lx-store-poc .lx-store-detail-page,.lx-store-poc .lx-store-detail-body,.lx-store-poc .lx-store-detail-section{background:transparent!important}" + STORE_CSS + STORE_OVERLAY_CSS + STORE_PRODUCT_WHITE_CSS + STORE_RESPONSIVE_CSS + STORE_DETAIL_COUPON_CARD_CSS + STORE_CARD_CONTEXT_CSS + STORE_PRODUCT_SHOWCASE_CSS + STORE_PHONE_BIND_CSS;
     host.dataset.storeRelease = window.LEXIANG_STORE_RELEASE;
     const body = document.createElement("div");
     body.className = "lx-store-poc";
