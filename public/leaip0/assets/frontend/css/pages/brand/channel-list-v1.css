@@ -38,3 +38,10 @@ html body[data-page="brand"] .content[data-view="list"]>.lx-brand-home{display:b
 
 .lx-brand-home[data-brand-columns="5"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.lx-brand-home[data-brand-columns="6"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
 .lx-brand-home[data-brand-columns="5"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(5),.lx-brand-home[data-brand-columns="6"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(n+5){display:flex}
+
+/* Brand-only composer shortcuts; shared runtime rows remain hidden in this channel. */
+html body[data-page="brand"] .assistant-panel .assistant-bottom>.shortcut-row{display:none!important}
+html body[data-page="brand"] .assistant-panel .lx-brand-shortcuts{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 6px;padding:0}
+html body[data-page="brand"] .assistant-panel .lx-brand-shortcut{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:30px;padding:5px 12px;border:1px solid #e2ddeb;border-radius:8px;background:#fff;color:#5b1452;font-family:inherit;font-size:13px;font-weight:500;line-height:18px;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color .16s,border-color .16s}
+html body[data-page="brand"] .assistant-panel .lx-brand-shortcut:hover{background:#f3f0f7;border-color:#cbaed2}
+html body[data-page="brand"] .assistant-panel .lx-brand-shortcut:focus-visible{outline:2px solid #5b1452;outline-offset:2px}
