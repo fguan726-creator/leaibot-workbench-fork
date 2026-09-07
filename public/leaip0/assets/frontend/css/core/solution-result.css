@@ -1321,3 +1321,6 @@ main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
 
 /* Preserve the reference computed service-note typography in every channel. */
 html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .lx-p0-disclaimer{font-size:12.5px!important;line-height:18px!important;text-align:right!important}
+
+/* Split composer stop glyph: 12px × 7/8. */
+html body:not(.assistant-fullscreen):not(.lx-auto-fs) .assistant-panel button.send-btn.lx-stop-generation::after{width:10.5px!important;height:10.5px!important}
