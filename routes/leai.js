@@ -280,9 +280,10 @@ router.post('/stream', async (req, res) => {
 
           // 商品（只发一次）
           if (!sentProducts && Array.isArray(r.product_list) && r.product_list.length) {
-            const upstreamProducts = mapProductList(r.product_list, 6);
+            const recommendationLimit = useLeaiProductCatalog ? 12 : 6;
+            const upstreamProducts = mapProductList(r.product_list, recommendationLimit);
             const products = useLeaiProductCatalog
-              ? authoritativeRecommendations(db, upstreamProducts, { site: siteFromRequest(req), limit: 6 })
+              ? authoritativeRecommendations(db, upstreamProducts, { site: siteFromRequest(req), limit: recommendationLimit })
               : upstreamProducts;
             if (products.length) {
               sentProducts = true;
