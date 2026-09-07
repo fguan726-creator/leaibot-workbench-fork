@@ -13,7 +13,7 @@
   host.setAttribute('aria-label', '个人及家庭场景推荐');
   const frame = document.createElement('iframe');
   frame.title = '个人及家庭场景 Banner';
-  frame.src = '/assets/components/scene-banner-v154/scene-banner.html?v=20260904-personal-exact';
+  frame.src = '/assets/components/scene-banner-v154/scene-banner.html?v=20260907-campus-gradient';
   frame.setAttribute('scrolling', 'no');
   frame.setAttribute('loading', 'eager');
   frame.style.cssText = 'display:block;border:0;position:absolute;left:0;top:0;transform-origin:0 0;width:1280px;height:650px;max-width:none;';

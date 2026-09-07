@@ -367,7 +367,12 @@
   <link rel="stylesheet" href="/assets/components/scene-banner-v154/channel-home-carousel-bottom-v1.css?v=20260904-personal-exact">
   <link rel="stylesheet" href="/assets/components/scene-banner-v154/channel-home-product-cards-large-v1.css?v=20260904-personal-exact">
   <link rel="stylesheet" href="/assets/components/scene-banner-v154/channel-home-copy5-portrait-cards-v1.css?v=20260904-personal-exact">
-</head>
+<style id="campus-gradient">
+.carousel-dot[aria-label="切换到校园场景"]{--campus-gradient:linear-gradient(105deg,#8de8ff 0%,#b9a2ff 38%,#ffa8d9 70%,#ffe2a0 100%)}
+.carousel-dot[aria-label="切换到校园场景"] .carousel-label{padding-left:14px!important;color:transparent!important;background:var(--campus-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none!important}
+.carousel-dot[aria-label="切换到校园场景"] .carousel-label::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:10px;height:10px;background:var(--campus-gradient);clip-path:polygon(50% 0,64% 36%,100% 50%,64% 64%,50% 100%,36% 64%,0 50%,36% 36%)}
+.carousel-dot[aria-label="切换到校园场景"]::after{background:var(--campus-gradient)!important}
+</style></head>
 <body>
   <main class="page">
     <section class="hero" id="bannerHero" aria-live="polite">
