@@ -1,0 +1,81 @@
+/* Brand content only. Tokens: lenovo-leai-pc-5.0-design v0.14.39. */
+.lx-brand-home {
+  --brand-home-ink: #252525;
+  --brand-home-soft: #606060;
+  --brand-home-accent: #4d144a;
+  --brand-home-border: #e2ddeb;
+  --brand-home-paper: #ffffff;
+  --brand-home-hover: #f3f0f7;
+  container-type: inline-size;
+  min-width: 0;
+  padding: 24px;
+  color: var(--brand-home-ink);
+  background: var(--brand-home-paper);
+  font-family: "Source Han Sans CN", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  letter-spacing: 0;
+}
+.lx-brand-home * { box-sizing: border-box; letter-spacing: 0; }
+.lx-brand-home a { color: inherit; text-decoration: none; }
+.lx-brand-home a:focus-visible {
+  outline: 2px solid var(--brand-home-accent);
+  outline-offset: 4px;
+}
+.lx-brand-home .lxbrand-section { padding: 28px 0 8px; scroll-margin-top: 20px; }
+.lx-brand-home .lxbrand-section:first-child { padding-top: 0; }
+.lx-brand-home .lxbrand-section + .lxbrand-section { margin-top: 20px; border-top: 1px solid var(--brand-home-border); }
+.lx-brand-home .lxbrand-section:last-child { padding-bottom: 24px; }
+.lx-brand-home .lxbrand-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.lx-brand-home .lxbrand-section-heading h2 { margin: 0; font-size: 20px; line-height: 1.5; font-weight: 700; }
+.lx-brand-home .lxbrand-section-heading a { color: var(--brand-home-accent); font-size: 13px; font-weight: 500; }
+.lx-brand-home .lxbrand-section-heading a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.lx-brand-home .lxbrand-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.lx-brand-home .lxbrand-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--brand-home-border);
+  border-radius: 8px;
+  background: var(--brand-home-paper);
+  overflow: hidden;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.lx-brand-home .lxbrand-card:hover { border-color: var(--brand-home-accent); background: var(--brand-home-hover); }
+.lx-brand-home .lxbrand-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--brand-home-hover);
+}
+.lx-brand-home .lxbrand-card-body { display: flex; flex-direction: column; align-items: flex-start; flex: 1; gap: 10px; padding: 16px; }
+.lx-brand-home .lxbrand-card time,
+.lx-brand-home .lxbrand-category { font-size: 12px; line-height: 1.5; color: var(--brand-home-soft); }
+.lx-brand-home .lxbrand-card h3 { margin: 0; font-size: 16px; line-height: 1.6; font-weight: 700; overflow-wrap: anywhere; }
+.lx-brand-home .lxbrand-card p { margin: 0; color: var(--brand-home-soft); font-size: 13px; line-height: 1.6; }
+.lx-brand-home .lxbrand-link { margin-top: auto; padding-top: 8px; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--brand-home-accent); }
+.lx-brand-home .lxbrand-card:hover .lxbrand-link { text-decoration: underline; text-underline-offset: 4px; }
+.lx-brand-home .lxbrand-about-links { display: grid; grid-template-rows: repeat(2, 1fr); padding: 0 16px; }
+.lx-brand-home .lxbrand-about-link { display: flex; flex-direction: column; gap: 8px; padding: 20px 0; }
+.lx-brand-home .lxbrand-about-link + .lxbrand-about-link { border-top: 1px solid var(--brand-home-border); }
+.lx-brand-home .lxbrand-about-link h3 { margin: 0; font-size: 16px; line-height: 1.6; }
+.lx-brand-home .lxbrand-about-link p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--brand-home-soft); }
+.lx-brand-home .lxbrand-about-link:hover .lxbrand-link { text-decoration: underline; text-underline-offset: 4px; }
+@container (max-width: 640px) {
+  .lx-brand-home .lxbrand-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lx-brand-home .lxbrand-about-links { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; gap: 20px; padding: 0; }
+  .lx-brand-home .lxbrand-about-link + .lxbrand-about-link { border-top: 0; }
+}
+@container (max-width: 420px) {
+  .lx-brand-home .lxbrand-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lx-brand-home .lxbrand-card { transition: none; }
+}
