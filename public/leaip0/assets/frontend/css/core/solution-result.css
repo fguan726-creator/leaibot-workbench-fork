@@ -1324,3 +1324,5 @@ html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[d
 
 /* Split composer stop glyph: 12px × 7/8. */
 html body:not(.assistant-fullscreen):not(.lx-auto-fs) .assistant-panel button.send-btn.lx-stop-generation::after{width:10.5px!important;height:10.5px!important}
+
+html body [data-member-device-page] .leai-device-center .leai-device-filters{display:none!important}
