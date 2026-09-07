@@ -2846,6 +2846,31 @@
       "file": "public/leaip0/brand/index.html",
       "source": "public/leaip0/assets/frontend/js/core/reco-match-v1.js",
       "url": "/assets/frontend/js/core/reco-match-v1.js"
+    },
+    {
+      "file": "public/leaip0/index.html",
+      "source": "public/leaip0/assets/frontend/js/core/tab-reorder-v1.js",
+      "url": "/assets/frontend/js/core/tab-reorder-v1.js"
+    },
+    {
+      "file": "public/leaip0/shop-chat/index.html",
+      "source": "public/leaip0/assets/frontend/js/core/tab-reorder-v1.js",
+      "url": "/assets/frontend/js/core/tab-reorder-v1.js"
+    },
+    {
+      "file": "public/leaip0/b-chat/index.html",
+      "source": "public/leaip0/assets/frontend/js/core/tab-reorder-v1.js",
+      "url": "/assets/frontend/js/core/tab-reorder-v1.js"
+    },
+    {
+      "file": "public/leaip0/biz-chat/index.html",
+      "source": "public/leaip0/assets/frontend/js/core/tab-reorder-v1.js",
+      "url": "/assets/frontend/js/core/tab-reorder-v1.js"
+    },
+    {
+      "file": "public/leaip0/brand/index.html",
+      "source": "public/leaip0/assets/frontend/js/core/tab-reorder-v1.js",
+      "url": "/assets/frontend/js/core/tab-reorder-v1.js"
     }
   ],
   "inlineSources": [
