@@ -1326,3 +1326,5 @@ html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[d
 html body:not(.assistant-fullscreen):not(.lx-auto-fs) .assistant-panel button.send-btn.lx-stop-generation::after{width:10.5px!important;height:10.5px!important}
 
 html body [data-member-device-page] .leai-device-center .leai-device-filters{display:none!important}
+
+html body .lx-answer-followups-title,html body .lx-answer-tools .lx-answer-question{font-size:12.5px!important}
