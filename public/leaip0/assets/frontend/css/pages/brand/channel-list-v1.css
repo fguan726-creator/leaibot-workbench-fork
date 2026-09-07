@@ -35,3 +35,6 @@ html body[data-page="brand"] .content[data-view="list"]>.lx-brand-home{display:b
 @container lx-brand-floors (min-width:1320px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(6){display:flex}}
 @container lx-brand-floors (max-width:600px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container lx-brand-floors (max-width:360px){.lx-brand-home :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:minmax(0,1fr)}}
+
+.lx-brand-home[data-brand-columns="5"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.lx-brand-home[data-brand-columns="6"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+.lx-brand-home[data-brand-columns="5"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(5),.lx-brand-home[data-brand-columns="6"] :is(#lxbrand-news,#lxbrand-cases) .lxbrand-card:nth-child(n+5){display:flex}

@@ -213,7 +213,7 @@ html body .lx-ref-chips .lx-ref-chip-mini>[data-ref-remove-idx]{position:static!
 html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-label{font-weight:600!important}
 html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price strong,html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price strong>span{font-weight:700!important}
 </style>
-<link rel="stylesheet" href="/assets/frontend/css/pages/brand/channel-list-v1.css?p0v=0fae87245e8bb633">
+<link rel="stylesheet" href="/assets/frontend/css/pages/brand/channel-list-v1.css?p0v=e4819c6489cf0955">
 </head>
   <body data-page="brand" data-state="default">
     <script src="/assets/frontend/bundles/p0-brand-core-2.js?p0v=4c83dffe83802597"></script>
@@ -805,5 +805,8 @@ html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price str
 <script src="/assets/frontend/js/core/reco-match-v1.js?p0v=01e127edfd57f2ac"></script>
 <script src="/assets/frontend/js/core/tab-reorder-v1.js?p0v=8dc5ecbb5c5b9ed3"></script>
 <script src="/assets/frontend/js/core/prompt-menu-height-v1.js?p0v=d360d6b8c137a088"></script>
+<script data-brand-responsive>
+(function(){const seen=new WeakSet();function size(el){const width=el.clientWidth;const count=width>=1320?6:width>=1100?5:4;if(el.dataset.brandColumns!==String(count))el.dataset.brandColumns=String(count);}const resize=new ResizeObserver(entries=>entries.forEach(e=>size(e.target)));function attach(){document.querySelectorAll('.lx-brand-home').forEach(el=>{if(seen.has(el))return;seen.add(el);size(el);resize.observe(el);});}attach();const content=document.querySelector('.shell>.content');if(content)new MutationObserver(attach).observe(content,{childList:true,subtree:true});})();
+</script>
 </body>
 </html>
