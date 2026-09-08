@@ -169,9 +169,9 @@
 (function () {
   "use strict";
 
-  // Temporary product switch: keep association data/logic intact, but do not
-  // surface the composer suggestion panel until the switch is enabled again.
-  window.__LX_COMPOSER_ASSOCIATIONS_ENABLED__ = false;
+  // Composer associations use the original keyword and progressive completion flow.
+  // Enabled by default for fullscreen and split-screen composers.
+  window.__LX_COMPOSER_ASSOCIATIONS_ENABLED__ = true;
 
   const SELECTOR = ".lx-suggest-panel";
   const STYLE_ID = "lx-composer-association-popup-off";
