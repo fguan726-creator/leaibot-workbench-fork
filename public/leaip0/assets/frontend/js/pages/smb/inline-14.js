@@ -530,7 +530,7 @@
     var reason = detail.querySelector("[data-detail-reason]");
     if (reason) {
       reason.hidden = false;
-      reason.innerHTML = '<span class="lx-fit-icon">✦</span><span class="lx-fit-text"><strong>乐享推荐</strong> 该配置兼顾性能、使用体验与官方服务，适合进一步比较后购买。<span class="lx-fit-note">由联想乐享 AI 生成 · 仅供参考</span></span>';
+      reason.innerHTML = '<span class="lx-fit-icon">✦</span><span class="lx-fit-text"><strong>乐享推荐</strong> 该配置兼顾性能、使用体验与官方服务，适合进一步比较后购买。<span class="lx-fit-note">乐享生成 · 仅供参考</span></span>';
     }
     renderVariants(product);
     var tags = detail.querySelector(".detail-tags");

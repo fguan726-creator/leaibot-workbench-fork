@@ -1,0 +1,8 @@
+
+/* public/leaip0/assets/frontend/css/components/member-demo-off-v35.css */
+#leaiLabTrigger,
+#leaiLab,
+.leai-lab-trigger,
+.leai-lab {
+  display: none !important;
+}

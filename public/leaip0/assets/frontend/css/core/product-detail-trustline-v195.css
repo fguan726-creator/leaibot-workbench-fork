@@ -1,0 +1,25 @@
+.product-detail .detail-gallery .detail-trustline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin: 18px auto 0;
+  color: var(--text-muted, #979797);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.product-detail .detail-gallery .detail-trustline strong {
+  color: var(--text-soft, #625b68);
+  font-weight: 700;
+}
+
+@media (max-width: 1280px) {
+  .product-detail .detail-gallery .detail-trustline {
+    gap: 8px;
+    font-size: 13px;
+  }
+}

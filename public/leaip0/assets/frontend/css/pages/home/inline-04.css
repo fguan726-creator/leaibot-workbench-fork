@@ -1,25 +1,4 @@
-@font-face {
-        font-family: "Source Han Sans CN";
-        src: url("https://leaibot.cn/assets/fonts/SourceHanSansCN-Regular.subset.woff2") format("woff2");
-        font-weight: 400;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: "Source Han Sans CN";
-        src: url("https://leaibot.cn/assets/fonts/SourceHanSansCN-Medium.subset.woff2") format("woff2");
-        font-weight: 500;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: "Source Han Sans CN";
-        src: url("https://leaibot.cn/assets/fonts/SourceHanSansCN-Bold.subset.woff2") format("woff2");
-        font-weight: 700;
-        font-display: swap;
-      }
-
-      :root {
+:root {
         --brand-red: #e42b20;
         --price-red: #ff2f2f;
         --aubergine: #5b1452;
@@ -5467,10 +5446,7 @@
         transition: color .16s ease, transform .16s ease;
       }
 
-      .lx-p0-message.lx-chat-skin .followups button::after {
-        content: " →";
-        color: currentColor;
-      }
+      .lx-p0-message.lx-chat-skin .followups button::after {content:"";display:inline-block;width:9px;height:5px;margin-left:5px;vertical-align:middle;background:currentColor;-webkit-mask:url(/assets/icons/arrow-down.svg) center/contain no-repeat;mask:url(/assets/icons/arrow-down.svg) center/contain no-repeat;transform:rotate(-90deg) scale(0.6666667);}
 
       .lx-p0-message.lx-chat-skin .followups button:hover {
         color: #5b1452;
@@ -8460,7 +8436,7 @@ body.lx-auto-fs .lxfd-ai-body .followups button,
 body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest[data-followups] button,
 body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest-chip,
 body.lx-auto-fs .lxfd-ai-body .followups [data-quick-ask],
-body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest[data-followups] [data-quick-ask]{display:inline-flex;min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:#4d144a;font-size:13px;font-weight:400;line-height:1.55;text-align:left;cursor:pointer;transition:color .16s ease,transform .16s ease;box-shadow:none}
+body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest[data-followups] [data-quick-ask]{display:inline-flex;min-height:0;padding:0;border:0;border-radius:0;background:transparent;color:#4d144a;font-size:13px;font-weight:400;line-height:1.55;text-align:left;cursor:pointer;transition:color .16s ease,transform .16s ease;box-shadow:none;display:inline-flex;align-items:center;justify-content:flex-start;}
 body.assistant-fullscreen .lxfd-followups button::after,
 body.assistant-fullscreen .lxfd-ai-body .followups button::after,
 body.assistant-fullscreen .lxfd-ai-body .lx-p0-suggest[data-followups] button::after,
@@ -8472,7 +8448,7 @@ body.lx-auto-fs .lxfd-ai-body .followups button::after,
 body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest[data-followups] button::after,
 body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest-chip::after,
 body.lx-auto-fs .lxfd-ai-body .followups [data-quick-ask]::after,
-body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest[data-followups] [data-quick-ask]::after{content:" →";color:currentColor}
+body.lx-auto-fs .lxfd-ai-body .lx-p0-suggest[data-followups] [data-quick-ask]::after{content:"";display:inline-block;width:9px;height:5px;margin-left:5px;vertical-align:middle;background:currentColor;-webkit-mask:url(/assets/icons/arrow-down.svg) center/contain no-repeat;mask:url(/assets/icons/arrow-down.svg) center/contain no-repeat;transform:rotate(-90deg) scale(0.6666667);}
 body.assistant-fullscreen .lxfd-followups button:hover,
 body.assistant-fullscreen .lxfd-ai-body .followups button:hover,
 body.assistant-fullscreen .lxfd-ai-body .lx-p0-suggest[data-followups] button:hover,

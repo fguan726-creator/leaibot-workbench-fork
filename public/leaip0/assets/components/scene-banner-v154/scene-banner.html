@@ -21,7 +21,7 @@
     .page {
       width: 100%;
       min-width: 980px;
-      padding: 18px 0 32px;
+      padding: 18px 0 16px;
       background: transparent;
     }
     .carousel-arrow:focus-visible, .carousel-dot:focus-visible {
@@ -36,7 +36,7 @@
       overflow: hidden;
       border-radius: 20px;
       background: #0b0c12;
-      box-shadow: 0 14px 36px rgba(22,14,26,.12);
+      box-shadow: 0 2px 6px rgba(22,14,26,.035), 0 8px 20px rgba(22,14,26,.065);
       isolation: isolate;
     }
     .hero-copy {
@@ -85,7 +85,7 @@
       font-size: 15px;
       line-height: 1.65;
     }
-    .hero-purchase { display: flex; align-items: center; margin-top: 27px; }
+    .hero-purchase { display: none; }
     .price { display: flex; align-items: baseline; gap: 3px; color: #fff; white-space: nowrap; text-shadow: 0 2px 18px rgba(0,0,0,.28); }
     .price-symbol { font-size: 16px; font-weight: 700; }
     .price-value { font-size: 28px; font-weight: 760; letter-spacing: -.8px; }
@@ -120,13 +120,13 @@
       position: absolute;
       z-index: 4;
       right: 28px;
-      bottom: 56px;
+      bottom: 28px;
       display: grid;
       grid-template-columns: repeat(3,minmax(0,1fr));
       gap: 4px;
-      width: min(46%,580px);
-      height: 94px;
-      padding: 6px;
+      width: min(50%,640px);
+      height: 106px;
+      padding: 7px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,.18);
       border-radius: 22px;
@@ -139,11 +139,11 @@
     .hero.is-changing .hero-products { opacity: .16; transform: translateY(6px); }
     .hero-product-card {
       display: grid;
-      grid-template-columns: 54px minmax(0,1fr);
+      grid-template-columns: 58px minmax(0,1fr);
       align-items: center;
-      gap: 9px;
+      gap: 10px;
       min-width: 0;
-      height: 80px;
+      height: 92px;
       padding: 8px 9px 8px 8px;
       overflow: hidden;
       border: 0;
@@ -166,28 +166,28 @@
     }
     .hero-product-image-wrap {
       display: grid;
-      width: 50px;
-      height: 50px;
+      width: 58px;
+      height: 58px;
       place-items: center;
       overflow: hidden;
       border-radius: 12px;
       background: rgba(255,255,255,.94);
       box-shadow: inset 0 0 0 1px rgba(0,0,0,.035);
     }
-    .hero-product-image { display: block; width: 46px; height: 46px; object-fit: contain; }
+    .hero-product-image { display: block; width: 54px; height: 54px; object-fit: contain; }
     .hero-product-info { min-width: 0; }
     .hero-product-name {
       display: -webkit-box;
       margin: 0;
       overflow: hidden;
       color: rgba(255,255,255,.96);
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 650;
       line-height: 1.35;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
     }
-    .hero-product-price { margin: 5px 0 0; color: rgba(255,255,255,.68); font-size: 11px; font-weight: 600; line-height: 1.2; }
+    .hero-product-price { margin: 5px 0 0; color: rgba(255,255,255,.70); font-size: 11.5px; font-weight: 600; line-height: 1.2; }
     .carousel-arrow {
       position: absolute;
       z-index: 5;
@@ -223,45 +223,76 @@
     .carousel-pagination {
       position: absolute;
       z-index: 5;
+      top: 14px;
       left: 50%;
-      bottom: 16px;
-      display: flex;
+      bottom: auto;
+      display: grid;
+      grid-template-columns: repeat(6,minmax(0,1fr));
       align-items: center;
-      gap: 7px;
-      padding: 8px 11px;
+      gap: 0;
+      width: min(456px,calc(100% - 180px));
+      min-height: 32px;
+      padding: 3px;
+      overflow: visible;
+      border: 0;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(10,12,20,.44);
-      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+      background: rgba(18,18,20,.38);
+      box-shadow: none;
       transform: translateX(-50%);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(18px) saturate(120%);
+      -webkit-backdrop-filter: blur(18px) saturate(120%);
     }
     .carousel-dot {
       position: relative;
-      width: 8px;
-      height: 4px;
-      padding: 0;
+      display: flex;
+      width: auto;
+      min-width: 0;
+      height: 26px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px 1px;
       overflow: hidden;
       border: 0;
       border-radius: 999px;
-      background: rgba(255,255,255,.36);
+      background: transparent;
+      color: rgba(255,255,255,.62);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: .02em;
+      white-space: nowrap;
       cursor: pointer;
-      transition: width .22s ease, background .22s ease;
+      text-shadow: 0 1px 7px rgba(0,0,0,.38);
+      transition: color .22s ease, background-color .22s ease, transform .22s ease;
     }
-    .carousel-dot::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: #fff;
-      transform: scaleX(0);
-      transform-origin: left center;
+    .carousel-dot::after { content: none; }
+    .carousel-dot:hover { background: rgba(255,255,255,.1); color: #fff; }
+    .carousel-dot.is-active {
+      background: rgba(255,255,255,.94);
+      color: #1d1d1f;
+      box-shadow: none;
+      font-weight: 700;
+      text-shadow: none;
     }
-    .carousel-dot.is-active { width: 32px; background: rgba(255,255,255,.22); }
-    .carousel-dot.is-active::after { animation: carouselProgress 6500ms linear forwards; }
-    .hero.is-paused .carousel-dot.is-active::after { animation-play-state: paused; }
-    @keyframes carouselProgress { to { transform: scaleX(1); } }
+    .carousel-label { position: relative; z-index: 1; overflow: hidden; text-overflow: ellipsis; }
+    .carousel-time {
+      display: none;
+      position: relative;
+      z-index: 1;
+      align-items: baseline;
+      margin-left: 5px;
+      color: rgba(29,29,31,.48);
+      font-size: 10px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0;
+    }
+    .carousel-time::before {
+      content: "·";
+      margin-right: 4px;
+      color: rgba(29,29,31,.32);
+    }
+    .carousel-dot.is-active .carousel-time { display: inline-flex; }
     @media (max-width: 1100px) {
       .hero-copy { width: 52%; padding-left: 42px; padding-right: 32px; }
       .hero-products { width: 48%; }
@@ -277,10 +308,11 @@
     html.is-compact-host .hero-title { font-size: 40px; }
     html.is-compact-host .hero-products {
       right: 20px;
-      bottom: 48px;
+      bottom: 24px;
       width: 62%;
       height: 112px;
     }
+    html.is-compact-host .carousel-pagination { width: min(456px,calc(100% - 96px)); }
     html.is-compact-host .hero-product-card {
       grid-template-columns: 58px minmax(0,1fr);
       gap: 10px;
@@ -291,11 +323,56 @@
     html.is-compact-host .hero-product-image { width: 54px; height: 54px; }
     html.is-compact-host .hero-product-name { font-size: 14px; }
     html.is-compact-host .hero-product-price { margin-top: 6px; font-size: 12px; }
+    /* Short desktop panels keep the scene immersive while revealing the next
+       product floor. The host supplies the exact natural height after scaling. */
+    html.is-short-host .page { padding-bottom: 10px; }
+    html.is-short-host .hero {
+      height: var(--short-hero-height, 420px);
+      min-height: var(--short-hero-height, 420px);
+    }
+    html.is-short-host .hero-copy {
+      justify-content: flex-start;
+      width: 48%;
+      padding: 38px 30px 98px 44px;
+    }
+    html.is-short-host .eyebrow { margin-bottom: 10px; padding: 4px 9px; font-size: 12px; }
+    html.is-short-host .product-name { margin-bottom: 5px; font-size: 15px; }
+    html.is-short-host .hero-title { max-width: 390px; font-size: 32px; line-height: 1.12; letter-spacing: -1px; }
+    html.is-short-host .hero-desc { max-width: 390px; margin-top: 12px; font-size: 13.5px; line-height: 1.55; }
+    html.is-short-host .hero-purchase { margin-top: 18px; }
+    html.is-short-host .price-symbol { font-size: 14px; }
+    html.is-short-host .price-value { font-size: 25px; }
+    html.is-short-host .price-suffix { font-size: 11px; }
+    html.is-short-host .hero-products {
+      right: 20px;
+      bottom: 48px;
+      width: 68%;
+      height: 108px;
+    }
+    html.is-short-host .hero-product-card {
+      grid-template-columns: 58px minmax(0,1fr);
+      gap: 10px;
+      height: 94px;
+      padding: 8px 9px;
+    }
+    html.is-short-host .hero-product-image-wrap { width: 58px; height: 58px; }
+    html.is-short-host .hero-product-image { width: 54px; height: 54px; }
+    html.is-short-host .hero-product-name { font-size: 13px; }
+    html.is-short-host .hero-product-price { margin-top: 5px; font-size: 11.5px; }
+    html.is-short-host .carousel-arrow { width: 40px; height: 40px; }
     @media (prefers-reduced-motion: reduce) {
       *,*::before,*::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
     }
   </style>
-</head>
+  <link rel="stylesheet" href="/assets/components/scene-banner-v154/channel-home-carousel-bottom-v1.css?v=20260904-personal-exact">
+  <link rel="stylesheet" href="/assets/components/scene-banner-v154/channel-home-product-cards-large-v1.css?v=20260904-personal-exact">
+  <link rel="stylesheet" href="/assets/components/scene-banner-v154/channel-home-copy5-portrait-cards-v1.css?v=20260904-personal-exact">
+<style id="campus-gradient">
+.carousel-dot[aria-label="切换到校园场景"]{--campus-gradient:linear-gradient(105deg,#8de8ff 0%,#b9a2ff 38%,#ffa8d9 70%,#ffe2a0 100%)}
+.carousel-dot[aria-label="切换到校园场景"] .carousel-label{padding-left:14px!important;color:transparent!important;background:var(--campus-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none!important}
+.carousel-dot[aria-label="切换到校园场景"] .carousel-label::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:10px;height:10px;background:var(--campus-gradient);clip-path:polygon(50% 0,64% 36%,100% 50%,64% 64%,50% 100%,36% 64%,0 50%,36% 36%)}
+.carousel-dot[aria-label="切换到校园场景"]::after{background:var(--campus-gradient)!important}
+</style></head>
 <body>
   <main class="page">
     <section class="hero" id="bannerHero" aria-live="polite">
@@ -345,7 +422,7 @@
           ]
         },
         mobile: {
-          eyebrow:'移动场景', product:'联想小新 Air 13', title:'轻一点，灵感走得更远', desc:'小巧机身、可靠续航与清晰屏幕，让通勤、咖啡馆和移动学习都更轻松。', price:'5,499', sku:'1053879', image:'/assets/img/personal-scene-mobile-lenovo-v3.png', alt:'联想小新 Air 13 城市咖啡馆移动使用场景',
+          eyebrow:'移动场景', product:'联想小新 Air 13', title:'轻一点，灵感走得更远', desc:'小巧机身、可靠续航与清晰屏幕，让通勤、咖啡馆和移动学习都更轻松。', price:'5,499', sku:'1053879', image:'/assets/components/scene-banner-v154/personal-scene-mobile-lenovo-v3.png', alt:'联想小新 Air 13 城市咖啡馆移动使用场景',
           products:[
             { name:'联想小新 Air 13', price:'¥5,499', sku:'1053879', image:'/leai product data/shop-chat product data/笔记本/08_SPU_联想小新_Air_13/白底图.jpg' },
             { name:'Air Pro 双模鼠标', price:'¥99.9', sku:'1050750', image:'/leai product data/shop-chat product data/选件/08_SPU_联想_Air_Pro_双模鼠标/白底图.jpg' },
@@ -361,7 +438,7 @@
           ]
         },
         travel: {
-          eyebrow:'差旅场景', product:'YOGA Air 14s', title:'从登机到开会，一台就够', desc:'轻薄便携、快速唤醒和长续航组合，让移动会议、远程沟通与旅途娱乐从容切换。', price:'7,999', sku:'1030691', image:'/assets/img/personal-scene-travel-lenovo-v4.png', alt:'联想 YOGA Air 14s 机场候机厅差旅使用场景',
+          eyebrow:'差旅场景', product:'YOGA Air 14s', title:'从登机到开会，一台就够', desc:'轻薄便携、快速唤醒和长续航组合，让移动会议、远程沟通与旅途娱乐从容切换。', price:'7,999', sku:'1030691', image:'/assets/components/scene-banner-v154/personal-scene-travel-lenovo-v4.png', alt:'联想 YOGA Air 14s 机场候机厅差旅使用场景',
           products:[
             { name:'YOGA Air 14s', price:'¥7,999', sku:'1030691', image:'/leai product data/shop-chat product data/笔记本/02_SPU_YOGA_Air_14s/白底图.jpg' },
             { name:'USB-C 标准电源适配器', price:'¥149', sku:'1050929', image:'/leai product data/shop-chat product data/选件/11_SPU_联想_USB-C_标准电源适配器/白底图.jpg' },
@@ -387,6 +464,7 @@
       let transitionToken = 0;
       let changeTimer;
       let autoTimer;
+      const autoplayDuration = 6500;
       function renderProducts(scene) {
         products.textContent = '';
         products.setAttribute('aria-label', scene.eyebrow + '推荐商品');
@@ -412,8 +490,11 @@
         const dot = document.createElement('button');
         dot.type = 'button';
         dot.className = 'carousel-dot' + (index === 0 ? ' is-active' : '');
+        dot.setAttribute('role', 'tab');
         dot.setAttribute('aria-label', '切换到' + scenes[key].eyebrow);
         dot.setAttribute('aria-current', index === 0 ? 'true' : 'false');
+        dot.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+        dot.innerHTML = '<span class="carousel-label">' + scenes[key].eyebrow.replace(/场景$/, '') + '</span>';
         dot.addEventListener('click', function () { goTo(index, true); });
         pagination.appendChild(dot);
       });
@@ -452,6 +533,7 @@
               const selected = dotIndex === activeIndex;
               dot.classList.toggle('is-active', selected);
               dot.setAttribute('aria-current', selected ? 'true' : 'false');
+              dot.setAttribute('aria-selected', selected ? 'true' : 'false');
             });
             requestAnimationFrame(function () { hero.classList.remove('is-changing'); });
             if (typeof onCommitted === 'function') onCommitted();
@@ -468,6 +550,13 @@
         autoTimer = 0;
         hero.classList.add('is-paused');
       }
+      function restartProgress() {
+        const activeDot = pagination.querySelector('.carousel-dot.is-active');
+        if (!activeDot) return;
+        activeDot.classList.remove('is-active');
+        void pagination.offsetWidth;
+        activeDot.classList.add('is-active');
+      }
       function startAuto(forceReset) {
         if (autoTimer && !forceReset) {
           hero.classList.remove('is-paused');
@@ -477,12 +566,13 @@
         autoTimer = 0;
         hero.classList.remove('is-paused');
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        restartProgress();
         autoTimer = setTimeout(function () {
           autoTimer = 0;
           setScene(activeIndex + 1, function () {
             if (!hero.classList.contains('is-paused')) startAuto(false);
           });
-        }, 6500);
+        }, autoplayDuration);
       }
       function goTo(index, fromUser) {
         if (!fromUser) {

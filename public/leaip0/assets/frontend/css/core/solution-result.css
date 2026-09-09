@@ -547,7 +547,7 @@ body.assistant-right .lx-cmp-floating-cta{right:calc(var(--assistant-panel-width
 .lx-pc-ai-suggest h4{margin:0 0 6px;color:#4d144a;font-size:16px;line-height:1.2;font-weight:600}.lx-pc-ai-suggest p{margin:0;color:#625b68;font-size:14px;line-height:1.5}.lx-pc-ai-suggest p strong{color:#4d144a;font-weight:500}
 .lx-product-compare{position:relative;width:100%}.lx-pc-shell{position:relative;width:100%;container-type:inline-size;container-name:lx-product-compare;border:1px solid rgba(226,221,235,.5);border-radius:17px;overflow:hidden;box-shadow:none;background:#fff}
 .lx-pc-scroll{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-gutter:stable}.lx-pc-grid{display:grid;width:100%;min-width:0;align-items:stretch}.lx-pc-grid.is-fit{min-width:0}.lx-pc-grid.is-scroll{width:100%;min-width:calc(170px + var(--lx-pc-cols)*300px)}
-.lx-pc-cell{box-sizing:border-box;min-width:0;border-right:1px solid rgba(226,221,235,.5);border-bottom:1px solid rgba(226,221,235,.5);background:#fff;transition:background-color .16s ease}.lx-pc-cell.column-hover{background:#fcfaff!important}
+.lx-pc-cell{box-sizing:border-box;min-width:0;border-right:1px solid rgba(226,221,235,.5);border-bottom:1px solid rgba(226,221,235,.5);background:#fff;transition:background-color .16s ease}.lx-product-compare .lx-pc-cell.column-hover{background:#fcfaff!important}
 .lx-pc-label{background:#fcfaff;color:#979797;font-size:14px;font-weight:500;display:flex;align-items:center;padding-left:16px;gap:9px}.lx-pc-grid.is-scroll .lx-pc-label{position:sticky;left:0;z-index:2;box-shadow:1px 0 0 rgba(226,221,235,.5)}.lx-pc-label-icon{width:18px;height:18px;display:grid;place-items:center;flex:0 0 auto}.lx-pc-label-icon svg{width:18px;height:18px;stroke:#979797;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}.lx-pc-label-icon.is-sparkle svg{stroke:none;fill:#4d144a}
 .lx-pc-r-product{height:130px;overflow:hidden}.lx-pc-r-ai{height:92px;overflow:hidden}.lx-pc-r-normal{height:47px;overflow:hidden}.lx-pc-r-action{height:72px;border-bottom:0;overflow:hidden}
 .lx-pc-product-head{position:relative;padding:21px 28px 16px!important;cursor:pointer}.lx-pc-product-head:hover{background:#fcfaff}.lx-pc-product-close{display:none!important}
@@ -559,8 +559,12 @@ body.assistant-right .lx-cmp-floating-cta{right:calc(var(--assistant-panel-width
 .lx-pc-ai-cell{display:flex;align-items:center;padding:0 26px!important}.lx-pc-ai-note{width:100%;height:66px;min-height:66px;padding:13px 18px;display:flex;align-items:center;gap:14px;overflow:hidden;border-radius:13px;border:1px solid rgba(226,221,235,.5);background:#fcfaff;color:#625b68;font-size:14px;line-height:1.55}.lx-pc-ai-note>span:last-child{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2}.lx-pc-sparkle{width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;color:#4d144a}.lx-pc-sparkle svg{width:28px;height:28px;fill:currentColor}
 .lx-pc-value{display:flex;align-items:center;padding:0 38px;color:#625b68;font-size:14px;line-height:1.5}.lx-pc-value-pill{display:inline;color:inherit;font-weight:400}
 .lx-pc-action-cell{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:9px}.lx-pc-buy-btn{width:min(250px,calc(100% - 36px));height:34px;border:0;border-radius:999px;background:linear-gradient(90deg,#4d144a 11.9%,#b8252e 100%);color:#fff;font-size:16px;font-weight:500;cursor:pointer;box-shadow:0 4px 10px rgba(77,20,74,.10);transition:transform .15s ease,box-shadow .15s ease}.lx-pc-buy-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(77,20,74,.10)}.lx-pc-buy-btn:active{transform:translateY(1px)}
-.lx-pc-cell.recommended{background:#fff!important;border-left:0!important;border-right:1px solid rgba(226,221,235,.5)!important}.lx-pc-cell.recommended.top{border-top:0!important;border-top-right-radius:0}.lx-pc-cell.recommended.bottom{border-bottom:0!important;border-bottom-right-radius:0}
-.lx-pc-rec-badge{display:none!important}
+.lx-product-compare .lx-pc-cell.recommended{background:#f3edf6!important;box-shadow:inset 1px 0 #b79bbc,inset -1px 0 #b79bbc}
+.lx-product-compare .lx-pc-cell.recommended.column-hover{background:#eee4f2!important}
+.lx-product-compare .lx-pc-cell.recommended.top{box-shadow:inset 1px 0 #b79bbc,inset -1px 0 #b79bbc,inset 0 1px #b79bbc}
+.lx-product-compare .lx-pc-cell.recommended.bottom{box-shadow:inset 1px 0 #b79bbc,inset -1px 0 #b79bbc,inset 0 -1px #b79bbc}
+.lx-product-compare .lx-pc-grid .lx-pc-product-head.recommended{padding-top:33px!important;padding-bottom:12px!important}
+.lx-product-compare .lx-pc-rec-badge{position:absolute;top:0;left:0;z-index:1;display:inline-flex!important;align-items:center;height:22px;padding:0 10px;border-radius:0 0 8px 0;background:linear-gradient(90deg,#4d144a 11.9%,#b8252e 100%);color:#fff;font-size:11px;font-weight:600;line-height:22px;white-space:nowrap;pointer-events:none}
 .lx-pc-foot-note{margin:12px 0 14px;color:#979797;font-size:12px;line-height:1.5}.lx-pc-foot-note b{color:#4d144a}.lx-product-compare button:focus-visible,.lx-product-compare [tabindex="0"]:focus-visible{outline:3px solid rgba(155,142,182,.62);outline-offset:2px}
 .lx-product-compare.is-hide-same .lx-pc-same-row{display:none}.lx-pc-options{position:absolute;right:130px;top:-140px;z-index:3;display:flex;height:36px;align-items:center;gap:18px;white-space:nowrap}.lx-pc-option{display:inline-flex;align-items:center;gap:7px;color:#625b68;font-size:14px;line-height:1;cursor:pointer;user-select:none}.lx-pc-option input{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border:1px solid #e2ddeb;border-radius:50%;background:#fff;cursor:pointer}.lx-pc-option input:checked{border-color:#4d144a;background:#4d144a;box-shadow:inset 0 0 0 4px #fff}.lx-pc-option input:focus-visible{outline:3px solid rgba(155,142,182,.62);outline-offset:2px}.lx-pc-option:hover{color:#4d144a}
 .lx-pc-scroll-nav{position:absolute;right:18px;top:-140px;z-index:3;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0}.lx-pc-nav-btn{position:relative;display:grid;place-items:center;width:42px;height:36px;padding:0;border:1px solid #e2ddeb;border-radius:10px;background:#fff;color:#4d144a;cursor:pointer;transition:background-color .16s ease,border-color .16s ease,opacity .16s ease}.lx-pc-nav-btn:hover:not(:disabled){border-color:#9b8eb6;background:#f3f0f7}.lx-pc-nav-btn:active:not(:disabled){background:#efe4f1}.lx-pc-nav-btn:disabled{cursor:not-allowed;opacity:.35}.lx-pc-nav-btn::before{width:5.33px;height:5.33px;border-top:1.33px solid currentColor;border-right:1.33px solid currentColor;content:""}.lx-pc-nav-btn[data-lx-pc-scroll="-1"]::before{transform:rotate(-135deg)}.lx-pc-nav-btn[data-lx-pc-scroll="1"]::before{transform:rotate(45deg)}
@@ -748,3 +752,583 @@ html body .lx-p0-modal.lx-lead-shell:has(.lx-solution-whitepaper-modal) .lx-p0-m
 .lx-solution-whitepaper-viewer iframe{display:block;width:100%;height:100%;min-height:480px;border:0;background:#fff}
 .lx-solution-whitepaper-modal>.lx-p0-disclaimer{flex:0 0 auto;margin:0!important;color:#979797;font-size:12px;line-height:1.5}
 @media (max-width:720px){html body .lx-p0-modal-mask.lx-lead-modal-mask:has(.lx-solution-whitepaper-modal){padding:12px!important}html body .lx-p0-modal.lx-lead-shell:has(.lx-solution-whitepaper-modal){width:calc(100vw - 24px)!important;height:calc(100vh - 24px)!important}.lx-solution-whitepaper-toolbar{align-items:flex-start;flex-direction:column}.lx-solution-whitepaper-toolbar p{white-space:normal}.lx-solution-whitepaper-viewer iframe{min-height:360px}}
+
+/* P0 recommendation reference 8770 — 2026-09-05 */
+/*
+ * Personal channel shared card geometry.
+ * Shared airy geometry for recommendation, cleaning and device cards.
+ * Card height may follow content, while page edges, gaps and action anchors
+ * stay identical across the three experiences.
+ */
+
+/* AI recommendation: remove its extra inner offset and match device width. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content[data-view="reco"]
+> .reco-page.lx-reco-poc-page {
+  box-sizing: border-box !important;
+  width: calc(100% + 40px) !important;
+  margin-right: -22px !important;
+  margin-left: -18px !important;
+  padding: 32px 24px 48px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content[data-view="reco"] .lx-reco-poc-list {
+  gap: 18px !important;
+  padding-top: 6px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content[data-view="reco"] .lx-reco-poc-page
+.reco-row.lx-reco-poc-row {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  grid-template-columns: 150px minmax(0, 1fr) 224px !important;
+  min-height: 136px !important;
+  padding: 16px 24px 16px 14px !important;
+  border-radius: 20px !important;
+  row-gap: 7px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content[data-view="reco"] .lx-reco-poc-page
+.reco-row-side.lx-reco-poc-side {
+  justify-content: flex-end !important;
+  padding: 0 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content[data-view="reco"] .lx-reco-poc-page
+.reco-row-actions.lx-reco-poc-actions {
+  gap: 14px !important;
+}
+
+
+/* Exact recommendation-only rules from the reference's shared price baseline. */
+html body.lx-home-split:not(.assistant-fullscreen) .content .lx-reco-poc-actions{align-items:center!important}
+html body.lx-home-split:not(.assistant-fullscreen) .content .lx-reco-poc-actions .reco-row-price{min-width:76px!important;margin:0!important;text-align:right!important;white-space:nowrap!important;font-variant-numeric:tabular-nums!important}
+/* Reference shop-chat/index.html, reco-buy-hidden-v162. */
+html body .reco-page .lx-reco-poc-row .lx-reco-poc-buy{display:none!important}
+
+/* Service list reference 8770 — 2026-09-05 */
+/* LX_CLEANING_RECOMMENDATION_MATCH_PRODUCT_CARDS_V6_20260901 */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]:has(.lx-service-reco-page) {
+  background-color: #f5f5f7 !important;
+  background-image: linear-gradient(180deg, #fff 0, #fff 74px, #fefefe 96px, #fafafa 122px, #f7f7f8 164px, #f5f5f7 214px, #f5f5f7 100%) !important;
+  background-repeat: no-repeat !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100% !important;
+  padding: 26px 22px 36px !important;
+  overflow: auto !important;
+  background: transparent !important;
+  --service-card-line: #ded9e3;
+  --service-card-gradient: linear-gradient(90deg, #4d144a 11.9%, #b8252e 100%);
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 24px !important;
+  margin: 0 !important;
+  padding: 0 2px 18px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-head h2 {
+  margin: 0 !important;
+  color: #1d1d1f !important;
+  font-size: 21px !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-head span {
+  padding-top: 5px !important;
+  color: #77747a !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-weight: 400 !important;
+  white-space: nowrap !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row {
+  position: relative !important;
+  flex: none !important;
+  min-height: 112px !important;
+  display: grid !important;
+  grid-template-columns: 176px minmax(0, 1fr) clamp(198px, 15vw, 238px) !important;
+  grid-template-rows: max-content max-content !important;
+  align-content: center !important;
+  align-items: center !important;
+  column-gap: 0 !important;
+  row-gap: 5px !important;
+  margin: 0 0 10px !important;
+  padding: 10px 18px 10px 10px !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(29, 29, 31, .025) !important;
+  outline: 0 !important;
+  transform: translateY(0) !important;
+  transition: transform .18s cubic-bezier(.22, .61, .36, 1), background-color .2s ease, box-shadow .2s ease !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row::before {
+  display: none !important;
+  content: none !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row + .reco-row {
+  border-top: 0 !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row:hover {
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: 0 8px 24px rgba(50, 29, 57, .075) !important;
+    transform: translateY(-1px) !important;
+  }
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row:has(.lx-pick-btn.picked),
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row:has(.lx-pick-btn[aria-pressed="true"]) {
+  background: linear-gradient(90deg, #fff 0, #fff 168px, #fdfcfe 242px, #faf8fb 58%, #f7f4f9 100%) !important;
+  box-shadow: 0 5px 16px rgba(77, 20, 74, .05) !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row > img {
+  display: block !important;
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: 138px !important;
+  height: 88px !important;
+  max-width: 138px !important;
+  max-height: 88px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  object-fit: contain !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-main {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-column: 2 !important;
+  grid-row: 1 / span 2 !important;
+  grid-template-areas: "tag" "title" "desc" !important;
+  grid-template-rows: 19px auto auto !important;
+  gap: 7px !important;
+  align-self: center !important;
+  padding: 0 22px 0 8px !important;
+  text-align: left !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-main > strong {
+  grid-area: title !important;
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: #1d1d1f !important;
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+  font-weight: 600 !important;
+  letter-spacing: -.015em !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-desc {
+  grid-area: desc !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: #6e6e73 !important;
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+  font-weight: 400 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-tags {
+  position: static !important;
+  z-index: 2 !important;
+  grid-area: tag !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-tags .product-promo {
+  height: 19px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 7px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: #fcf2f8 !important;
+  color: #bb1836 !important;
+  font-size: 10.5px !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-reco-why {
+  display: none !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-side {
+  position: relative !important;
+  min-height: 82px !important;
+  display: flex !important;
+  grid-column: 3 !important;
+  grid-row: 1 / span 2 !important;
+  align-self: stretch !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  gap: 13px !important;
+  padding: 8px 0 8px 8px !important;
+  text-align: right !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-price {
+  color: #e2231a !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+  letter-spacing: -.025em !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-actions .lx-p0-btn.primary {
+  min-width: 92px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 16px !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  background: var(--service-card-gradient) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 3px 9px rgba(77, 20, 74, .10) !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-actions .lx-p0-btn.primary:hover {
+  border-color: transparent !important;
+  background: var(--service-card-gradient) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 14px rgba(77, 20, 74, .14) !important;
+  transform: translateY(-1px) !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn {
+  position: absolute !important;
+  top: 15px !important;
+  right: 14px !important;
+  z-index: 3 !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  opacity: 0 !important;
+  box-shadow: none !important;
+  transition: opacity .15s ease !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn > img {
+  display: none !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn::before {
+  content: "" !important;
+  display: block !important;
+  width: 19px !important;
+  height: 19px !important;
+  box-sizing: border-box !important;
+  border: 1.5px solid var(--reco-line, #ded9e3) !important;
+  border-radius: 6px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  transition: border-color .18s ease, background .18s ease !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: 5px !important;
+  height: 8px !important;
+  border-right: 1.5px solid #fff !important;
+  border-bottom: 1.5px solid #fff !important;
+  opacity: 0 !important;
+  transform: translate(-50%, -58%) rotate(45deg) !important;
+  transition: opacity .12s ease !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn:hover::before {
+  border-color: var(--lx-brand-red, #b8252e) !important;
+  background: #fcf2f8 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn.picked::before,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn[aria-pressed="true"]::before {
+  border-color: transparent !important;
+  background: var(--reco-gradient, linear-gradient(90deg, #4d144a 11.9%, #b8252e 100%)) !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn.picked::after,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn[aria-pressed="true"]::after {
+  opacity: 1 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row:hover .lx-pick-btn,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row:focus-within .lx-pick-btn,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn.picked,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .lx-pick-btn[aria-pressed="true"] {
+  opacity: 1 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .lx-p0-disclaimer {
+  margin: 4px 0 0 !important;
+  padding: 0 4px !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+@media (max-width: 1280px) {
+  html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row {
+    grid-template-columns: 150px minmax(0, 1fr) 174px !important;
+    padding-right: 14px !important;
+  }
+
+  html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .reco-row > img {
+    width: 122px !important;
+    height: 82px !important;
+  }
+}
+@media(prefers-reduced-motion:reduce){.lx-reco-poc-row,.lx-reco-poc-buy,.lx-reco-poc-selector{transition:none!important}.lx-reco-poc-row:hover{transform:none!important}}
+
+
+/* Cleaning recommendations: remove the wrapper inset, then use the same
+   page edge as the device center. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page {
+  box-sizing: border-box !important;
+  width: calc(100% + 40px) !important;
+  margin-right: -22px !important;
+  margin-left: -18px !important;
+  padding: 32px 24px 48px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page > .reco-row {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  grid-template-columns: 150px minmax(0, 1fr) 224px !important;
+  min-height: 136px !important;
+  margin: 0 0 18px !important;
+  padding: 16px 24px 16px 14px !important;
+  border-radius: 20px !important;
+  row-gap: 7px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page .reco-row-side {
+  justify-content: flex-end !important;
+  padding: 0 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page .reco-row-actions {
+  gap: 14px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content[data-view="reco"] .reco-page:has([data-member-service-page]) {
+  box-sizing: border-box !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-service-page] {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 32px 24px 48px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-service-page] .leai-service-list {
+  gap: 18px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-service-page] .leai-service-list > .reco-row {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 136px !important;
+  margin: 0 !important;
+  padding: 16px 24px 16px 14px !important;
+  border-radius: 20px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-service-page] .reco-row-side {
+  align-self: stretch !important;
+  justify-content: end !important;
+  padding: 0 !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-service-page] .reco-row-actions {
+  gap: 14px !important;
+}
+
+/* Warranty recommendations share the cleaning-service canvas and card system. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-warranty-service-page] {
+  background-color: #f5f5f7 !important;
+  background-image: linear-gradient(
+    180deg,
+    #fff 0,
+    #fff 74px,
+    #fefefe 96px,
+    #fafafa 122px,
+    #f7f7f8 164px,
+    #f5f5f7 214px,
+    #f5f5f7 100%
+  ) !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-warranty-service-page] .leai-service-list > .reco-row {
+  grid-template-columns: 150px minmax(0, 1fr) 224px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-warranty-service-page] .reco-row-actions {
+  justify-content: flex-end !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-warranty-service-page] .leai-service-compare-link {
+  top: 26px !important;
+  right: 24px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-warranty-service-page] .leai-service-rank,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-warranty-service-page] [data-service-detail] {
+  display: none !important;
+}
+
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) .content :is(.lx-service-reco-page .reco-row-actions,[data-member-service-page] .reco-row-actions){align-items:center!important}
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content :is(
+  [data-member-service-page] .reco-row-actions .lx-p0-btn.primary
+) {
+  width: 96px !important;
+  min-width: 96px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding-right: 14px !important;
+  padding-left: 14px !important;
+  border-radius: 999px !important;
+  box-sizing: border-box !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content :is(
+  [data-member-service-page] .reco-row-price
+) {
+  min-width: 76px !important;
+  margin: 0 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+
+/* Reference cleaning renderer omits direct purchase/detail actions. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page .reco-row-actions .lx-p0-btn:is(.primary,.lx-p0-btn){display:none!important}
+
+/* 2026-09-02: cleaning cards use the recommendation-card selection anchor
+   and the same 20px label / 7px vertical text rhythm. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page .reco-row-main {
+  grid-template-rows: 20px auto auto !important;
+  gap: 7px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page .reco-row-tags {
+  height: 20px !important;
+  min-height: 20px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page .reco-row-tags .product-promo {
+  height: 20px !important;
+  min-height: 20px !important;
+  padding: 0 8px 0 6px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"]
+> .reco-page.lx-service-reco-page .lx-pick-btn {
+  top: 26px !important;
+  right: 24px !important;
+}
+
+/* Preserve the reference computed service-note typography in every channel. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen) main.shell > section.content:is(.lx-shop-content,.content)[data-view="reco"] > .reco-page.lx-service-reco-page > .lx-p0-disclaimer{font-size:12.5px!important;line-height:18px!important;text-align:right!important}
+
+/* Split composer stop glyph: 12px × 7/8. */
+html body:not(.assistant-fullscreen):not(.lx-auto-fs) .assistant-panel button.send-btn.lx-stop-generation::after{width:10.5px!important;height:10.5px!important}
+
+html body [data-member-device-page] .leai-device-center .leai-device-filters{display:none!important}
+
+html body .lx-answer-followups-title,html body .lx-answer-tools .lx-answer-question{font-size:12.5px!important}

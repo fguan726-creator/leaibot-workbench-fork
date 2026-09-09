@@ -166,3 +166,35 @@ body.lx-template-file.lx-home-split:is([data-page="business"], [data-page="enter
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+
+/* Product code: retain a 12px gap within the existing 22px flex rhythm.
+   Shared by home, personal/family, SMB and government/enterprise details.
+   No image, button, typography or other detail spacing is changed. */
+.content[data-view="detail"] .product-detail .detail-info > .lx-detail-product-code-v188,
+.content[data-view="detail"] .product-detail .detail-info > .detail-itemcode {
+  margin-top: -10px !important;
+}
+
+/* Align the entire price group with the title and configuration column.
+   Keep vertical padding, typography and spacing within the group unchanged. */
+.content[data-view="detail"] .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price,
+.content[data-view="detail"] .product-detail .detail-price {
+  padding-left: 0;
+}
+
+/* Shared product detail tab bar: requested compact spacing. */
+.content[data-view="detail"] .product-detail .detail-tabbar {
+  padding: 10px 4px 0px !important;
+}
+
+/* Use the approved AI sparkle asset for every product-detail renderer. */
+.content[data-view="detail"] .product-detail .detail-fit-reason .lx-fit-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  font-size: 0 !important;
+  background: url("/assets/icons/global-sparkle.svg") center / contain no-repeat;
+}
+.content[data-view="detail"] .product-detail .detail-fit-reason .lx-fit-icon > * {
+  display: none !important;
+}

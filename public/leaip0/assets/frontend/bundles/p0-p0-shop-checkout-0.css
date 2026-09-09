@@ -1,0 +1,54 @@
+
+/* public/leaip0/assets/frontend/js/core/address-dialog-v144.css */
+html body .lx-p0-modal.lx-address-standard{width:min(620px,calc(100vw - 40px))!important;min-height:0!important;max-height:calc(100vh - 40px)!important;zoom:1!important;padding:0!important;border:1px solid #e2ddeb!important;border-radius:20px!important;background:#fff!important;overflow:auto!important;box-shadow:none!important}
+html body .lx-address-standard .lx-p0-modal-head{display:none!important}
+html body .lx-address-standard .lx-p0-modal-body{padding:0 28px 24px!important;overflow:visible!important}
+html body .lx-address-standard .head{display:flex!important;align-items:center!important;min-height:72px!important;padding:20px 48px 20px 0!important;margin:0 -28px 20px!important;padding-left:28px!important;border-bottom:1px solid #eee8f2!important;gap:0!important}
+html body .lx-address-standard .head .pin{display:none!important}
+html body .lx-address-standard .head h3{font-size:20px!important;font-weight:600!important;line-height:28px!important;margin:0!important}
+html body .lx-address-standard .x.lx-p0-close{position:absolute!important;top:20px!important;right:24px!important;width:32px!important;height:32px!important;border-radius:50%!important;padding:8px!important;background:#f5f1f8!important}
+html body .lx-address-standard .x svg{width:16px!important;height:16px!important}
+html body .lx-address-standard .divider{font-size:14px!important;margin:18px 0!important;font-weight:500!important}
+html body .lx-address-standard .lx-addr-form{display:flex!important;flex-direction:column!important;gap:14px!important}
+html body .lx-address-standard .frow{display:grid!important;grid-template-columns:1fr 1fr!important;gap:14px!important}
+html body .lx-address-standard .lx-address-control{min-width:0!important;width:100%!important}
+html body .lx-address-standard .lx-address-label{display:block;margin-bottom:7px;font-size:14px;font-weight:500;color:#252525}
+html body .lx-address-standard .field{display:flex!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;height:42px!important;padding:0 12px!important;margin:0!important;border:1px solid #e2ddeb!important;border-radius:8px!important;background:white!important}
+html body .lx-address-standard .field input{width:100%!important;min-width:0!important;font-size:14px!important;line-height:20px!important;font-weight:400!important;padding:0!important;border:0!important;background:transparent!important}
+html body .lx-address-standard .field.lx-address-regions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;border:0!important;padding:0!important;height:auto!important}
+html body .lx-address-standard .lx-address-regions select{width:100%;height:42px;min-width:0;padding:0 8px;border:1px solid #e2ddeb;border-radius:8px;background:#fff;color:#252525;font:400 14px inherit}
+html body .lx-address-standard .lx-address-footer{display:flex;justify-content:flex-end;gap:12px;margin-top:22px}
+html body .lx-address-standard .lx-address-footer button{width:auto!important;min-width:100px!important;height:42px!important;padding:0 20px!important;margin:0!important;border:1px solid #e2ddeb!important;border-radius:8px!important;background:#fff!important;color:#4d144a!important;font-size:15px!important;font-weight:500!important}
+html body .lx-address-standard .lx-address-footer [data-addr-save]{background:linear-gradient(90deg,#4d144a,#b8252e)!important;color:white!important;border:0!important}
+html body .lx-address-standard .foot-tip{font-size:12px!important;line-height:20px!important;margin:16px 0 0!important;color:#979797!important}
+html body .lx-address-standard .lx-p0-disclaimer{font-size:14px!important;line-height:22px!important}
+@media(max-width:480px){html body .lx-address-standard .frow{grid-template-columns:1fr!important}html body .lx-address-standard .field.lx-address-regions{grid-template-columns:1fr!important}}
+
+/* Reuse final lead-form control metrics; outrank the legacy address skin. */
+
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-addr-form .field{height:auto!important;min-height:0!important;border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;border-radius:0!important;outline:0!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-addr-form .field input:not([type="hidden"]),
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-addr-form .field select{box-sizing:border-box!important;width:100%!important;min-width:0!important;height:40px!important;min-height:40px!important;margin:0!important;padding:0 12px!important;border:1px solid #e2ddeb!important;border-radius:8px!important;background:#fff!important;color:#252525!important;box-shadow:none!important;font-family:inherit!important;font-size:13px!important;line-height:20px!important;font-weight:600!important;outline:0!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .field input::placeholder{color:#bcb4c1!important;font-weight:500!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .field input:focus,html body .lx-p0-modal.lx-address-standard.lx-address-standard .field select:focus{border-color:#5b1452!important;box-shadow:0 0 0 3px rgba(50,29,57,.08)!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .field select:disabled{color:#bcb4c1!important;background:#faf8fc!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-label{font-size:14px!important;line-height:22px!important;font-weight:500!important;margin-bottom:7px!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer{display:grid!important;grid-template-columns:120px minmax(0,1fr)!important;gap:12px!important;margin:18px 0 0!important;padding:0!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer button{width:100%!important;height:50px!important;min-height:50px!important;border-radius:13px!important;font-family:inherit!important;font-size:16px!important;line-height:20px!important;font-weight:850!important;cursor:pointer!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .lx-address-cancel{border:1px solid #e2ddeb!important;background:#fff!important;color:#5b1452!important;box-shadow:none!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .save.acta.addr-ghost[data-addr-save]{border:0!important;background:linear-gradient(90deg,#4d144a 11.9%,#b8252e 100%)!important;color:#fff!important;box-shadow:0 12px 26px rgba(146,86,214,.16)!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .lx-address-cancel:hover{border-color:#5b1452!important;background:#fcfaff!important}
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer [data-addr-save]:hover{filter:brightness(1.03)!important}
+
+/* Address footer: requested weight and no shadow in every interaction state. */
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer button,
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer button *,
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .save.acta.addr-ghost[data-addr-save],
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .save.acta.addr-ghost[data-addr-save]:hover,
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .save.acta.addr-ghost[data-addr-save]:active,
+html body .lx-p0-modal.lx-address-standard.lx-address-standard .lx-address-footer .save.acta.addr-ghost[data-addr-save]:focus {
+ font-weight:600!important;
+ box-shadow:none!important;
+ text-shadow:none!important;
+ filter:none!important;
+}

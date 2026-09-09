@@ -791,7 +791,7 @@
             var card = event.target.closest("[data-order-card]");
             var detailButton = event.target.closest("[data-order-detail-id]");
             var back = event.target.closest("[data-order-back]");
-            var tab = event.target.closest("[data-detail-tab]");
+            var tab = event.target.closest("[data-order-detail] [data-detail-tab]");
             var copyTracking = event.target.closest("[data-copy-tracking]");
             var typeTrigger = event.target.closest("[data-order-type-trigger]");
             var typeOption = event.target.closest("[data-order-type-option]");

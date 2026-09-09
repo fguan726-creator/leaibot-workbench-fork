@@ -44,10 +44,13 @@
     return name ? { sku: key, name, image_url: image, price } : key;
   };
 
-  const showGeneration = startedAt => {
+  let openSequence = 0;
+  const showGeneration = (ready, sequence) => {
+    let settled = false;
+    Promise.resolve(ready).then(() => { settled = true; }, () => { settled = true; });
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const content = document.querySelector('.content');
-      if (!content) return;
+      if (!content || settled || sequence !== openSequence) return;
       content.querySelectorAll('.lx-page-generating').forEach(node => node.remove());
       const overlay = document.createElement('div');
       overlay.className = 'lx-page-generating';
@@ -58,13 +61,13 @@
       content.scrollTop = 0;
       content.classList.add('is-generating-tab');
       requestAnimationFrame(() => overlay.classList.add('is-show'));
-      const wait = Math.max(2000 - (Date.now() - startedAt), 0);
-      window.setTimeout(() => {
+      Promise.resolve(ready).catch(() => {}).then(() => {
+        if (sequence !== openSequence || !overlay.isConnected) { overlay.remove(); return; }
         overlay.classList.add('is-done');
         overlay.classList.remove('is-show');
         content.classList.remove('is-generating-tab');
         window.setTimeout(() => overlay.remove(), 260);
-      }, wait);
+      });
     }));
   };
 
@@ -73,11 +76,11 @@
     if (!key) return false;
     const api = window.__lxAgentAPI;
     if (typeof api?.openProduct !== 'function') return false;
-    const startedAt = Date.now();
+    const sequence = ++openSequence;
     const preserveState = document.body.dataset.state;
-    api.openProduct(findProduct(key, card));
+    const ready = api.openProduct(findProduct(key, card));
     if (preserveState) document.body.dataset.state = preserveState;
-    showGeneration(startedAt);
+    showGeneration(ready, sequence);
     return true;
   };
 

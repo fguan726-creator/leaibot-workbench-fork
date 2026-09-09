@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "measured": "2026-09-04",
+  "scope": "Initial external JS/CSS and HTML; excludes images, iframe, API and lazy features",
+  "maxSingleJsGzip": 237568,
+  "maxSingleCssGzip": 103424,
+  "pages": [
+    {
+      "file": "index.html",
+      "maxRequests": 37,
+      "maxGzip": 443392,
+      "maxHtmlGzip": 26624
+    },
+    {
+      "file": "shop-chat/index.html",
+      "maxRequests": 57,
+      "maxGzip": 484352,
+      "maxHtmlGzip": 27648
+    },
+    {
+      "file": "b-chat/index.html",
+      "maxRequests": 60,
+      "maxGzip": 491520,
+      "maxHtmlGzip": 32768
+    },
+    {
+      "file": "biz-chat/index.html",
+      "maxRequests": 57,
+      "maxGzip": 488448,
+      "maxHtmlGzip": 27648
+    },
+    {
+      "file": "brand/index.html",
+      "maxRequests": 42,
+      "maxGzip": 446464,
+      "maxHtmlGzip": 15360
+    }
+  ]
+}

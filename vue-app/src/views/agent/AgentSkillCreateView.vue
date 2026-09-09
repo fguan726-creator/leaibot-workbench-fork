@@ -273,7 +273,7 @@
                     </section>
                   </div>
                   <div v-if="!clarifyMessages.length" class="skill-chat-ai">
-                    <div>请在下方输入框补充本轮 Skill 创建需求。需求澄清智能体会基于你的描述、基础配置和已选子菜单上下文，按九要素收敛能力定义、输入输出、执行边界和验收用例。</div>
+                    <div>请在下方输入框补充本轮 Skill 创建需求。需求澄清智能体会基于你的描述、基础配置和已选能力上下文，按九要素收敛能力定义、输入输出、执行边界和验收用例。</div>
                   </div>
                   <template v-for="message in clarifyMessages" :key="message.id">
                     <div v-if="message.kind === 'state'" class="skill-chat-ai skill-conversation-states" aria-label="AI 会话状态">
@@ -568,6 +568,7 @@ import { MENU_TREE, useAppStore } from '@/stores/app'
 import { useAIStore } from '@/stores/ai'
 import { useSkillHubStore, type SkillCapabilityUpdate, type SkillDraftSnapshot, type SkillHubActor, type SkillHubItem } from '@/stores/skillHub'
 import { skillHubMutationDecision } from '@/services/skillCapabilityChanges.js'
+import { mergeSkillContextItems, mergeSkillMenuLabels } from '@/domain/skillContextCatalog.js'
 import AgentConversationStates from '@/components/agent/AgentConversationStates.vue'
 
 type TabKey = 'config' | 'clarify' | 'draft' | 'verify' | 'review'
@@ -577,6 +578,7 @@ type ContextItem = {
   subtitle: string
   source: string
   menuPath: string
+  sourceType?: 'page' | 'api'
   version?: string
   currentVersion?: string
   targetVersion?: string
@@ -724,7 +726,7 @@ const form = ref({
 })
 
 const menuGroups = Object.values(MENU_TREE)
-const menuGroupLabels = menuGroups.map(group => group.label)
+const menuGroupLabels = mergeSkillMenuLabels(menuGroups.map(group => group.label))
 const contextItems = ref<ContextItem[]>(createMenuContextItems(form.value.menu))
 const selectedContextItems = computed(() => contextItems.value.filter(item => item.selected))
 const affectedSelectedContextItems = computed(() => {
@@ -765,7 +767,7 @@ const filteredContextItems = computed(() => {
     .sort((left, right) => Number(right.recommended) - Number(left.recommended))
 })
 const contextResourceMetrics = [
-  { label: 'API', value: 13 },
+  { label: 'API', value: 14 },
   { label: 'DB 表', value: 5 },
   { label: 'Tool', value: 2 },
   { label: '权限点', value: 10 }
@@ -826,56 +828,20 @@ watch(
 
 function createMenuContextItems(activeMenu: string) {
   const recommendedCodes = RECOMMENDED_CONTEXT_CODES_BY_MENU[activeMenu] || new Set<string>()
-  const update = activeCapabilityUpdate.value
-  const affected = new Map((update?.affectedContexts || []).map(context => [context.contextId, context]))
-  const optional = new Map((update?.optionalContexts || []).map(context => [context.contextId, context]))
-  const baseItems = menuGroups.flatMap(group =>
+  const pageItems: ContextItem[] = menuGroups.flatMap(group =>
     Object.entries(group.children).map(([pageId, page]) => {
-      const affectedContext = affected.get(pageId)
-      const optionalContext = optional.get(pageId)
       return {
-        name: affectedContext?.name || optionalContext?.name || page.label,
+        name: page.label,
         code: pageId,
-        subtitle: optionalContext?.summary || CONTEXT_SUBTITLE_BY_CODE[pageId] || `查看${page.label}相关业务数据与操作能力`,
+        subtitle: CONTEXT_SUBTITLE_BY_CODE[pageId] || `查看${page.label}相关业务数据与操作能力`,
         source: group.label,
-        menuPath: affectedContext?.menuPath || optionalContext?.menuPath || `${group.label} / ${page.label}`,
-        version: optionalContext?.version,
-        currentVersion: affectedContext?.currentVersion,
-        targetVersion: affectedContext?.targetVersion,
-        changeRole: affectedContext ? 'affected' as const : optionalContext ? 'optional' as const : undefined,
+        menuPath: `${group.label} / ${page.label}`,
         selected: false,
-        recommended: recommendedCodes.has(pageId) || Boolean(affectedContext || optionalContext)
+        recommended: recommendedCodes.has(pageId)
       }
     })
   )
-  if (!update) return baseItems
-  const knownCodes = new Set(baseItems.map(item => item.code))
-  const additions: ContextItem[] = [
-    ...update.affectedContexts.map(context => ({
-      name: context.name,
-      code: context.contextId,
-      subtitle: update.summary,
-      source: context.menuPath.split('/')[0]?.trim() || update.baseMenu,
-      menuPath: context.menuPath,
-      currentVersion: context.currentVersion,
-      targetVersion: context.targetVersion,
-      changeRole: 'affected' as const,
-      selected: false,
-      recommended: true
-    })),
-    ...update.optionalContexts.map(context => ({
-      name: context.name,
-      code: context.contextId,
-      subtitle: context.summary,
-      source: context.menuPath.split('/')[0]?.trim() || update.baseMenu,
-      menuPath: context.menuPath,
-      version: context.version,
-      changeRole: 'optional' as const,
-      selected: false,
-      recommended: true
-    }))
-  ].filter(item => !knownCodes.has(item.code))
-  return [...baseItems, ...additions]
+  return mergeSkillContextItems(pageItems, activeMenu, activeCapabilityUpdate.value)
 }
 
 function contextVersionLabel(item: ContextItem) {
@@ -962,7 +928,7 @@ const summaryItems = ref<Array<{ label: string; text: string }>>([
 
 const clarifyActions = [
   { label: '生成测试用例', prompt: '请根据我刚才补充的需求，生成需要覆盖的测试用例方向。' },
-  { label: '检查权限与依赖', prompt: '请根据我刚才补充的需求，检查权限边界、依赖页面和需要确认的数据范围。' },
+  { label: '检查权限与依赖', prompt: '请根据我刚才补充的需求，检查权限边界、依赖能力和需要确认的数据范围。' },
   { label: '运行预览', prompt: '请根据我刚才补充的需求，预览这个 Skill 被调用时应该返回什么内容。' },
   { label: '优化逻辑', prompt: '请根据我刚才补充的需求，指出还需要优化的流程、字段和异常兜底。' },
   { label: '风险评估', prompt: '请根据我刚才补充的需求，评估导出、发布、写入或审批相关风险。' },
@@ -985,7 +951,7 @@ const draftYaml = computed(() => `skill:
   cn_name: ${form.value.cnName}
   version: ${EMPLOYEE_CERT_SKILL.version}
   menu: ${form.value.menu}
-  context_pages:
+  context_capabilities:
 ${selectedContextItems.value.map(item => `    - ${item.source}/${item.name} (${item.code})`).join('\n') || '    - 待选择'}
   trigger:
     - natural_language
@@ -1232,7 +1198,7 @@ async function submitClarifyMessage() {
   }
   const stateId = `s-${Date.now()}`
   clarifyMessages.value.push({ id: stateId, kind: 'state', states: [
-    { kind: 'thinking', status: 'running', title: '理解补充需求', detail: '正在结合基础配置、菜单子项上下文和当前澄清记录判断缺口。' },
+    { kind: 'thinking', status: 'running', title: '理解补充需求', detail: '正在结合基础配置、能力上下文和当前澄清记录判断缺口。' },
     { kind: 'tool_call', status: 'running', title: '调用大模型', detail: '正在把 Skill 创建上下文发送到服务端会话接口。' },
     { kind: 'streaming', status: 'pending', title: '组织澄清回复', detail: '模型返回后将提炼为下一轮澄清问题和配置建议。' }
   ] })
@@ -1243,7 +1209,7 @@ async function submitClarifyMessage() {
     clarifyMessages.value = clarifyMessages.value.filter(message => message.id !== stateId)
     clarifyMessages.value.push({ id: `sd-${Date.now()}`, kind: 'state', states: [
       { kind: 'thinking', status: 'done', title: '理解补充需求', detail: '已写入当前 Skill 创建上下文。' },
-      { kind: 'tool_call', status: 'done', title: '大模型已返回', detail: '已结合历史输入和当前菜单子项更新澄清建议。' },
+      { kind: 'tool_call', status: 'done', title: '大模型已返回', detail: '已结合历史输入和当前能力上下文更新澄清建议。' },
       { kind: 'streaming', status: 'done', title: '组织澄清回复', detail: '已生成本轮更新后的 Skill 创建确认项。' },
       { kind: 'follow_up', status: 'blocked', title: '等待用户确认', detail: '请继续确认未闭合的能力定义、输入输出、调用边界或验收用例。' }
     ] })
@@ -1253,11 +1219,11 @@ async function submitClarifyMessage() {
   } catch (error) {
     clarifyMessages.value = clarifyMessages.value.filter(message => message.id !== stateId)
     clarifyMessages.value.push({ id: `sf-${Date.now()}`, kind: 'state', states: [
-      { kind: 'thinking', status: 'done', title: '理解补充需求', detail: '已保留当前用户输入和菜单子项上下文。' },
+      { kind: 'thinking', status: 'done', title: '理解补充需求', detail: '已保留当前用户输入和能力上下文。' },
       { kind: 'tool_call', status: 'failed', title: '大模型调用失败', detail: error instanceof Error ? sanitizeModelVendorName(error.message) : '服务端会话接口暂不可用。' },
       { kind: 'error', status: 'blocked', title: '等待重试', detail: '未生成本地替代内容，避免把演示内容误当真实模型结果。' }
     ] })
-    clarifyMessages.value.push({ id: `a-${Date.now()}`, kind: 'assistant', text: '大模型暂时没有返回结果。我已经保留当前输入和菜单子项上下文，你可以稍后重试，或先继续补充应用场景、数据范围、输出形式和验收用例。' })
+    clarifyMessages.value.push({ id: `a-${Date.now()}`, kind: 'assistant', text: '大模型暂时没有返回结果。我已经保留当前输入和能力上下文，你可以稍后重试，或先继续补充应用场景、数据范围、输出形式和验收用例。' })
     scrollChat()
   }
 }
@@ -1353,7 +1319,7 @@ function tryClarifyStructuredDemo(value: string) {
   const command = 'python3 scripts/demo_agent_flow.py --dry-run'
   clarifyMessages.value.push({ id: `s-${Date.now()}-full`, kind: 'state', states: [
     { kind: 'thinking', status: 'done', title: '理解演示目标', detail: '已识别为 Skill 创建 / 需求澄清的全场景走查。' },
-    { kind: 'tool_call', status: 'done', title: '调用页面能力', detail: '已读取 Skill 草稿、字段规则、测试用例和权限边界。' },
+    { kind: 'tool_call', status: 'done', title: '调用上下文能力', detail: '已读取 Skill 草稿、字段规则、测试用例和权限边界。' },
     { kind: 'tool_result', status: 'done', title: '能力结果返回', detail: '已生成可审计的结构化输出。' },
     { kind: 'confirm', status: 'blocked', title: '等待用户授权', detail: '涉及命令、写入或导出动作时，需要用户批准。' }
   ] })
@@ -1397,14 +1363,14 @@ async function requestSkillModelReply(userText: string): Promise<SkillClarifyDoc
   const message = [
     '你是乐享门户工作台的 Skill 创建助手，请在需求澄清阶段帮助 PM 设计 Skill。',
     '你的唯一目标是支持 Skill 创建：把用户描述收敛为可进入草稿生成的 Skill 能力定义、输入输出、调用边界和验收用例。',
-    '必须基于当前工作台已有菜单和子菜单理解能力上下文，不要编造菜单外能力。',
+    '必须基于当前工作台已登记的菜单和能力上下文理解业务能力，不要编造目录外能力。',
     `这是第 ${turnIndex} 轮用户补充。必须基于全部历史输入更新澄清结果，不要每轮重新开始。`,
     '如果用户是在确认上一轮问题或补充边界，请把对应事项视为已确认，再追问剩余缺口；不要重复追问已经确认的内容。',
     '你的任务是帮助用户完成澄清闭环：已确认的内容用“已确认”沉淀，缺失内容用“还需要补充”推进，不要机械反问。',
     '必须按 Skill 撰写九要素判断用户是否已经提供信息：命名、归属、场景、触发、输入、输出、边界、依赖、用例。',
     '用户用自然语言提供九要素时，也视为已提供；不要要求用户按字段名重复填写。',
     '输出必须是结构化的“本轮澄清反馈”。禁止输出 markdown 符号、代码块、JSON、配置对象或长段落。',
-    '内容必须严格基于“用户补充”里的问题描述和已选子菜单上下文；不要自行补充示例业务、指标、页面、产物、数值或场景。',
+    '内容必须严格基于“用户补充”里的问题描述和已选能力上下文；不要自行补充示例业务、指标、页面、产物、数值或场景。',
     '如果用户没有提到某个字段、产物或系统集成，只能提出“是否需要确认”的问题，不能当作已确定内容。',
     '请只围绕创建 Skill 前必须由人确认的问题输出，不要提前给最终 Skill 配置或最终结论。',
     '已经由用户明确给出的内容不要再作为待确认问题输出；例如用户已说“作为一个独立 Skill 创建”，就不要再问是否拆分为多个 Skill。',
@@ -1417,7 +1383,7 @@ async function requestSkillModelReply(userText: string): Promise<SkillClarifyDoc
     '固定输出三组：Skill 能力定义确认、输入输出与调用边界、验收用例。每组 2-4 个项目符号。',
     '',
     `当前所属菜单：${form.value.menu}`,
-    `已选子菜单上下文：${selectedContextItems.value.map(item => `${item.source}/${item.name}(${item.code})`).join('、') || '未选择'}`,
+    `已选能力上下文：${selectedContextItems.value.map(item => `${item.source}/${item.name}(${item.code})`).join('、') || '未选择'}`,
     '',
     '基础配置：',
     JSON.stringify({
@@ -1527,7 +1493,7 @@ function buildClarifyFallbacks(userText: string, history: string[], facts: Skill
       ? '还需要确认操作、数据、范围、动作四类执行边界。'
       : '',
     !facts.elements.dependency
-      ? '还需要补充依赖的数据口径、页面能力、接口或上游材料。'
+      ? '还需要补充依赖的数据口径、页面或接口能力、上游材料。'
       : ''
   ].filter((item): item is string => Boolean(item))
   const evaluateItems = [

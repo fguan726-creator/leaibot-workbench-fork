@@ -1,0 +1,214 @@
+/* Compact scene navigator shared by the three channel homepages. */
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-product-name {
+  width: 100% !important;
+  max-width: 430px !important;
+  margin: 0 0 7px !important;
+  color: rgba(255, 255, 255, .82) !important;
+  font-size: 17px !important;
+  line-height: 1.35 !important;
+  font-weight: 650 !important;
+  letter-spacing: -.01em !important;
+  white-space: normal !important;
+  text-align: left !important;
+}
+
+.carousel-pagination,
+.device-scene-pagination {
+  position: absolute !important;
+  z-index: 6 !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: 14px !important;
+  left: 50% !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(10px, 1.15vw, 16px) !important;
+  padding: 6px 16px 5px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: rgba(18, 18, 20, .58) !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .12) !important;
+  transform: translateX(-50%) !important;
+  backdrop-filter: blur(18px) saturate(100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(100%) !important;
+}
+
+/* Give the labels one calm, continuous rail instead of packing them into mini buttons. */
+.carousel-pagination {
+  width: min(52%, 440px) !important;
+  max-width: calc(100% - 48px) !important;
+  justify-content: space-between !important;
+}
+
+body[data-page="business"] .device-scene-pagination {
+  width: min(62%, 520px) !important;
+  max-width: calc(100% - 48px) !important;
+  justify-content: space-between !important;
+}
+
+body[data-page="enterprise"] .device-scene-pagination {
+  width: min(78%, 660px) !important;
+  max-width: calc(100% - 48px) !important;
+  justify-content: space-between !important;
+}
+
+.carousel-dot,
+.device-scene-dot {
+  position: relative !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 21px !important;
+  min-height: 21px !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 0 1px 4px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, .48) !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+  transition: color .2s ease, transform .2s ease !important;
+}
+
+.carousel-dot::after,
+.device-scene-dot::after {
+  content: "" !important;
+  position: absolute !important;
+  top: auto !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 0 !important;
+  display: block !important;
+  height: 2px !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  opacity: 0 !important;
+  transform: scaleX(0);
+  transform-origin: left center !important;
+  pointer-events: none !important;
+}
+
+.carousel-dot:not(.is-active):hover,
+.device-scene-dot:not(.is-active):hover {
+  background: transparent !important;
+  color: rgba(255, 255, 255, .82) !important;
+  transform: translateY(-1px) !important;
+}
+
+.carousel-dot.is-active,
+.device-scene-dot.is-active {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 21px !important;
+  min-height: 21px !important;
+  padding: 0 1px 4px !important;
+  background: transparent !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.carousel-dot.is-active::after,
+.device-scene-dot.is-active::after {
+  opacity: 1 !important;
+  animation: channelSceneRead 6500ms linear forwards !important;
+}
+
+.hero.is-paused .carousel-dot.is-active::after,
+.device-scene-hall.is-carousel-paused .device-scene-dot.is-active::after {
+  animation-play-state: paused !important;
+}
+
+@keyframes channelSceneRead {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.carousel-dot.is-active:hover,
+.device-scene-dot.is-active:hover {
+  background: transparent !important;
+}
+
+.carousel-label,
+.device-scene-label {
+  position: relative !important;
+  z-index: 2 !important;
+  display: block !important;
+  max-width: 86px !important;
+  overflow: hidden !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  line-height: 1 !important;
+  font-weight: 560 !important;
+  letter-spacing: .015em !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.carousel-time,
+.device-scene-time,
+.carousel-dot.is-active .carousel-time,
+.device-scene-dot.is-active .device-scene-time {
+  display: none !important;
+}
+
+/* Leave a clear lower lane for the navigator instead of covering product cards. */
+.hero-products {
+  bottom: 56px !important;
+}
+
+html.is-compact-host .hero-products {
+  bottom: 56px !important;
+}
+
+html.is-short-host .hero-products {
+  bottom: 48px !important;
+}
+
+@media (max-width: 1100px) {
+  .carousel-pagination,
+  .device-scene-pagination {
+    gap: 9px !important;
+    padding-right: 13px !important;
+    padding-left: 13px !important;
+  }
+  .carousel-dot,
+  .device-scene-dot {
+    width: auto !important;
+    min-width: 0 !important;
+    font-size: 10.5px !important;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 820px) {
+  body:is([data-page="business"], [data-page="enterprise"]) .device-scene-product-name {
+    margin-bottom: 5px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-dot,
+  .device-scene-dot {
+    transition: none !important;
+  }
+  .carousel-dot.is-active::after,
+  .device-scene-dot.is-active::after {
+    animation: none !important;
+    transform: scaleX(1) !important;
+  }
+}

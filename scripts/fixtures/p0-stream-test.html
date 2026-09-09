@@ -1,0 +1,22 @@
+<!doctype html><meta charset="utf-8"><title>P0 incremental stream regression</title>
+<button id="run">运行流式更新回归</button><pre id="result">待运行</pre><div id="fixtures"></div>
+<script src="/assets/frontend/js/core/stream-view-v1.js"></script><script>
+document.getElementById('run').onclick=async()=>{
+ const report=document.getElementById('result'),fixtures=document.getElementById('fixtures');report.textContent='验证中';fixtures.replaceChildren();
+ const assert=(v,m)=>{if(!v)throw Error(m)},sleep=n=>new Promise(r=>setTimeout(r,n));
+ try{
+  const host=document.createElement('div');fixtures.append(host);host.innerHTML='<p id="text">甲</p><button id="keep">查看</button>';
+  const p=host.firstChild,button=host.lastChild;let clicks=0;button.addEventListener('click',()=>clicks++);
+  const view=window.__lxStreamView;view.patch(host,'<p id="text">甲乙</p><button id="keep">查看</button><em>新增</em>');
+  assert(host.firstChild===p&&host.children[1]===button,'节点被重建');button.click();assert(clicks===1,'事件丢失');assert(p.textContent==='甲乙'&&host.children.length===3,'追加失败');
+  view.patch(host,'<p id="text">修正<strong>加粗</strong></p><button id="keep" title="详情">查看</button>');assert(host.firstChild===p&&host.children.length===2&&button.title==='详情','Markdown修正失败');
+  const source=document.createElement('div'),target=document.createElement('div');fixtures.append(source,target);source.innerHTML='<p>第一段</p>';let generating=true,finished=0;
+  view.mirror({source,target,normalize:x=>x,isGenerating:()=>generating,onFinish:()=>finished++});const retained=target.firstChild;
+  source.firstChild.textContent='第一段和第二段';await sleep(80);assert(target.firstChild===retained&&target.textContent==='第一段和第二段','流式增量失败');
+  generating=false;await sleep(800);assert(finished===1,'结束未清理');source.firstChild.textContent='不应同步';await sleep(80);assert(target.textContent==='第一段和第二段','结束后仍监听');
+  let timeoutFinished=0;view.mirror({source,target,normalize:x=>x,isGenerating:()=>true,onFinish:()=>timeoutFinished++,timeout:50});await sleep(100);assert(timeoutFinished===1,'超时未清理');
+  let detachedFinished=0;view.mirror({source,target,normalize:x=>x,isGenerating:()=>true,onFinish:()=>detachedFinished++});target.remove();await sleep(800);assert(detachedFinished===0,'旧页面触发存储');
+  report.textContent='PASS：节点保留、事件保留、追加/删除/Markdown修正、流式更新、完成清理、超时清理、旧页面取消';
+ }catch(error){report.textContent='FAIL：'+error.message;}
+};
+</script>

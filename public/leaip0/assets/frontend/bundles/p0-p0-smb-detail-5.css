@@ -1,0 +1,21 @@
+
+/* public/leaip0/assets/frontend/css/core/product-detail-itemcode-v1.css */
+.content .product-detail .lx-detail-product-code-v188,
+.content .product-detail .lx-detail-product-code-v188 span,
+.content .product-detail .lx-detail-product-code-v188 strong,
+.content .product-detail .detail-itemcode,
+.content .product-detail .detail-itemcode span,
+.content .product-detail .detail-itemcode strong { font-size: 12px; }
+
+/* Main detail price: preserve responsive scale, reduce by exactly 4px. */
+.content .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price strong { font-size: calc(clamp(34px, 2.65vw, 48px) - 4px); }
+.content .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price strong > span { font-size: clamp(19.72px, 1.537vw, 27.84px); }
+.content[data-view="detail"] .product-detail .detail-price,
+.content[data-view="detail"] .product-detail .detail-price-main { font-size: 36px; }
+
+/* Series comparison is exposed only in the assistant composer suite. */
+.content .product-detail [data-spu-compare] { display: none !important; }
+
+.content .product-detail .detail-trustline,
+.content .product-detail .detail-trustline strong,
+.content .product-detail .detail-trustline span { font-size: 12px; }

@@ -1,0 +1,34 @@
+/* PC 5.0: shared review presentation, without changing review data or actions. */
+.content .product-detail .lx-market-reviews {box-sizing:border-box;width:100%;padding:24px;color:#252525;background:#ffffff;}
+.content .product-detail .lx-market-reviews::before {content:"评价展示示例，非当前商品真实买家评价";display:block;margin:0 0 16px;color:#606060;font-size:12px;line-height:20px;}
+.content .product-detail .lx-market-review-summary {display:flex;flex-direction:column;gap:16px;padding:0 0 20px;border-bottom:1px solid #e2ddeb;}
+.content .product-detail .lx-market-satisfaction {display:flex;align-items:baseline;gap:12px;font-size:16px;line-height:24px;font-weight:500;}
+.content .product-detail .lx-market-satisfaction strong {color:#4d144a;font-size:28px;line-height:36px;font-weight:500;}
+.content .product-detail .lx-market-review-tools {display:flex;flex-direction:column;align-items:flex-start;gap:12px;min-width:0;}
+.content .product-detail .lx-market-filter-row,.content .product-detail .lx-market-impressions {display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;}
+.content .product-detail .lx-market-filter-row>button,.content .product-detail .lx-market-impressions button {position:relative;min-width:0;min-height:34px;height:auto;padding:6px 12px;border:1px solid #e2ddeb;border-radius:7px;background:#ffffff;color:#454545;font-size:13px;line-height:20px;font-weight:400;cursor:pointer;}
+.content .product-detail .lx-market-filter-row>button::before {display:none;}
+.content .product-detail .lx-market-filter-row>button.is-active {border-color:#4d144a;background:#f3f0f7;color:#4d144a;font-weight:500;}
+.content .product-detail .lx-market-filter-row>button:hover,.content .product-detail .lx-market-impressions button:hover {border-color:#d3bfd2;background:#f3f0f7;color:#4d144a;}
+.content .product-detail .lx-market-impressions>span {font-size:13px;line-height:20px;color:#606060;margin-right:4px;}
+.content .product-detail .lx-market-review-item {display:flex;flex-direction:column;gap:12px;min-height:0;padding:24px 0;border-bottom:1px solid #e2ddeb;}
+.content .product-detail .lx-market-review-item:last-child {border-bottom:0;padding-bottom:0;}
+.content .product-detail .lx-market-review-user {display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 16px;min-width:0;}
+.content .product-detail .lx-market-review-user strong {font-size:14px;line-height:22px;font-weight:500;color:#252525;overflow-wrap:anywhere;}
+.content .product-detail .lx-market-review-user time {margin-left:auto;color:#606060;font-size:12px;line-height:20px;}
+.content .product-detail .lx-market-stars {color:#4d144a;font-size:0;line-height:20px;letter-spacing:0;}
+.content .product-detail .lx-market-stars::before {content:attr(aria-label);font-size:12px;line-height:20px;}
+.content .product-detail .lx-market-review-body {display:flex;flex-direction:column;gap:12px;min-width:0;}
+.content .product-detail .lx-market-review-body p {margin:0;color:#252525;font-size:15px;line-height:26px;font-weight:400;overflow-wrap:anywhere;}
+.content .product-detail .lx-market-review-media {display:flex;flex-wrap:wrap;gap:8px;}
+.content .product-detail .lx-market-review-media button {width:72px;height:72px;padding:4px;border:1px solid #e2ddeb;border-radius:7px;background:#ffffff;overflow:hidden;cursor:pointer;}
+.content .product-detail .lx-market-review-media button:hover {border-color:#4d144a;background:#fcfaff;}
+.content .product-detail .lx-market-review-media img {display:block;width:100%;height:100%;object-fit:contain;}
+.content .product-detail .lx-market-reviews button:focus-visible {outline:2px solid #4d144a;outline-offset:3px;}
+/* Older home/brand review renderers retain their content with the same tokens. */
+.content .product-detail .detail-review-grid {display:flex;flex-direction:column;gap:0;}
+.content .product-detail .detail-review-card {width:auto;min-height:0;padding:20px 0;border:0;border-bottom:1px solid #e2ddeb;border-radius:0;background:#ffffff;box-shadow:none;}
+.content .product-detail .detail-review-card-title {font-size:16px;line-height:24px;font-weight:500;color:#252525;}
+.content .product-detail .detail-review-card-content {font-size:15px;line-height:26px;color:#454545;}
+.content .product-detail .detail-review-card-foot {font-size:12px;line-height:20px;color:#606060;}
+@media(max-width:1280px){.content .product-detail .lx-market-reviews{padding:20px;}.content .product-detail .lx-market-review-user time{margin-left:0;}}

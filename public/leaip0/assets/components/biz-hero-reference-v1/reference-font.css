@@ -1,0 +1,5 @@
+/* Match the supplied reference only inside the enterprise hero. */
+body[data-page="enterprise"] .content > .device-scene-hall,
+body[data-page="enterprise"] .content > .device-scene-hall * {
+  font-family: "Source Han Sans CN", "PingFang SC", "Microsoft YaHei", Arial, sans-serif !important;
+}

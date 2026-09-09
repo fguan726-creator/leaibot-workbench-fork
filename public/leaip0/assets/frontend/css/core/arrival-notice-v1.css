@@ -1,0 +1,16 @@
+.lx-p0-modal.lx-arrival-dialog {width:min(480px,calc(100vw - 48px));border:1px solid #e2ddeb;border-radius:8px;background:#ffffff;}
+.lx-arrival-dialog .lx-p0-modal-head {padding:20px 24px 16px;}
+.lx-arrival-dialog .lx-p0-modal-body {padding:0 24px 24px;}
+.lx-arrival-dialog .lx-arrival-product {margin:0 0 8px;color:#252525;font-size:16px;line-height:24px;font-weight:500;}
+.lx-arrival-dialog .lx-p0-disclaimer {margin:0 0 24px;color:#606060;font-size:12px;line-height:20px;}
+.lx-arrival-dialog .lx-arrival-form {display:flex;flex-direction:column;gap:8px;}
+.lx-arrival-dialog .lx-arrival-form label {color:#454545;font-size:14px;line-height:22px;}
+.lx-arrival-dialog .lx-arrival-input-wrap {display:flex;align-items:center;border:1px solid #e2ddeb;border-radius:7px;min-height:44px;background:#ffffff;}
+.lx-arrival-dialog .lx-arrival-input-wrap:focus-within {border-color:#4d144a;}
+.lx-arrival-dialog .lx-arrival-input-wrap input {flex:1;min-width:0;border:0!important;background:none;box-shadow:none!important;padding:10px 12px;color:#252525;font:inherit;outline:none;}
+.lx-arrival-dialog [data-arrival-clear] {border:0;background:none;color:#4d144a;padding:10px 12px;font-size:12px;cursor:pointer;}
+.lx-arrival-dialog .lx-arrival-error {min-height:20px;margin:0;color:#8f1111;font-size:12px;line-height:20px;}
+.lx-arrival-dialog .lx-arrival-confirm {margin-top:8px;width:100%;min-height:44px;border:0;border-radius:7px;background:linear-gradient(90deg,#4D144A 11.9%,#B8252E 100%);color:#ffffff;font-size:16px;font-weight:500;cursor:pointer;}
+.lx-arrival-dialog button:focus-visible {outline:2px solid #4d144a;outline-offset:3px;}
+.lx-arrival-dialog button:disabled {cursor:default;opacity:.5;}
+.lx-arrival-dialog .lx-arrival-status {margin:0;color:#606060;font-size:12px;line-height:20px;}

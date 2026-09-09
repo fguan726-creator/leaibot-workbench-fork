@@ -1,0 +1,83 @@
+
+/* public/leaip0/assets/frontend/css/components/member-asset-rules-v135.css */
+/* Stable usage-link and rule-popover presentation for voucher/red-packet assets. */
+html body .leai-member-asset-page .leai-summary-usage,
+html body .leai-member-asset-page .leai-summary-usage:hover,
+html body .leai-member-asset-page .leai-summary-usage:focus-visible,
+html body .leai-member-asset-page .leai-summary-usage:active {
+  background: transparent !important;
+  color: #5b1452 !important;
+  opacity: 1 !important;
+  font-weight: 400 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip {
+  position: absolute !important;
+  right: 14px !important;
+  bottom: 48px !important;
+  left: auto !important;
+  z-index: 30 !important;
+  width: 340px !important;
+  height: auto !important;
+  min-height: 148px !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+  padding: 16px 18px !important;
+  overflow: visible !important;
+  border: 1px solid #eadfeb !important;
+  border-radius: 14px !important;
+  background: #fff !important;
+  color: #252525 !important;
+  box-shadow: 0 12px 28px rgba(50, 29, 57, .14) !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip[hidden] {
+  display: none !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip:not([hidden]) {
+  display: block !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip > strong {
+  display: block !important;
+  margin: 0 0 8px !important;
+  color: #252525 !important;
+  font-size: 15px !important;
+  line-height: 22px !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip > p {
+  margin: 0 !important;
+  color: #625b68 !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip > small {
+  display: block !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-top: 10px !important;
+  color: #9b969e !important;
+  font-size: 10px !important;
+  line-height: 17px !important;
+}
+
+html body .leai-member-asset-page .leai-summary-card.leai-member-main > .leai-asset-rule-tooltip::after {
+  position: absolute !important;
+  right: 24px !important;
+  bottom: -6px !important;
+  width: 11px !important;
+  height: 11px !important;
+  border-right: 1px solid #eadfeb !important;
+  border-bottom: 1px solid #eadfeb !important;
+  background: #fff !important;
+  content: "" !important;
+  transform: rotate(45deg) !important;
+}

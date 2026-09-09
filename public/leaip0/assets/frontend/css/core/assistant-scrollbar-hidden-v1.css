@@ -1,0 +1,14 @@
+html body:not(.assistant-fullscreen) .assistant-panel,
+html body:not(.assistant-fullscreen) .assistant-panel .chat-state,
+html body:not(.assistant-fullscreen) .assistant-panel .lx-p0-messages {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html body:not(.assistant-fullscreen) .assistant-panel::-webkit-scrollbar,
+html body:not(.assistant-fullscreen) .assistant-panel .chat-state::-webkit-scrollbar,
+html body:not(.assistant-fullscreen) .assistant-panel .lx-p0-messages::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}

@@ -1,3 +1,7 @@
+<!-- Release marker: checkout-benefit-info-v65-20260905 -->
+<!-- Release marker: checkout-layout-v62-20260905 -->
+<!-- Release marker: checkout-address-invoice-store-position-v61-20260905 -->
+<!-- Release marker: fulfillment-subsidy-checkout-v60-20260904 -->
 <!--
   Lenovo Lexiang shop chat page template snapshot
   Source: https://leaibot.cn/shop-chat/
@@ -40,55 +44,199 @@
 <!doctype html>
 <html lang="zh-CN">
   <head>
+<script src="/assets/frontend/js/core/generation-control-v1.js?p0v=ae711bc67d1ba3ad"></script>
     <base href="../assets/templates/">
     <!-- Temporary full-storage diagnostic disabled: preserve user storage. -->
-    <script src="/assets/frontend/js/core/p0-root-nav.js?v=20260827-logo-new-home-v1&amp;p0v=70ac31fc278c2823"></script>
-    <script src="/assets/frontend/js/pages/biz/inline-01.js?p0v=31e5f3c1e54fbcbe"></script>
-    <meta charset="UTF-8" />
+    <script src="/assets/frontend/bundles/p0-biz-core-1.js?p0v=df97c391a47d6f2c"></script>
+<meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>联想乐享 PC 端商城对话模板</title>
     <script src="/assets/frontend/js/shared/inline-1cbc376bb123.js?p0v=6b7b2946a7296fd1"></script>
-    <link rel="stylesheet" href="/assets/frontend/css/shared/inline-91661584194a.css?p0v=aaee018f3b5c55c7">
+<link rel="stylesheet" href="/assets/frontend/css/shared/inline-91661584194a.css?p0v=aaee018f3b5c55c7">
     <link rel="preload" as="image" href="../logos/logo-full-red.png">
     <link rel="preload" as="image" href="../img/lxfd-gallery-1-1.jpg">
     <link rel="preload" as="image" href="../img/lxfd-gallery-1-2.jpg">
     <link rel="preload" as="image" href="../img/lxfd-gallery-1-3.jpg">
-    <link rel="stylesheet" data-template-file="shop-chat-page-template-main.css" data-template-source="https://leaibot.cn/css/main.css?v=202607150210" href="/assets/frontend/css/shared/inline-3bc2eb74f360.css?p0v=862ebe4e56921a90">
+    <link rel="stylesheet" data-template-file="shop-chat-page-template-main.css" data-template-source="https://leaibot.cn/css/main.css?v=202607150210" href="/assets/frontend/css/shared/inline-3bc2eb74f360.css?p0v=a0c2425c5d12577e">
     <link rel="stylesheet" data-template-file="shop-chat-page-template-assistant.css" data-template-source="https://leaibot.cn/css/assistant-panel-ng-skin.css?v=202606222610" href="/assets/frontend/css/shared/inline-d52d38244aa9.css?p0v=254bb0a5d4db66e0">
-    <link rel="stylesheet" data-template-file="shop-chat-page-template.css" data-shop-template-styles href="/assets/frontend/css/shared/inline-642ec9aa4eee.css?v=0.16.40-borderless-source&amp;p0v=89166c1e1040257a">
+    <link rel="stylesheet" data-template-file="shop-chat-page-template.css" data-shop-template-styles href="/assets/frontend/css/shared/inline-642ec9aa4eee.css?p0v=89166c1e1040257a">
     <link rel="stylesheet" href="/assets/frontend/css/shared/inline-2104d0ed7dd2.css?p0v=0536b69ea8ac9ff2">
     <link rel="stylesheet" data-category-waiting-modal href="/assets/frontend/css/shared/inline-935e2224afac.css?p0v=44194d31b465439c">
-  <link rel="stylesheet" href="/assets/frontend/css/core/split-frame-composer-sync.css?p0v=ebd6c63a830d6057" />
-  <link rel="stylesheet" href="/assets/frontend/css/core/right-generation-aurora.css?v=0.15.17-top-layer&amp;p0v=9fb0189512e6318b" />
-  <link rel="stylesheet" href="/assets/frontend/css/core/auth-dialog.css?v=3-logo-gap&amp;p0v=50648ec8b3414732" />
-  <link rel="stylesheet" href="/assets/frontend/css/core/hover-ai-disabled.css?v=0.14.86-no-glass-blur&amp;p0v=316a5c45d5e7cb4a" />
+  <link rel="stylesheet" href="/assets/frontend/css/core/split-frame-composer-sync.css?p0v=e58e3fbf7324a903" />
+  <link rel="stylesheet" href="/assets/frontend/css/core/right-generation-aurora.css?p0v=9fb0189512e6318b" />
+  <link rel="stylesheet" href="/assets/frontend/css/core/auth-dialog.css?p0v=50648ec8b3414732" />
+  <link rel="stylesheet" href="/assets/frontend/css/core/hover-ai-disabled.css?p0v=316a5c45d5e7cb4a" />
   <link rel="stylesheet" href="/assets/frontend/css/core/history-standard.css?p0v=9e50eac89407ca47" />
-  <link rel="stylesheet" href="/assets/frontend/css/core/channel-home-surface.css?v=0.16.44-shell-bg&amp;p0v=2f2b1f2bbf474075" />
-  <link rel="stylesheet" data-device-scene-hall href="/assets/frontend/css/pages/shop/inline-22.css?v=20260824-biz-enterprise-note-real-v2&amp;p0v=f9199551ecc8c9aa" />
-  <link rel="stylesheet" data-lx-modal-overlay-unified href="/assets/frontend/css/core/modal-overlay-unified.css?v=20260824-address-modal-unified-v1&amp;p0v=aa0b145728f7ceb9">
-  <link rel="stylesheet" data-lx-workplace-auth-modal href="/assets/frontend/css/core/workplace-auth-modal.css?v=20260823-global-standard&amp;p0v=67883b263a1cdfc2">
-  <link rel="preload" href="/assets/frontend/js/core/member-service-checkin-v135.js?v=20260831-checkin-v135&amp;p0v=2f51784705efea58" as="script">
-  <link id="lx-member-component-css" rel="stylesheet" href="/assets/frontend/css/components/member-service-exact-0827.css?v=20260901-member-eager-v1">
-  <script id="lx-member-component-runtime" defer src="/assets/frontend/js/components/member-service-clean-v45.js?v=20260901-member-eager-v1"></script>
-  <link rel="stylesheet" href="/assets/frontend/css/components/member-insights-v134.css?v=20260828-member-exact-v34&amp;p0v=fbd0fb00c66cf902">
-  <link rel="stylesheet" href="/assets/frontend/css/components/member-asset-rules-v135.css?v=20260828-member-exact-v34&amp;p0v=90c8e902fea8cdd3">
-  <link rel="stylesheet" href="/assets/frontend/css/components/member-asset-ledger-v137.css?v=20260828-member-exact-v34&amp;p0v=94fbfef45e735191">
-  <link rel="stylesheet" href="/assets/frontend/css/components/member-demo-off-v35.css?v=20260828-member-demo-off-v35&amp;p0v=a28ef7ac4d81c295">
-  <link rel="stylesheet" href="/assets/frontend/css/components/member-device-bind-fix-v39.css?v=20260828-member-device-bind-v40&amp;p0v=78e8459fcc19e7a7">
-  <link rel="stylesheet" href="/assets/frontend/css/components/member-device-actions-v38.css?v=20260828-member-device-actions-v38&amp;p0v=3697b0e924d30937">
-  <link rel="preload" href="/assets/pages/store-v5-detail-surface-v27.js?p0v=c8e63d51847b2b26" as="script">
-<link rel="stylesheet" href="/assets/frontend/css/core/composer-reference-font-v130.css?v=20260831-composer-font-v130&amp;p0v=4620706fd4e76660">
-<link rel="stylesheet" href="/assets/frontend/css/core/enterprise-lead-card-v133.css?v=20260831-lead-v133&amp;p0v=6983ccbaeb4725dd">
-<link rel="stylesheet" href="/assets/frontend/css/core/enterprise-auth-footer-v134.css?v=20260831-auth-footer-v134&amp;p0v=6931e759d5e842d9">
+  <link rel="stylesheet" href="/assets/frontend/css/core/channel-home-surface.css?p0v=2f2b1f2bbf474075" />
+  <link rel="stylesheet" data-device-scene-hall href="/assets/frontend/css/pages/shop/inline-22.css?p0v=f9199551ecc8c9aa" />
+  <link rel="stylesheet" data-biz-hero-reference href="/assets/components/smb-hero-reference-v1/channel-home-hero-unified-v161.css?p0v=b47d6cd787f473c6">
+  <link rel="stylesheet" data-biz-hero-reference href="/assets/components/smb-hero-reference-v1/channel-home-carousel-bottom-v1.css?p0v=32df8f240ba88a09">
+  <link rel="stylesheet" data-biz-hero-reference href="/assets/components/smb-hero-reference-v1/channel-home-product-cards-large-v1.css?p0v=c125731f4c1832de">
+  <link rel="stylesheet" data-biz-hero-reference href="/assets/components/smb-hero-reference-v1/channel-home-copy5-portrait-cards-v1.css?p0v=4456c6c659e02c77">
+  <link rel="stylesheet" href="/assets/components/biz-hero-reference-v1/reference-font.css?p0v=110b119caa11031b">
+  <link rel="stylesheet" data-lx-modal-overlay-unified href="/assets/frontend/css/core/modal-overlay-unified.css?p0v=1b9fb5667191bb08">
+  <link rel="stylesheet" data-lx-workplace-auth-modal href="/assets/frontend/css/core/workplace-auth-modal.css?p0v=67883b263a1cdfc2">
+  <link rel="preload" href="/assets/frontend/js/core/member-service-checkin-v135.js?p0v=05c0ef89f3bdde51" as="script">
+  <template id="p0-member-style-0"></template>
+  
+  <template id="p0-member-style-1"></template>
+  <template id="p0-member-style-2"></template>
+  <template id="p0-member-style-3"></template>
+  <template id="p0-member-style-4"></template>
+  <template id="p0-member-style-5"></template>
+  <template id="p0-member-style-6"></template>
+  <link rel="preload" href="/assets/pages/store-v5-detail-surface-v27.js?p0v=d94280835f97d778" as="script">
+<link rel="stylesheet" href="/assets/frontend/css/core/composer-reference-font-v130.css?p0v=4620706fd4e76660">
+<link rel="stylesheet" href="/assets/frontend/css/core/enterprise-lead-card-v133.css?p0v=6983ccbaeb4725dd">
+<link rel="stylesheet" href="/assets/frontend/css/core/enterprise-auth-footer-v134.css?p0v=6931e759d5e842d9">
 <style id="checkin-empty-action-v135">.leai-member-checkin-prompt.is-checked .leai-member-checkin-action:empty{display:none!important;background:none!important;padding:0!important;}</style>
-<link rel="stylesheet" href="/assets/frontend/css/core/voucher-rule-arrow-v136.css?v=20260831-voucher-arrow-v136&amp;p0v=731d7bf249dcdc6c">
+<link rel="stylesheet" href="/assets/frontend/css/core/voucher-rule-arrow-v136.css?p0v=731d7bf249dcdc6c">
 <style id="reco-buy-weight-v138">html body .reco-page .lx-reco-poc-row .lx-reco-poc-buy,html body .reco-page .lx-reco-poc-row .lx-reco-poc-buy *{font-weight:500!important;}</style>
-<link rel="stylesheet" href="/assets/frontend/js/core/address-dialog-v144.css?v=20260831-address-v144&amp;p0v=bc9865500eee58e1">
+<template id="p0-biz-checkout-0"></template>
+  <link rel="stylesheet" href="/assets/frontend/css/core/composer-smart-actions-v1.css?p0v=07bb602f84b7f2d4" />
+  <script defer src="/assets/frontend/js/core/composer-autogrow-v1.js?p0v=d1a6c0e55b76afc6"></script>
+<script defer src="/assets/frontend/js/core/composer-smart-actions-v1.js?p0v=8abecd2cea45996e"></script>
+<link rel="stylesheet" href="/assets/frontend/css/core/assistant-scrollbar-hidden-v1.css?p0v=f523ecbede3f74a8" />
+<link rel="stylesheet" href="/assets/frontend/css/core/empty-hover-backplate-collapse-v1.css?p0v=ecb2fd0eb78d7559">
+<template id="p0-biz-detail-0"></template>
+<script id="p0-home-feature-config" type="application/json">{"features":{"detail":{"styles":[{"anchor":"p0-biz-detail-0","url":"/assets/frontend/bundles/p0-p0-biz-detail-0.css?p0v=1897ffc493bf0bb5"},{"anchor":"p0-biz-detail-1","url":"/assets/frontend/bundles/p0-p0-biz-detail-1.css?p0v=cab5c39c44d7e50f"},{"anchor":"p0-biz-detail-2","url":"/assets/frontend/bundles/p0-p0-biz-detail-2.css?p0v=12c7b4eac601e3b4"},{"anchor":"p0-biz-detail-3","url":"/assets/frontend/bundles/p0-p0-biz-detail-3.css?p0v=f054b000c8c6f79f"},{"anchor":"p0-biz-detail-4","url":"/assets/frontend/bundles/p0-p0-biz-detail-4.css?p0v=33f0b778a7f31409"},{"anchor":"p0-biz-detail-5","url":"/assets/frontend/bundles/p0-p0-biz-detail-5.css?p0v=cb8e2ca3f9d57fe1"}],"script":"/assets/frontend/bundles/p0-biz-detail.js?p0v=ff797cc8d0a93f1f"},"orders":{"styles":[{"anchor":"p0-biz-orders-0","url":"/assets/frontend/bundles/p0-p0-biz-orders-0.css?p0v=e0e9c414dedb98a6"}],"script":"/assets/frontend/bundles/p0-biz-orders.js?p0v=e61d9412bfea5fc0"},"checkout":{"styles":[{"anchor":"p0-biz-checkout-0","url":"/assets/frontend/bundles/p0-p0-biz-checkout-0.css?p0v=4cd8a5a5d35aa42c"}],"script":"/assets/frontend/bundles/p0-biz-checkout.js?p0v=75aed15b186aa088","depends":["detail","orders"]}},"memberStyles":[{"anchor":"p0-member-style-0","url":"/assets/frontend/bundles/p0-biz-member-0.css?p0v=f80bfacc71c79599"},{"anchor":"p0-member-style-1","url":"/assets/frontend/bundles/p0-biz-member-1.css?p0v=9db657ec5be83585"},{"anchor":"p0-member-style-2","url":"/assets/frontend/bundles/p0-biz-member-2.css?p0v=99b30c17aaa7b9af"},{"anchor":"p0-member-style-3","url":"/assets/frontend/bundles/p0-biz-member-3.css?p0v=93a36541f7dee691"},{"anchor":"p0-member-style-4","url":"/assets/frontend/bundles/p0-biz-member-4.css?p0v=3260b6cadb013ad0"},{"anchor":"p0-member-style-5","url":"/assets/frontend/bundles/p0-biz-member-5.css?p0v=5378bfc377800d50"},{"anchor":"p0-member-style-6","url":"/assets/frontend/bundles/p0-biz-member-6.css?p0v=378fe0bdc91e5003"}],"memberStyle":"/assets/frontend/bundles/p0-biz-member-0.css?p0v=f80bfacc71c79599"}</script>
+<script data-p0-inline-source="/assets/frontend/js/core/p0-home-features-v1.js">/* Explicit feature boundaries: detail / orders / checkout. No eager business downloads. */
+(() => {
+  'use strict';
+  if(window.__lxHomeFeatures?.version===2)return;
+  const config=JSON.parse(document.getElementById('p0-home-feature-config').textContent);
+  const resources=new Map(), features=new Map();let actionToken=0,replaying=false;
+  function load(tag,url,anchor,id){
+    const key=tag+':'+url;if(resources.has(key))return resources.get(key);
+    const task=new Promise((resolve,reject)=>{
+      const node=document.createElement(tag);let settled=false,timer;
+      if(id)node.id=id;
+      if(tag==='link'){node.rel='stylesheet';node.href=url;}else{node.src=url;node.async=false;}
+      function finish(error){if(settled)return;settled=true;clearTimeout(timer);node.onload=node.onerror=null;if(error){node.remove();reject(error);}else resolve(node);}
+      node.onload=()=>finish();node.onerror=()=>finish(new Error('功能资源加载失败，请重试'));
+      timer=setTimeout(()=>finish(new Error('网络连接超时，请重试')),60000);
+      try{if(anchor)anchor.before(node);else document.head.appendChild(node);}catch(error){finish(error);}
+    });resources.set(key,task);task.catch(()=>{if(resources.get(key)===task)resources.delete(key);});return task;
+  }
+  function ensure(name){
+    if(features.has(name))return features.get(name).task;
+    const spec=config.features[name];if(!spec)return Promise.reject(new Error('未知功能：'+name));
+    const entry={state:'loading'};features.set(name,entry);
+    entry.task=Promise.all((spec.depends||[]).map(ensure)).then(()=>{
+      // Start the script transfer together with CSS; execute only after CSS is ready.
+      const hint=document.createElement('link');hint.rel='preload';hint.as='script';hint.href=spec.script;document.head.appendChild(hint);
+      return Promise.all(spec.styles.map(s=>load('link',s.url,document.getElementById(s.anchor))))
+        .then(()=>load('script',spec.script)).finally(()=>hint.remove());
+    }).then(()=>{
+      if(name==='orders' && document.readyState==='loading')return new Promise((resolve,reject)=>{let timer;const done=()=>{clearTimeout(timer);document.removeEventListener('DOMContentLoaded',done);resolve();};document.addEventListener('DOMContentLoaded',done,{once:true});timer=setTimeout(()=>{document.removeEventListener('DOMContentLoaded',done);reject(new Error('页面初始化超时，请重试'));},60000);});
+    }).then(()=>{entry.state='ready';}).catch(error=>{entry.state='error';if(features.get(name)===entry)features.delete(name);throw error;});
+    return entry.task;
+  }
+  const ready=name=>features.get(name)?.state==='ready';
+  window.__lxHomeFeatures={version:2,detail:()=>ensure('detail'),orders:()=>ensure('orders'),commerce:()=>ensure('checkout'),get ready(){return ready('checkout');},states:()=>Object.fromEntries([...features].map(([k,v])=>[k,v.state]))};
+  if(config.memberStyle)window.__lxLoadMemberStyles=()=>Promise.all((config.memberStyles||[{url:config.memberStyle,anchor:'p0-member-style-anchor'}]).map((s,n)=>load('link',s.url,document.getElementById(s.anchor),n===0?'lx-member-component-css':undefined)));
+  function status(message,retry){
+    document.getElementById('p0-feature-status')?.remove();const box=document.createElement('div');box.id='p0-feature-status';box.className='lx-p0-toast show';box.setAttribute('role',retry?'alert':'status');box.textContent=message;
+    if(retry){const b=document.createElement('button');b.type='button';b.textContent='重试';b.onclick=retry;box.append(' ',b);}document.body.appendChild(box);
+  }
+  function run(name,action){const token=++actionToken;status(name==='orders'?'正在加载订单…':'正在准备商品与下单信息…');return ensure(name).then(()=>{
+    if(token!==actionToken)return;document.getElementById('p0-feature-status')?.remove();return action();
+  }).catch(()=>{if(token===actionToken)status('连接较慢，功能暂未加载完成',()=>run(name,action));});}
+  for(const name of ['__lxOpenOrdersCenter','lxHandleCommerceQuery','lxHandleCommerceEntry']){
+    const stub=(...args)=>run('orders',()=>{const fn=window[name];if(fn===stub||typeof fn!=='function')throw new Error('订单入口未准备好');return fn(...args);});window[name]=stub;
+  }
+  const orderSelector='.utility-btn[aria-label="订单"],[data-commerce-entry="orders"],[data-lxfd-open="orders"],[data-open-orders],[data-lx-result-id="info:orders"],[data-tab-id="info:orders"]';
+  const sendSelector='.assistant-panel .send-btn,.assistant-panel [data-send],.assistant-panel button[type="submit"],.lxfd-send';
+  const inputSelector='.assistant-panel .composer textarea,.lxfd-composer textarea';
+  const isOrder=input=>/^(?:我要|我想|帮我)?(?:查看|查询|打开)?(?:我的)?订单(?:中心|列表|记录)?$/.test(String(input?.value||'').replace(/[\s，。！？、,.!?]/g,''));
+  function intercept(event,name,action){event.preventDefault();event.stopImmediatePropagation();run(name,()=>{replaying=true;try{return action();}finally{replaying=false;}});}
+  window.addEventListener('click',event=>{
+    if(replaying||!(event.target instanceof Element))return;const button=event.target.closest('button,a,[role="button"]');if(!button||button.closest('.lx-tab-close'))return;
+    const input=button.closest('form')?.querySelector('textarea')||document.querySelector(inputSelector);
+    if(!ready('orders')&&(button.matches(orderSelector)||(button.matches(sendSelector)&&isOrder(input))))return intercept(event,'orders',()=>{if(button.isConnected)button.click();});
+    const buy=!button.closest('[data-buy-modal-direct]')&&!button.dataset.bizQuote&&(button.matches('[data-buy-sku],[data-buy-now],[data-action="buy"],[data-order-action="buy"],[data-cart-checkout]')||/^(?:一键领取?优惠下单|一键领优惠下单|立即购买|立即下单|去购买|去下单|去结算|结算|提交订单)$/.test(button.textContent.replace(/\s+/g,'')));
+    if(config.features.checkout&&!ready('checkout')&&buy)intercept(event,'checkout',()=>{if(button.isConnected)button.click();});
+  },true);
+  window.addEventListener('keydown',event=>{if(replaying||ready('orders')||event.key!=='Enter'||event.shiftKey||event.isComposing||!event.target.matches?.(inputSelector)||!isOrder(event.target))return;const input=event.target;intercept(event,'orders',()=>input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',bubbles:true,cancelable:true})));},true);
+  window.addEventListener('submit',event=>{if(replaying||ready('orders')||!event.target.matches?.('.assistant-panel .composer,.lxfd-composer')||!isOrder(event.target.querySelector('textarea')))return;const form=event.target;intercept(event,'orders',()=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));},true);
+})();
+</script>
+<style id="lx-detail-list-background">
+/* Product detail canvas uses the same subtle gradient as product lists. */
+html body[data-page]:not(.assistant-fullscreen):not(.lx-auto-fs) main.shell > section.content[data-view="detail"]:has(.product-detail) {
+  background-color:#f5f5f7!important;
+  background-image:linear-gradient(180deg,#fff 0,#fff 74px,#fefefe 96px,#fafafa 122px,#f7f7f8 164px,#f5f5f7 214px,#f5f5f7 100%)!important;
+  background-repeat:no-repeat!important;
+  background-size:100% 100%!important;
+  background-position:left top!important;
+}
+</style>
+<style id="lx-detail-main-radius">
+/* Product hero card: the image and purchase information share an 8px shell. */
+html body[data-page] main.shell > section.content[data-view="detail"] .product-detail > .detail-main {
+  border-radius:8px!important;
+}
+</style>
+<style id="lx-member-advice-off">
+/* Remove the complete suggestions row, including its layout space. */
+body .leai-member-page .leai-member-suggestions-panel,
+body .leai-member-page [data-member-section="insights"] { display:none!important; }
+</style>
+<style id="lx-fulfillment-style">
+/* History messages render before the lazy checkout module is loaded. */
+body .lx-fulfillment-suggestion{margin:10px 0 0;color:#353037;font-size:14px;line-height:1.8}
+body .lx-fulfillment-suggestion .lx-fulfillment-link{display:inline;padding:0 2px;border:0;border-bottom:1px solid currentColor;border-radius:0;background:transparent;color:#681057;font:inherit;font-weight:700;line-height:inherit;cursor:pointer;box-shadow:none}
+body .lx-fulfillment-suggestion .lx-fulfillment-link:hover,body .lx-fulfillment-suggestion .lx-fulfillment-link:focus{color:#a51f42}
+</style>
+<style id="lx-prompt-menu-ellipsis">
+html body[data-page] .page-dots .prompt-menu{overflow-x:hidden!important;overflow-y:auto!important;box-sizing:border-box}
+html body[data-page] .page-dots .prompt-menu .menu-row,html body[data-page] .page-dots .prompt-menu .trail-row,html body[data-page] .page-dots .prompt-menu .lx-trail-head{display:block;box-sizing:border-box;width:100%;max-width:100%;min-width:0;overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important}
+</style>
+<style id="lx-page-dots-small">
+html body[data-page] .assistant-panel .page-dots.page-dots i{width:5px!important;height:5px!important;min-width:5px!important;min-height:5px!important;border-radius:50%!important}
+html body[data-page] .assistant-panel .page-dots.page-dots i.active{background:#4d144a!important}
+</style>
+<style id="lx-match-modal-size">
+html #lx-reco-match-dialog{width:min(720px,calc(100vw - 48px));height:fit-content;max-height:min(760px,88dvh);padding:24px;border:1px solid #e2ddeb;border-radius:8px;box-shadow:0 24px 70px rgba(155,142,182,.62),0 4px 14px rgba(50,29,57,.08);overflow:hidden;color:#252525}
+html #lx-reco-match-dialog[open]{display:flex;flex-direction:column}
+html #lx-reco-match-dialog .lx-match-layout{height:auto;max-height:calc(min(760px,88dvh) - 50px);gap:20px;flex:0 1 auto;min-height:0}
+html #lx-reco-match-dialog h2{font-size:20px;line-height:28px;font-weight:600;padding-right:36px}
+html #lx-reco-match-dialog .lx-match-close{right:18px;top:20px;width:28px;height:28px;border-radius:50%;color:#979797}
+html #lx-reco-match-dialog .lx-match-close:hover{background:#f3f0f7}
+html #lx-reco-match-dialog .lx-match-scroll{flex:0 1 auto;min-height:0;overflow:auto}
+html #lx-reco-match-dialog .lx-match-product{gap:16px;padding:16px;margin-bottom:16px;border:1px solid #e2ddeb;border-radius:8px;background:#faf8fc}
+html #lx-reco-match-dialog .lx-match-product img{width:88px;height:88px;border-radius:8px}
+html #lx-reco-match-dialog h3{font-size:16px;line-height:24px;font-weight:600;margin:0 0 8px;overflow-wrap:anywhere;color:#252525}
+html #lx-reco-match-dialog .lx-match-price{font-size:18px;line-height:26px;font-weight:600;color:#252525}
+html #lx-reco-match-dialog .lx-match-table-wrap{border:1px solid #e2ddeb;border-radius:8px;background:#fff}
+html #lx-reco-match-dialog table{font-size:14px;line-height:22px;table-layout:fixed}
+html #lx-reco-match-dialog th,html #lx-reco-match-dialog td{padding:12px;overflow-wrap:anywhere;border-color:#e2ddeb}
+html #lx-reco-match-dialog th{background:#f3f0f7;font-weight:600}
+html #lx-reco-match-dialog th:first-child,html #lx-reco-match-dialog td:first-child{width:88px}
+html #lx-reco-match-dialog th:nth-child(2){width:124px}
+html #lx-reco-match-dialog .lx-match-status{width:20px;height:20px;font-size:14px;background:#4d144a}
+html #lx-reco-match-dialog .lx-match-status.pending{background:#f3f0f7;color:#979797}
+html #lx-reco-match-dialog .lx-match-footer{padding-top:16px;border-top:1px solid #e2ddeb;flex:none}
+html #lx-reco-match-dialog .lx-match-buy{min-width:104px;height:40px;padding:0 24px;border-radius:8px;font-size:14px;line-height:20px;font-weight:500;background:#4d144a}
+html #lx-reco-match-dialog .lx-match-buy:hover{filter:brightness(1.12)}
+@media(max-width:600px){html #lx-reco-match-dialog{width:calc(100vw - 24px);padding:20px}html #lx-reco-match-dialog .lx-match-layout{max-height:calc(88dvh - 42px)}html #lx-reco-match-dialog th:first-child,html #lx-reco-match-dialog td:first-child{width:72px}html #lx-reco-match-dialog th:nth-child(2){width:92px}html #lx-reco-match-dialog .lx-match-product img{width:64px;height:64px}}
+</style>
+<style id="lx-match-polish">html body #lx-reco-match-dialog{box-shadow:none!important}html body #lx-reco-match-dialog .lx-match-buy{background:linear-gradient(110deg,#4d144a,#b8252e)!important;box-shadow:none!important}</style>
+<style id="lx-compare-ten-chips">html body .composer .lx-ref-chips:has(.lx-ref-chip-mini),html body .lxfd .lx-ref-chips:has(.lx-ref-chip-mini){display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:9px!important;overflow:visible!important}html body .lx-ref-chips .lx-ref-chip-mini{width:100%!important;box-sizing:border-box!important;min-width:0!important}html body .composer:has(.lx-ref-chip-mini){height:auto!important}html body .composer:has(.lx-ref-chip-mini)>.attach{max-height:none!important;height:auto!important;overflow:visible!important}html body[data-page] .assistant-panel form.composer.has:has(.lx-ref-chip-mini:nth-child(6)){min-height:223px!important}html body .composer:has(.lx-ref-chip-mini) textarea{flex-shrink:0!important}</style>
+<style id="lx-ref-chip-close">
+html body .lx-ref-chips .lx-ref-chip-mini{display:grid!important;grid-template-columns:minmax(0,1fr) 16px!important;column-gap:2px!important;padding:5px 4px!important;align-items:center!important}
+html body .lx-ref-chips .lx-ref-chip-mini>img{width:100%!important;max-width:30px!important;min-width:0!important;justify-self:center}
+html body .lx-ref-chips .lx-ref-chip-mini>span{display:none!important}
+html body .lx-ref-chips .lx-ref-chip-mini>[data-ref-remove-idx]{position:static!important;transform:none!important;margin:0!important;width:16px!important;height:16px!important;min-width:0!important;justify-self:end;box-sizing:border-box!important}
+</style>
+<style id="lx-detail-price-weight">
+html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-label{font-weight:600!important}
+html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price strong,html body .product-detail .lx-detail-benefits-v182 .lx-detail-benefits-price strong>span{font-weight:700!important}
+</style>
 </head>
   <body data-page="enterprise" data-state="default">
-    <script src="/assets/frontend/js/shared/inline-54fe4c623706.js?p0v=19f95e6c832cf15a"></script>
-    <script src="/assets/frontend/js/shared/inline-dab1b3ae0743.js?p0v=8aeada2454e576fe"></script>
-    <div class="lx-route-loading" aria-hidden="true"><div class="lx-rl-spin"></div><div class="lx-rl-txt">联想乐享 加载中…</div></div>
+    <script src="/assets/frontend/bundles/p0-biz-core-2.js?p0v=4c83dffe83802597"></script>
+<div class="lx-route-loading" aria-hidden="true"><div class="lx-rl-spin"></div><div class="lx-rl-txt">联想乐享 加载中…</div></div>
     <header class="topbar">
       <!-- 整页跳回 / = 初始全屏欢迎态（非分屏首页），配合全屏首问重置旧对话上下文（真机反馈） -->
       <a class="brand" href="/" aria-label="联想乐享首页">
@@ -100,6 +248,7 @@
         <button type="button" data-page="personal">个人及家庭</button>
         <button type="button" data-page="business">中小企业</button>
         <button class="active" type="button" data-page="enterprise">政教及大企业</button>
+        <button type="button" data-page="brand">品牌</button>
       </nav>
 
       <div class="utility" aria-label="快捷入口">
@@ -117,7 +266,7 @@
         </div>
       </div>
       <script src="/assets/frontend/js/shared/inline-f6883bac7348.js?p0v=68b904105831909e"></script>
-    </header>
+</header>
 
     <main class="shell">
       <aside class="assistant-panel" aria-label="联想乐享 AI 助手">
@@ -165,11 +314,11 @@
           </div>
           <h1 class="headline">我是联想乐享<br />有任何问题随时告诉我</h1>
           <div class="quick-list">
-            <button class="quick-item" type="button" data-quick-placeholder aria-disabled="true" tabindex="-1"><span>推荐问题待定制</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
-            <button class="quick-item" type="button" data-quick-placeholder aria-disabled="true" tabindex="-1"><span>推荐问题待定制</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
-            <button class="quick-item" type="button" data-quick-placeholder aria-disabled="true" tabindex="-1"><span>推荐问题待定制</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
-            <button class="quick-item" type="button" data-quick-placeholder aria-disabled="true" tabindex="-1"><span>推荐问题待定制</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
-            <button class="quick-item" type="button" data-quick-placeholder aria-disabled="true" tabindex="-1"><span>推荐问题待定制</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
+            <button class="quick-item" type="button" data-quick-placeholder disabled aria-disabled="true" tabindex="-1"><span>我要看行业解决方案</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
+            <button class="quick-item" type="button" data-quick-placeholder disabled aria-disabled="true" tabindex="-1"><span>教育行业的白皮书</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
+            <button class="quick-item" type="button" data-quick-placeholder disabled aria-disabled="true" tabindex="-1"><span>我要批量采购报价</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
+            <button class="quick-item" type="button" data-quick-placeholder disabled aria-disabled="true" tabindex="-1"><span>我要查制造行业相关方案</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
+            <button class="quick-item" type="button" data-quick-placeholder disabled aria-disabled="true" tabindex="-1"><span>我要查售后服务</span><img class="arrow" src="../icons/global-next.svg" alt="" /></button>
           </div>
         </section>
 
@@ -861,10 +1010,10 @@
           <div class="detail-main">
             <button class="detail-back" type="button">← 返回商品列表</button>
             <div class="detail-gallery">
-              <div class="detail-badges" aria-label="商品标签"><span class="detail-badge-ai">AI 推荐</span><span class="detail-badge-hot">热销</span></div>
               <div class="detail-visual">
                 <div class="laptop" data-detail-visual><div class="screen"></div><div class="base"></div></div>
               </div>
+              <p class="detail-trustline"><strong>「放心购」</strong><span>官方正品 · 14天无忧退换 · 180天只换不修</span></p>
               <div class="detail-thumbs" aria-label="商品缩略图">
                 <button class="detail-thumb is-active" type="button" aria-label="商品图 1"></button>
                 <button class="detail-thumb" type="button" aria-label="商品图 2"></button>
@@ -888,56 +1037,8 @@
                 <button class="detail-primary" type="button">一键领优惠下单</button>
                 <button class="detail-secondary" type="button">加入购物车</button>
               </div>
-              <div class="detail-service">
-                <div class="service-item"><strong>官方正品</strong><span>联想乐享官方渠道保障</span></div>
-                <div class="service-item"><strong>180天只换不修</strong><span>商品放心购</span></div>
-                <div class="service-item"><strong>14天无理由退换</strong><span>官方品质保障</span></div>
-              </div>
             </div>
           </div>
-          <section class="detail-reviews-section lx-review-b" aria-label="用户评价">
-            <div class="detail-reviews-header">
-              <h3 class="detail-reviews-title">用户评价</h3>
-              <p class="detail-reviews-note">由联想乐享 AI 总结的核心产品评价 · 仅供参考</p>
-            </div>
-            <div class="detail-review-ai-banner">
-              <div class="detail-review-ai-glow" aria-hidden="true"></div>
-              <div class="detail-review-ai-inner">
-                <div class="detail-review-ai-badge">
-                  <div class="detail-review-ai-pill"><span class="detail-review-ai-dot"></span><span>✨ 乐享 AI 总结</span></div>
-                  <span class="detail-review-ai-note">智能摘要 · 仅供参考</span>
-                </div>
-                <p class="detail-review-ai-text" data-review-sum>大多数用户认为<span class="highlight">屏幕素质高、性能强、做工精致</span>，适合创作办公；少数用户提到机身偏重、续航和风扇噪音仍有提升空间。</p>
-                <div class="detail-review-ai-tags" aria-label="评价情感标签"><span>屏幕素质高</span><span>性能强悍</span><span>做工精致</span><span>适合创作</span></div>
-              </div>
-            </div>
-            <div class="detail-review-rating-wrap">
-              <div class="detail-review-rating-card" aria-label="综合评分 4.9 分">
-                <div class="detail-review-rating-score"><strong>4.9</strong><span>/ 5 综合评分</span></div>
-                <div class="detail-review-rating-bars" aria-hidden="true">
-                  <div class="detail-review-rating-row"><span>5★</span><i><b style="width:76%"></b></i><em>76%</em></div>
-                  <div class="detail-review-rating-row"><span>4★</span><i><b style="width:18%"></b></i><em>18%</em></div>
-                  <div class="detail-review-rating-row"><span>3★</span><i><b style="width:4%"></b></i><em>4%</em></div>
-                  <div class="detail-review-rating-row"><span>2★</span><i><b style="width:1%"></b></i><em>1%</em></div>
-                  <div class="detail-review-rating-row"><span>1★</span><i><b style="width:1%"></b></i><em>1%</em></div>
-                </div>
-              </div>
-              <div class="detail-review-filter-tags" data-review-filter-tags aria-label="评价标签筛选">
-                <span class="detail-review-filter-lead">大家都在说</span>
-                <button class="detail-review-filter active" type="button">性能稳定</button>
-                <button class="detail-review-filter" type="button">屏幕观感好</button>
-                <button class="detail-review-filter" type="button">物流及时</button>
-                <button class="detail-review-filter" type="button">官方服务放心</button>
-              </div>
-            </div>
-            <div class="detail-review-cards-wrap">
-              <div class="detail-review-grid" data-detail-review-grid></div>
-              <div class="detail-review-actions" aria-label="评价横向切换">
-                <button class="detail-review-arrow" type="button" data-review-prev aria-label="查看上一组评价">‹</button>
-                <button class="detail-review-arrow" type="button" data-review-next aria-label="查看下一组评价">›</button>
-              </div>
-            </div>
-          </section>
           <div class="detail-rich" aria-label="商品扩展详情">
             <div class="detail-tabbar" role="tablist" aria-label="商品详情内容切换">
               <button class="detail-tab is-active" type="button" role="tab" aria-selected="true" data-detail-tab="story">商品详情</button>
@@ -981,6 +1082,7 @@
             <a href="/shop-chat/" role="menuitem" data-page="personal">个人及家庭</a>
             <a href="/b-chat/" role="menuitem" data-page="business">中小企业</a>
             <a href="/biz-chat/" role="menuitem" data-page="enterprise">政教及大企业</a>
+        <a href="/brand/" role="menuitem" data-page="brand">品牌</a>
           </div>
         </nav>
         <div class="lxfd-actions lxfd-glass anim-fade" aria-label="快捷入口">
@@ -1029,41 +1131,29 @@
         <p class="lxfd-legal-line">京ICP备11035381-2 | 京公网安备110108007970号 | 营业执照：91110108700000458B</p>
       </main>
     </div>
-    <script src="/assets/frontend/js/core/model-knowledge-runtime.js?v=0.13.15-stage&amp;p0v=90ffe4a3cdbaa0c3"></script>
-    <script src="/assets/frontend/js/shared/inline-5faa7877c846.js?p0v=4f355a113335dd9f"></script>
-    <script src="/assets/frontend/js/core/portal.js?v=0.13.15-stage&amp;p0v=c1505fdb78a9b295"></script>
-    <script src="/assets/frontend/js/core/industry-solutions-v114.js?v=20260831-industry-v114&amp;p0v=494b4df1164a187a"></script>
-    <script src="/assets/frontend/js/core/app-intent.industry-v114.js?v=20260831-industry-v114&amp;p0v=f8c63e243efa0dc6"></script>
-    <script src="/assets/frontend/js/core/app-conv.js?v=0.13.16-new-chat-refresh&amp;p0v=f3195eadf93530ba"></script>
-    <script src="/assets/frontend/js/core/enterprise-banner-v122.js?v=20260831-biz-banner-v122&amp;p0v=68f9cd8769040aca"></script>
-<script src="/assets/frontend/js/core/biz-chat.solution-original-v152.js?v=20260902-member-loader-v2"></script>
-    <script src="/assets/frontend/js/core/order-modal-reference-exact-no-body-max-v58.js?v=20260830-no-body-max-v58&amp;p0v=de0376065653658c"></script>
-    <script src="/assets/frontend/js/core/order-modal-reference-config-sku-v100.js?v=20260831-config-sku-v100&amp;p0v=73a4a641432fdfe4"></script>
-    <script src="/assets/frontend/js/core/scanpay-button-standard-v101.js?v=20260831-scanpay-gradient-v105&amp;p0v=b3d8e5924a68b3bd"></script>
-    <script src="/assets/frontend/js/core/order-payment-orders-sync-v102.js?v=20260831-order-payment-sync-v102&amp;p0v=f3827301243a183b"></script>
-    <script src="/assets/frontend/js/core/view-orders-recommendation-card-v103.js?v=20260831-view-orders-card-v103&amp;p0v=0a201502b72b569f"></script>
-    <script src="/assets/frontend/js/core/paid-order-result-card-v104.js?v=20260831-paid-order-card-v104&amp;p0v=be942d60c9fa347a"></script>
-    <script src="/assets/frontend/js/core/app-lxfd.industry-v114.controls-v150.js?v=20260831-controls-v150"></script>
-    <script src="/assets/frontend/js/core/app-voice.js?v=0.13.16-stage&amp;p0v=eee87cc45070eb90"></script>
-    <script src="/assets/frontend/js/core/app-agent.js?v=0.13.16-unified-agent&amp;p0v=2533e1dec0d991d4"></script>
-    <script data-shop-chat-template-behavior src="/assets/frontend/js/pages/biz/inline-13.js?v=0.14.40-fixed-site-tabs&amp;p0v=4a87f1e09eb08b74"></script>
-    <link rel="stylesheet" data-shop-smart-cursor-fix href="/assets/frontend/css/shared/inline-592f8f851e1f.css?v=0.16.39-borderless-product-cards&amp;p0v=d23bde0be30dd69a">
-    <script src="/assets/frontend/js/shared/inline-6495b30fa986.js?v=0.14.87-disable-dwell-state&amp;p0v=7da36c0b14856c77"></script>
-    <link rel="stylesheet" href="/assets/frontend/css/shared/inline-e75ae5be9405.css?p0v=41f49a6af45dc0ad">
+    <script src="/assets/frontend/bundles/p0-biz-core-3.js?p0v=3765e4103c34ab87"></script>
+<link rel="stylesheet" href="/assets/frontend/css/core/product-specs-grouped-v1.css?p0v=1026a542c206036b">
+<script src="/assets/frontend/js/core/product-specs-grouped-v1.js?p0v=e4edbdcfb53c4d7c"></script>
+<link rel="stylesheet" href="/assets/frontend/css/core/arrival-notice-v1.css?p0v=8fa47f34f5acd341">
+<script src="/assets/frontend/bundles/p0-biz-core-4.js?p0v=0038c0bbb48df462"></script>
+<script src="/assets/frontend/js/core/app-voice.js?p0v=eee87cc45070eb90"></script>
+<script src="/assets/frontend/js/core/app-agent.js?p0v=2533e1dec0d991d4"></script>
+<script data-shop-chat-template-behavior src="/assets/frontend/js/pages/biz/inline-13.js?p0v=344d02d8044058b2"></script>
+<link rel="stylesheet" data-shop-smart-cursor-fix href="/assets/frontend/css/shared/inline-592f8f851e1f.css?p0v=d23bde0be30dd69a">
+    <script src="/assets/frontend/js/shared/inline-6495b30fa986.js?p0v=7da36c0b14856c77"></script>
+<link rel="stylesheet" href="/assets/frontend/css/shared/inline-e75ae5be9405.css?p0v=41f49a6af45dc0ad">
     <script src="/assets/frontend/js/pages/biz/inline-17.js?p0v=6ec95a192a89da74"></script>
-    <link rel="stylesheet" data-lexiang-user-bubble-token href="/assets/frontend/css/shared/inline-c7bce3f5e8ce.css?p0v=62208ba8b56ca6f8">
+<link rel="stylesheet" data-lexiang-user-bubble-token href="/assets/frontend/css/shared/inline-c7bce3f5e8ce.css?p0v=62208ba8b56ca6f8">
     <link rel="stylesheet" data-unified-answer-card-selected href="/assets/frontend/css/shared/inline-77378062a204.css?p0v=27688947e31b0dd0">
     <link rel="stylesheet" data-lxfd-chat-dock-bottom-gap href="/assets/frontend/css/shared/inline-a6719541b94f.css?p0v=44d6d4e3a0791559">
-  <link rel="stylesheet" data-solution-result-shared href="/assets/frontend/css/core/solution-result.css?v=20260901-service-reco-1to1-v3">
+  <link rel="stylesheet" data-solution-result-shared href="/assets/frontend/css/core/solution-result.css?p0v=b040373b90dec3e8">
   <link rel="stylesheet" data-product-card-borderless-final href="/assets/frontend/css/core/product-card-borderless-v3.css?p0v=1f7ee610df9402fa">
-  <script src="/assets/frontend/js/core/solution-result.tabs-v120.js?v=20260831-industry-tabs-v120&amp;p0v=6faaa8786b71f994"></script>
-  <script src="/assets/frontend/js/core/split-frame-composer-sync.js?p0v=980563e95b65b74f"></script>
-  <script src="/assets/frontend/js/pages/shop/inline-22.biz-details-v122.js?v=20260831-biz-banner-v122&amp;p0v=86bb2c46c0424b98"></script>
-  <link rel="stylesheet" href="/assets/frontend/css/core/order-center.css?v=20260830-orders-detail-v25&amp;p0v=f1c271164cd8890f">
-  <script src="/assets/frontend/js/core/order-demo-data.js?v=20260829-orders-v2&amp;p0v=964d5c5f0a92784e"></script>
-  <script src="/assets/frontend/js/core/order-center.js?v=20260831-live-orders-v31&amp;p0v=cab741062cf52080"></script>
-  <script src="/assets/frontend/js/core/product-card-detail-loading-v139.js?v=20260831-selection-v139&amp;p0v=869d07955127c33e"></script>
-  <script>
+  <script src="/assets/frontend/bundles/p0-biz-core-5.js?p0v=8f84b5e02f5a8738"></script>
+<template id="p0-biz-orders-0"></template>
+  
+  
+  <script src="/assets/frontend/js/core/product-card-detail-loading-v139.js?p0v=a8d7c44567b25eb5"></script>
+<script>
     (() => {
       const openProductDetail = input => {
         const sku = String(typeof input === 'object' ? input?.sku || input?.productId || '' : input || '').trim();
@@ -1099,16 +1189,115 @@
       }, true);
     })();
   </script>
-  <script src="/assets/frontend/js/core/product-floor-compare-v127.js?v=20260831-ranking-no-pick-v127&amp;p0v=64813aef9b5d08c7"></script>
-  <script src="/assets/frontend/js/core/composer-association-popup-toggle-v106.js?v=20260831-composer-associations-off-v106&amp;p0v=d3a71b595ea0b08b"></script>
-  <script src="/channel-customer-service-v126.js?v=20260831-customer-v126&amp;p0v=2c98fbb5a2c01374"></script>
-<script src="/assets/frontend/js/core/whitepaper-action-cards-v124.js?v=20260831-whitepaper-v124&amp;p0v=69895e7f6ebbbcf6"></script>
-<script src="/assets/frontend/js/core/channel-hotline-v125.js?v=20260831-hotline-v125&amp;p0v=1e03e65e1d10c612"></script>
-<script src="/assets/frontend/js/core/reco-names-v137.js?v=20260901-reco-match-v139&amp;p0v=78f788479c2dd9d5"></script>
-<script src="/assets/frontend/js/core/compare-column-detail-v141.js?v=20260831-compare-column-detail-v141&amp;p0v=59832b42649cf67f"></script>
-<script src="/assets/frontend/js/core/address-regions-v142.js?v=20260831-address-v142&amp;p0v=3cee9c8f14299a30"></script><script src="/assets/frontend/js/core/address-dialog-v142.js?v=20260831-address-v142&amp;p0v=f6e1801495ea2ec0"></script>
-<script src="/assets/frontend/js/core/hide-legacy-demo-orders-v146.js?v=20260831-v146&amp;p0v=496f54a3def87082"></script>
-  <link rel="stylesheet" href="/assets/frontend/css/core/product-detail-benefits-v182.css?v=20260903-v188-product-code" />
-  <script src="/assets/frontend/js/core/product-detail-benefits-v182.js?v=20260903-v188-product-code"></script>
+  <script src="/assets/frontend/bundles/p0-biz-core-6.js?p0v=4b966109bad9f56c"></script>
+<script data-store-query-workflow-v52>
+    (() => {
+      const storeAction = query => {
+        const hasStoreTarget = /门店|联想|第[1-9一二两三四五六七八九十]+(?:个|家)/.test(query);
+        if (!hasStoreTarget) return '';
+        if (/预约|预订/.test(query)) return 'appointment';
+        if (/导航|路线|怎么去|带我去|规划路线/.test(query)) return 'navigation';
+        return '';
+      };
+      const activeStoreApi = () => {
+        const hosts = Array.from(document.querySelectorAll('.lx-store-component-host'));
+        const host = hosts.find(item => item.__lxStoreApi && item.getClientRects().length) || hosts.find(item => item.__lxStoreApi);
+        return host?.__lxStoreApi || null;
+      };
+      let lastPrepared = { key: '', at: 0 };
+      const routeStoreAction = (form, event) => {
+        if (!form?.matches?.('form.composer, form.lxfd-composer')) return;
+        const textarea = form.querySelector('textarea');
+        const query = String(textarea?.value || '').trim().replace(/[。！!？?]+$/, '');
+        const action = storeAction(query);
+        if (!action) return;
+        const api = activeStoreApi();
+        if (!api?.getCurrentStore?.()) return;
+        const key = action + ':' + query;
+        const duplicated = lastPrepared.key === key && Date.now() - lastPrepared.at < 800;
+        if (!duplicated) lastPrepared = { key, at: Date.now() };
+        if (action === 'appointment') {
+          if (!duplicated) {
+            const store = api.resolveStore?.(query) || api.getCurrentStore();
+            const requiresPhoneBinding = /未绑定手机(?:号|的号)|未绑定手机号/.test(query);
+            window.__lxStoreAppointmentById = window.__lxStoreAppointmentById || {};
+            window.__lxStoreAppointmentById[String(store.id || '')] = store;
+            if (requiresPhoneBinding) {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+              textarea.value = '';
+              window.__lxStoreRequiresPhoneBinding = '';
+              window.__lxPendingStoreAppointment = null;
+              api.openPhoneBindingAppointment?.(store.id);
+              return;
+            }
+            window.__lxStoreRequiresPhoneBinding = '';
+            window.__lxPendingStoreAppointment = store;
+            api.openAppointment?.(store.id);
+          }
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        if (!duplicated) {
+          textarea.value = '';
+          api.queryStore(query);
+        }
+      };
+      window.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+        routeStoreAction(event.target?.closest?.('form.composer, form.lxfd-composer'), event);
+      }, true);
+      window.addEventListener('click', event => {
+        const sender = event.target?.closest?.('button[type="submit"], .send-btn, .lxfd-send');
+        if (!sender) return;
+        routeStoreAction(sender.closest('form.composer, form.lxfd-composer'), event);
+      }, true);
+      window.addEventListener('submit', event => {
+        routeStoreAction(event.target, event);
+      }, true);
+      document.addEventListener('lx-store-bridge-payload', event => {
+        const payload = event.detail || {};
+        if (payload.type !== 'lx-store-navigation-result' || !/^https:\/\/api\.map\.baidu\.com\/direction\?/.test(payload.url || '')) return;
+        const answer = window.__lxPendingStoreNavigation?.ai;
+        if (!answer) return;
+        const startedAt = Date.now();
+        const appendNavigationCard = () => {
+          if (!answer.isConnected || answer.querySelector('[data-lx-store-baidu-url]')) return;
+          const copy = answer.querySelector('[data-lx-store-navigation-copy]');
+          if ((!copy?.textContent?.trim() || answer.querySelector('.is-typing')) && Date.now() - startedAt < 12000) {
+            window.setTimeout(appendNavigationCard, 180);
+            return;
+          }
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'answer-cta lx-store-navigation-cta lx-edu-auth-reco';
+          card.dataset.lxStoreBaiduUrl = payload.url;
+          card.setAttribute('aria-label', '在百度地图中查看导航路线');
+          card.innerHTML = '<span class="answer-cta-title">查看百度地图导航路线</span><span class="answer-cta-icon" aria-hidden="true">→</span>';
+          (answer.querySelector('.ai-body') || answer).appendChild(card);
+        };
+        appendNavigationCard();
+      });
+    })();
+  </script>
+  <template id="p0-biz-detail-1"></template>
+  
+<script src="/assets/frontend/bundles/p0-biz-core-7.js?p0v=187539b4e4b6f3a7"></script>
+<template id="p0-biz-detail-2"></template>
+
+<template id="p0-biz-detail-3"></template>
+<template id="p0-biz-detail-4"></template>
+<template id="p0-biz-detail-5"></template>
+<script src="/assets/frontend/js/core/followup-chevron-v1.js?p0v=845b3e54e80e4b4a"></script>
+<script src="/assets/frontend/js/core/answer-actions-v1.js?p0v=cc3f7487fbe1651b"></script>
+<script src="/assets/frontend/js/core/review-media-v1.js?p0v=4585bce7ccef1334"></script>
+<script src="/assets/frontend/js/core/order-login-v1.js?p0v=ac02d9bf296f0fc2"></script>
+<script src="/assets/frontend/js/core/thinking-auto-v1.js?p0v=8ee2a897a3409390"></script>
+<script src="/assets/frontend/js/core/reco-match-v1.js?p0v=01e127edfd57f2ac"></script>
+<script src="/assets/frontend/js/core/tab-reorder-v1.js?p0v=8dc5ecbb5c5b9ed3"></script>
+<script src="/assets/frontend/js/core/prompt-menu-height-v1.js?p0v=d360d6b8c137a088"></script>
 </body>
 </html>

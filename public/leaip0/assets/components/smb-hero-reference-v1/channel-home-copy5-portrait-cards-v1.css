@@ -1,0 +1,418 @@
+/* Copy 5 concept: tall product posters aligned with the left-side copy. */
+
+.hero-copy {
+  justify-content: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.hero-products {
+  /* Share one visual center line with the copy while preserving slide transforms. */
+  top: 50% !important;
+  translate: 0 -50% !important;
+  right: 24px !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: min(52%, 720px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+}
+
+.hero-product-card {
+  height: auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: 180px auto !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 13px !important;
+  padding: 10px !important;
+  border-radius: 18px !important;
+}
+
+.hero-product-image-wrap {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  height: 180px !important;
+  border-radius: 14px !important;
+}
+
+.hero-product-image {
+  width: 90% !important;
+  height: 164px !important;
+}
+
+.hero-product-info {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 4px !important;
+}
+
+.hero-product-name {
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  -webkit-line-clamp: 3 !important;
+}
+
+.hero-product-price {
+  margin-top: 9px !important;
+  font-size: 13.5px !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-copy {
+  justify-content: center !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-cards {
+  top: 50% !important;
+  translate: 0 -50% !important;
+  right: 24px !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: min(52%, 720px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  grid-auto-rows: auto !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+}
+
+body[data-page="enterprise"] .enterprise-scene-cards {
+  width: min(55%, 860px) !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card {
+  height: auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: 180px auto auto !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 0 !important;
+  padding: 10px !important;
+  border-radius: 18px !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-visual {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  height: 180px !important;
+  border-radius: 14px !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-visual img {
+  width: 90% !important;
+  height: 164px !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card strong,
+body[data-page="enterprise"] .enterprise-scene-card strong {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 14px 4px 0 !important;
+  align-self: start !important;
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+  transform: none !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-product {
+  position: static !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  width: auto !important;
+  min-height: 0 !important;
+  margin: 8px 4px 0 !important;
+  color: rgba(255, 255, 255, .66) !important;
+  font-size: 12.5px !important;
+  line-height: 1.3 !important;
+}
+
+@media (min-width: 761px) and (max-height: 820px) {
+  html.is-short-host .hero-copy {
+    justify-content: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  html.is-short-host .hero-products {
+    top: 50% !important;
+    translate: 0 -50% !important;
+    right: 20px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 52% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  html.is-short-host .hero-product-card {
+    height: auto !important;
+    min-height: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 142px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 8px !important;
+  }
+
+  html.is-short-host .hero-product-image-wrap {
+    width: 100% !important;
+    height: 142px !important;
+  }
+
+  html.is-short-host .hero-product-image {
+    width: 90% !important;
+    height: 126px !important;
+  }
+
+  html.is-short-host .hero-product-name {
+    font-size: 13.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  html.is-short-host .hero-product-price {
+    margin-top: 7px !important;
+    font-size: 12px !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .device-scene-copy {
+    justify-content: center !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-cards {
+    top: 50% !important;
+    translate: 0 -50% !important;
+    right: 20px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 52% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    grid-auto-rows: auto !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  body[data-page="enterprise"] .enterprise-scene-cards {
+    width: 55% !important;
+  }
+
+  body[data-page="enterprise"] .device-scene-copy {
+    width: 43% !important;
+  }
+
+  body[data-page="enterprise"] .device-scene-desc {
+    max-width: 300px !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card {
+    height: auto !important;
+    min-height: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: 124px auto auto !important;
+    padding: 8px !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-visual {
+    width: 100% !important;
+    height: 124px !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-visual img {
+    width: 90% !important;
+    height: 112px !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card strong,
+  body[data-page="enterprise"] .enterprise-scene-card strong {
+    margin: 10px 3px 0 !important;
+    font-size: 12.5px !important;
+    line-height: 1.32 !important;
+    -webkit-line-clamp: 3 !important;
+  }
+
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-product {
+    margin: 6px 3px 0 !important;
+    font-size: 11px !important;
+  }
+}
+
+/* Single-layer white product canvases: the source images already have a white
+   background, so the holder must match it exactly and cards stay transparent. */
+.hero-product-image-wrap,
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-visual {
+  background: #fff !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.hero-product-image,
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-visual img {
+  background: #fff !important;
+}
+
+.hero-product-card:hover,
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* copy5 refinement: anchor the product posters in the lower-right visual zone.
+   The offset scales gently with the canvas and preserves a calm right inset. */
+:root {
+  --lx-copy5-tray-right: clamp(28px, 2.6vw, 42px);
+  --lx-copy5-tray-center-y: clamp(54%, 56%, 57%);
+}
+
+html .page .hero .hero-products {
+  top: var(--lx-copy5-tray-center-y) !important;
+  right: var(--lx-copy5-tray-right) !important;
+  bottom: auto !important;
+  left: auto !important;
+  translate: 0 -50% !important;
+}
+
+html .page .hero .hero-copy {
+  width: 42% !important;
+  max-width: none !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-cards {
+  top: var(--lx-copy5-tray-center-y) !important;
+  right: var(--lx-copy5-tray-right) !important;
+  bottom: auto !important;
+  left: auto !important;
+  translate: 0 -50% !important;
+}
+
+body[data-page="business"] .device-scene-copy {
+  width: 42% !important;
+}
+
+body[data-page="enterprise"] .device-scene-copy {
+  width: 40% !important;
+}
+
+@media (min-width: 761px) and (max-height: 820px) {
+  html.is-short-host .page .hero .hero-products,
+  body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-cards {
+    top: 55% !important;
+    right: clamp(24px, 2.3vw, 34px) !important;
+  }
+}
+
+/* copy5 typography parity: keep all three channel homes on Personal's scale. */
+html .page .hero .hero-copy,
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-copy {
+  justify-content: center !important;
+  padding: 0 clamp(20px, 2.2vw, 34px) 0 clamp(38px, 3.7vw, 56px) !important;
+}
+
+html .page .hero .eyebrow,
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-industry-tag {
+  margin: 0 0 14px !important;
+  padding: 5px 10px !important;
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+html .page .hero .product-name,
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-product-name {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 7px !important;
+  font-size: 17px !important;
+  line-height: 1.35 !important;
+  font-weight: 650 !important;
+}
+
+html .page .hero .hero-title,
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-copy h2 {
+  margin: 0 !important;
+  font-size: clamp(34px, 3vw, 48px) !important;
+  line-height: 1.12 !important;
+  font-weight: 720 !important;
+  letter-spacing: -1.5px !important;
+}
+
+html .page .hero .hero-desc,
+body:is([data-page="business"], [data-page="enterprise"]) .device-scene-desc {
+  margin: 18px 0 0 !important;
+  font-size: 15px !important;
+  line-height: 1.65 !important;
+  font-weight: 400 !important;
+}
+
+.hero-product-name,
+html.is-short-host .hero-product-name,
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card strong,
+body[data-page="enterprise"] .enterprise-scene-card strong {
+  min-height: 0 !important;
+  max-height: 4.2em !important;
+  margin-top: 0 !important;
+  color: rgba(255, 255, 255, .96) !important;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  font-weight: 650 !important;
+  white-space: normal !important;
+  -webkit-line-clamp: 3 !important;
+}
+
+.hero-product-price,
+html.is-short-host .hero-product-price,
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-product {
+  color: rgba(255, 255, 255, .70) !important;
+  font-size: 13.5px !important;
+  line-height: 1.2 !important;
+  font-weight: 600 !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card strong,
+body[data-page="enterprise"] .enterprise-scene-card strong {
+  margin: 13px 4px 0 !important;
+}
+
+body:is([data-page="business"], [data-page="enterprise"]) .enterprise-scene-card-product {
+  margin: 8px 4px 0 !important;
+}
+
+/* Enterprise editorial artwork fills its canvas; hardware cutouts keep contain. */
+body[data-page="enterprise"] .enterprise-scene-card:not(.is-product) .enterprise-scene-card-visual {
+  overflow: hidden !important;
+  background: #fff !important;
+}
+
+body[data-page="enterprise"] .enterprise-scene-card:not(.is-product) .enterprise-scene-card-visual img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+  border-radius: inherit !important;
+  object-fit: cover !important;
+}

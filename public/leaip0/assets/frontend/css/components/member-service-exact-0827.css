@@ -11306,3 +11306,610 @@ body [data-member-device-page] {
   margin-right: 0;
   margin-left: 0;
 }
+
+/* LX_CLEANING_SERVICE_RECOMMENDATION_SURFACE_V44_20260901 */
+body .lx-member-component-host:has(> [data-member-service-page]),
+body .lx-member-component-host.leai-aui-view > [data-member-service-page].leai-page:not(.leai-member-page),
+body [data-member-service-page] {
+  background-color: #f5f5f7 !important;
+  background-image: linear-gradient(180deg, #fff 0, #fff 74px, #fefefe 96px, #fafafa 122px, #f7f7f8 164px, #f5f5f7 214px, #f5f5f7 100%) !important;
+  background-repeat: no-repeat !important;
+}
+
+body .lx-member-component-host.leai-aui-view > [data-member-service-page].leai-page:not(.leai-member-page),
+body [data-member-service-page] {
+  min-height: 100%;
+  padding: 26px 22px 36px !important;
+}
+
+body [data-member-service-page] .leai-recommendation-brief {
+  margin: 0;
+  padding: 0 2px 18px;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+body [data-member-service-page] .leai-recommendation-brief .leai-page-title {
+  margin: 0;
+  padding: 0;
+  color: #1d1d1f;
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+body [data-member-service-page] .leai-associated-device {
+  min-height: 0;
+  padding-top: 5px;
+  border: 0 !important;
+  background: transparent !important;
+  color: #77747a;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+body [data-member-service-page] .leai-service-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 0;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+body [data-member-service-page] .leai-service-list .reco-row {
+  position: relative;
+  min-height: 124px;
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr) clamp(198px, 15vw, 238px);
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 10px 18px 10px 10px;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 16px;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(29, 29, 31, .025) !important;
+  transform: translateY(0);
+  transition: transform .18s cubic-bezier(.22, .61, .36, 1), background-color .2s ease, box-shadow .2s ease;
+}
+
+body [data-member-service-page] .leai-service-list .reco-row:hover,
+body [data-member-service-page] .leai-service-list .reco-row:focus-within {
+  border: 0 !important;
+  background: #fff !important;
+  box-shadow: 0 8px 24px rgba(50, 29, 57, .075) !important;
+  transform: translateY(-1px);
+}
+
+body [data-member-service-page] .leai-service-list .reco-row:has(.leai-service-compare-link[aria-pressed="true"]) {
+  background: linear-gradient(90deg, #fff 0, #fff 168px, #fdfcfe 242px, #faf8fb 58%, #f7f4f9 100%) !important;
+  box-shadow: 0 5px 16px rgba(77, 20, 74, .05) !important;
+}
+
+body [data-member-service-page] .leai-service-list .reco-row > img {
+  width: 138px;
+  height: 92px;
+  max-width: 138px;
+  max-height: 92px;
+  justify-self: center;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: #fff;
+  object-fit: contain;
+}
+
+body [data-member-service-page] .reco-row-main {
+  min-width: 0;
+  display: block;
+  padding: 0 22px 0 8px;
+  text-align: left;
+}
+
+body [data-member-service-page] .leai-service-labels {
+  min-height: 19px;
+  margin-bottom: 7px;
+  gap: 6px;
+}
+
+body [data-member-service-page] .leai-service-tag,
+body [data-member-service-page] .leai-recommended-badge {
+  min-height: 19px;
+  padding: 3px 8px 4px 6px;
+  border: 0 !important;
+  border-radius: 6px;
+  background: #fcf2f8;
+  color: #bb1836;
+  font-size: 10.5px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+body [data-member-service-page] .leai-service-tag:hover,
+body [data-member-service-page] .leai-service-tag:focus-visible {
+  outline: 0;
+  background: #faeaf3;
+}
+
+body [data-member-service-page] .reco-row-main h2 {
+  margin: 0 0 7px;
+  color: #1d1d1f;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -.015em;
+}
+
+body [data-member-service-page] .reco-row-desc {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: #6e6e73;
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: unset;
+}
+
+body [data-member-service-page] .leai-service-compare-link {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 3;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: transparent;
+  font-size: 0;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity .15s ease;
+}
+
+body [data-member-service-page] .leai-service-compare-link::before {
+  width: 19px;
+  height: 19px;
+  display: block;
+  border: 1.5px solid #ded9e3;
+  border-radius: 6px;
+  background: #fff;
+  content: "";
+}
+
+body [data-member-service-page] .leai-service-compare-link::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 8px;
+  border-right: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  opacity: 0;
+  content: "";
+  transform: translate(-50%, -58%) rotate(45deg);
+}
+
+body [data-member-service-page] .reco-row:hover .leai-service-compare-link,
+body [data-member-service-page] .reco-row:focus-within .leai-service-compare-link,
+body [data-member-service-page] .leai-service-compare-link[aria-pressed="true"] {
+  opacity: 1;
+}
+
+body [data-member-service-page] .leai-service-compare-link[aria-pressed="true"]::before {
+  border-color: transparent;
+  background: linear-gradient(90deg, #4d144a 11.9%, #b8252e 100%);
+}
+
+body [data-member-service-page] .leai-service-compare-link[aria-pressed="true"]::after {
+  opacity: 1;
+}
+
+body [data-member-service-page] .reco-row-side {
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 0 8px 8px;
+  text-align: right;
+}
+
+body [data-member-service-page] .leai-service-list .reco-row-price {
+  color: #e2231a;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -.025em;
+}
+
+body [data-member-service-page] .leai-service-list .reco-row-actions .lx-p0-btn.primary {
+  min-width: 92px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4d144a 11.9%, #b8252e 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 3px 9px rgba(77, 20, 74, .10);
+}
+
+body [data-member-service-page] .leai-service-list .reco-row-actions .lx-p0-btn.primary:hover,
+body [data-member-service-page] .leai-service-list .reco-row-actions .lx-p0-btn.primary:focus-visible {
+  border-color: transparent;
+  background: linear-gradient(90deg, #4d144a 11.9%, #b8252e 100%);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(77, 20, 74, .14);
+  transform: translateY(-1px);
+}
+
+body [data-member-service-page] > .leai-member-disclaimer {
+  margin-top: 14px;
+  padding: 0 4px;
+  border: 0 !important;
+}
+
+@media (max-width: 900px) {
+  body [data-member-service-page] .leai-service-list .reco-row {
+    grid-template-columns: 118px minmax(0, 1fr) 150px;
+  }
+
+  body [data-member-service-page] .leai-service-list .reco-row > img {
+    width: 104px;
+    height: 78px;
+  }
+}
+
+
+/* Device list exact reference 8770 — 2026-09-05 */
+/* Device-page type scale aligned with recommendation and service-product cards. */
+body [data-member-device-page] .leai-panel-title {
+  font-size: 21px !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important;
+}
+
+body [data-member-device-page] .leai-panel-head p {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+body [data-member-device-page] .leai-device-list-copy > strong {
+  font-size: 15px !important;
+  line-height: 1.35 !important;
+  font-weight: 600 !important;
+}
+
+body [data-member-device-page] .leai-device-list-copy > small,
+body [data-member-device-page] .leai-device-list-copy > em {
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+}
+
+body [data-member-device-page] .leai-device-row-warranty > small,
+body [data-member-device-page] .leai-device-row-actions > small {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+}
+
+body [data-member-device-page] .leai-device-row-warranty > strong {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-weight: 500 !important;
+}
+
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add],
+body [data-member-device-page] .leai-device-row-actions button,
+body [data-member-device-page] .leai-device-filter {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+}
+
+body [data-member-device-page] .leai-device-filter strong {
+  font-size: inherit !important;
+  font-weight: 600 !important;
+}
+
+/* Keep every device-page action in the same pill-shaped brand style as Buy now. */
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add],
+body [data-member-device-page] .leai-device-row-actions button {
+  width: 92px !important;
+  min-width: 92px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: var(--lexiang-gradient-brand, linear-gradient(105deg, #4d144a, #b8252e)) !important;
+  color: #fff !important;
+  box-shadow: 0 7px 18px rgba(77, 20, 74, .15) !important;
+}
+
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add]:hover,
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add]:focus-visible,
+body [data-member-device-page] .leai-device-row-actions button:hover,
+body [data-member-device-page] .leai-device-row-actions button:focus-visible {
+  border: 0 !important;
+  background: var(--lexiang-gradient-brand, linear-gradient(105deg, #4d144a, #b8252e)) !important;
+  color: #fff !important;
+  box-shadow: 0 9px 22px rgba(77, 20, 74, .20) !important;
+  transform: translateY(-1px);
+}
+
+body [data-member-device-page] .leai-device-row-actions > small {
+  display: none !important;
+}
+
+/* Warranty is a secondary action: keep the unified size, restore the white treatment. */
+body [data-member-device-page] .leai-device-row-actions .leai-maintenance-button {
+  border: 1px solid rgba(77, 20, 74, .18) !important;
+  background: #fff !important;
+  color: var(--ms-brand, #4d144a) !important;
+  box-shadow: none !important;
+}
+
+body [data-member-device-page] .leai-device-row-actions .leai-maintenance-button:hover,
+body [data-member-device-page] .leai-device-row-actions .leai-maintenance-button:focus-visible {
+  border: 1px solid rgba(77, 20, 74, .30) !important;
+  background: rgba(77, 20, 74, .035) !important;
+  color: var(--ms-brand, #4d144a) !important;
+  box-shadow: none !important;
+}
+
+/* Apple-like segmented filters: one continuous track with an elevated selection. */
+body [data-member-device-page] .leai-device-filters {
+  display: inline-flex !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  align-items: center !important;
+  gap: 0 !important;
+  margin: 22px 0 26px !important;
+  padding: 3px !important;
+  overflow-x: auto !important;
+  border: 0 !important;
+  border-radius: 15px !important;
+  background: #efeff1 !important;
+  box-shadow: inset 0 0 0 1px rgba(29, 29, 31, .035) !important;
+}
+
+body [data-member-device-page] .leai-device-filter {
+  min-width: 0 !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 15px !important;
+  gap: 6px !important;
+  border: 0 !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  color: #6e6e73 !important;
+  box-shadow: none !important;
+  transform: translateY(0) !important;
+  transition: color .22s ease, background-color .22s ease, box-shadow .22s ease, transform .22s cubic-bezier(.22, .61, .36, 1) !important;
+  will-change: transform, box-shadow;
+}
+
+body [data-member-device-page] .leai-device-filter > strong {
+  display: inline-flex !important;
+  min-width: 0 !important;
+  height: auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: 12px !important;
+  line-height: 20px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+body [data-member-device-page] .leai-device-filter:hover,
+body [data-member-device-page] .leai-device-filter:focus-visible {
+  border: 0 !important;
+  background: rgba(255, 255, 255, .50) !important;
+  color: #1d1d1f !important;
+  box-shadow: none !important;
+  transform: translateY(0) !important;
+  outline: none !important;
+}
+
+body [data-member-device-page] .leai-device-filter.is-active {
+  position: relative !important;
+  z-index: 1 !important;
+  border: 0 !important;
+  background: #fff !important;
+  color: #1d1d1f !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(29, 29, 31, .10), 0 4px 12px rgba(29, 29, 31, .085) !important;
+}
+
+body [data-member-device-page] .leai-device-filter.is-active > strong {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+html body [data-member-device-page] .leai-device-center .leai-device-filters {
+  margin: 22px 0 26px !important;
+  padding: 3px !important;
+  background: #efeff1 !important;
+}
+
+html body [data-member-device-page] .leai-device-filter > strong {
+  box-sizing: border-box !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+}
+
+
+/* LX_DEVICE_PAGE_RECOMMENDATION_SURFACE_V41_20260901 */
+body .lx-member-component-host:has(> [data-member-device-page]),
+body .leai-aui-view:has([data-member-device-page]) {
+  background-color: #f5f5f7 !important;
+  background-image: linear-gradient(180deg, #fff 0, #fff 64px, #fcfcfd 112px, #f8f8f9 156px, #f5f5f7 210px, #f5f5f7 100%) !important;
+}
+
+body .lx-member-component-host.leai-aui-view > [data-member-device-page].leai-page:not(.leai-member-page),
+body [data-member-device-page] {
+  min-height: 100%;
+  padding: 24px 28px 36px;
+  background-color: #f5f5f7 !important;
+  background-image: linear-gradient(180deg, #fff 0, #fff 64px, #fcfcfd 112px, #f8f8f9 156px, #f5f5f7 210px, #f5f5f7 100%) !important;
+}
+
+body [data-member-device-page] > .leai-page-header,
+body [data-member-device-page] > .leai-device-center,
+body [data-member-device-page] .leai-device-center > .leai-panel-head,
+body [data-member-device-page] .leai-device-filters {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body [data-member-device-page] > .leai-device-center {
+  margin-top: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+body [data-member-device-page] .leai-device-center > .leai-panel-head {
+  margin-bottom: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+body [data-member-device-page] .leai-device-filters {
+  margin-top: 16px;
+  padding: 0 0 16px;
+  background: transparent !important;
+}
+
+body [data-member-device-page] .leai-device-list {
+  gap: 14px !important;
+  margin-top: 0;
+}
+
+body [data-member-device-page] .leai-device-list-row,
+body [data-member-device-page] .leai-device-list-row.is-pending {
+  min-height: 116px;
+  grid-template-columns: 92px minmax(240px, 1fr) minmax(120px, .38fr) 132px;
+  gap: 22px;
+  padding: 14px 22px;
+  border: 0 !important;
+  border-radius: 18px;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(29, 29, 31, .025) !important;
+  transition: transform .22s cubic-bezier(.22, .61, .36, 1), box-shadow .22s ease, background-color .22s ease;
+}
+
+body [data-member-device-page] .leai-device-list-row:hover,
+body [data-member-device-page] .leai-device-list-row:focus-within {
+  border: 0 !important;
+  background: #fff !important;
+  box-shadow: 0 9px 26px rgba(50, 29, 57, .075) !important;
+  transform: translateY(-1px);
+}
+
+body [data-member-device-page] .leai-device-list-row > img {
+  width: 92px;
+  height: 78px;
+}
+
+body [data-member-device-page] .leai-device-row-actions:empty {
+  min-height: 1px;
+}
+
+body [data-member-device-page] .leai-member-disclaimer {
+  border: 0 !important;
+}
+
+@media (max-width: 900px) {
+  body [data-member-device-page] {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  body [data-member-device-page] .leai-device-list-row,
+  body [data-member-device-page] .leai-device-list-row.is-pending {
+    grid-template-columns: 78px minmax(0, 1fr) 120px;
+    gap: 16px;
+  }
+
+  body [data-member-device-page] .leai-device-row-warranty {
+    display: none;
+  }
+}
+
+
+/* Device-page temporary simplification: remove binding and warranty CTAs. */
+body [data-member-device-page] [data-device-add],
+body [data-member-device-page] [data-device-bind-purchased],
+body [data-member-device-page] [data-device-warranty] {
+  display: none !important;
+}
+
+body [data-member-device-page] .leai-device-row-actions {
+  display: none !important;
+}
+
+body [data-member-device-page] .leai-device-list-row,
+body [data-member-device-page] .leai-device-list-row.is-pending {
+  grid-template-columns: 92px minmax(240px, 1fr) minmax(120px, .38fr) !important;
+}
+
+@media (max-width: 900px) {
+  body [data-member-device-page] .leai-device-list-row,
+  body [data-member-device-page] .leai-device-list-row.is-pending {
+    grid-template-columns: 78px minmax(0, 1fr) !important;
+  }
+}
+
+/* Device list uses the same page edge, gap, padding and action inset. */
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-device-page] {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 32px 24px 48px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-device-page] .leai-device-list {
+  gap: 18px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-device-page] .leai-device-list-row,
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-device-page] .leai-device-list-row.is-pending {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-height: 136px !important;
+  grid-template-columns: 92px minmax(220px, 1fr) minmax(120px, .38fr) !important;
+  gap: 24px !important;
+  margin: 0 !important;
+  padding: 16px 24px !important;
+  border-radius: 20px !important;
+}
+
+html body:is([data-page="home"],[data-page="personal"],[data-page="business"],[data-page="enterprise"]).lx-home-split:not(.assistant-fullscreen)
+.content [data-member-device-page] .leai-device-row-actions {
+  align-self: end !important;
+  justify-items: end !important;
+  padding: 0 !important;
+}
+

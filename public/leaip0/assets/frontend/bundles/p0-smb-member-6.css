@@ -1,0 +1,19 @@
+
+/* public/leaip0/assets/frontend/css/components/member-device-actions-v38.css */
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add],
+body [data-member-device-page] .leai-device-row-actions .leai-primary {
+  border: 1px solid transparent !important;
+  background: linear-gradient(90deg, #4d144a 11.9%, #b8252e 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 5px 14px rgba(77, 20, 74, 0.12) !important;
+  opacity: 1 !important;
+}
+
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add]:hover,
+body [data-member-device-page] .leai-device-center > .leai-panel-head > [data-device-add]:focus-visible,
+body [data-member-device-page] .leai-device-row-actions .leai-primary:hover,
+body [data-member-device-page] .leai-device-row-actions .leai-primary:focus-visible {
+  background: linear-gradient(90deg, #5b1452 11.9%, #c42b35 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 7px 18px rgba(77, 20, 74, 0.17) !important;
+}

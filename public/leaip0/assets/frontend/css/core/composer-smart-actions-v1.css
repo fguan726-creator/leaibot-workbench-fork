@@ -1,0 +1,396 @@
+.assistant-panel .assistant-bottom .lx-smart-actions {
+  position: relative;
+  display: none;
+  width: 100%;
+  margin: 0 0 8px;
+  background: #FFFFFF;
+}
+
+.assistant-panel .assistant-bottom .lx-smart-actions::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: 64px;
+  pointer-events: none;
+  background: linear-gradient(to top, #FFFFFF 0%, rgba(255,255,255,0) 100%);
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-active > .shortcut-row {
+  display: none !important;
+}
+
+.assistant-panel .assistant-bottom > .shortcut-row .shortcut {
+  border-radius: 7px !important;
+}
+
+.assistant-panel .assistant-bottom.lx-shortcuts-arriving > .shortcut-row {
+  animation: lx-smart-actions-compact-arrive .34s cubic-bezier(.22,.78,.22,1) both;
+}
+
+.assistant-panel .assistant-bottom.lx-shortcuts-arriving > .shortcut-row > .shortcut {
+  animation:
+    lx-smart-action-arrive .38s cubic-bezier(.22,.78,.22,1) both,
+    lx-shortcut-attention .72s cubic-bezier(.22,.78,.22,1) 1;
+}
+
+.assistant-panel .assistant-bottom.lx-shortcuts-arriving > .shortcut-row > .shortcut:nth-child(1) {
+  animation-delay: .04s, .48s;
+}
+
+.assistant-panel .assistant-bottom.lx-shortcuts-arriving > .shortcut-row > .shortcut:nth-child(2) {
+  animation-delay: .12s, 1.18s;
+}
+
+.assistant-panel .assistant-bottom.lx-shortcuts-arriving > .shortcut-row > .shortcut:nth-child(3) {
+  animation-delay: .20s, 1.88s;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-collapsing > .lx-smart-actions {
+  overflow: hidden;
+  transform-origin: left bottom;
+  animation: lx-smart-actions-collapse .68s cubic-bezier(.4,0,.2,1) both;
+  pointer-events: none;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions {
+  width: auto;
+  margin-bottom: 6px;
+  animation: lx-smart-actions-compact-arrive .34s cubic-bezier(.22,.78,.22,1) both;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-actions-title,
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-actions-close {
+  display: none;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-actions-list {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-action {
+  height: 27px;
+  min-height: 27px;
+  padding: 0 10px;
+  gap: 5px;
+  border-radius: 7px;
+  background: #FFFFFF;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  animation: none;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-action:hover,
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-action:focus-visible {
+  border-color: var(--border-strong) !important;
+  background: var(--lavender-hover) !important;
+  color: var(--aubergine) !important;
+  outline: 0;
+  transform: none;
+  box-shadow: none;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-action::before {
+  display: none;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-compact > .lx-smart-actions .lx-smart-action img {
+  width: 9px;
+  flex-basis: 9px;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-active > .lx-smart-actions {
+  display: block;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-motion > .lx-smart-actions .lx-smart-actions-title,
+.assistant-panel .assistant-bottom.lx-smart-actions-motion > .lx-smart-actions .lx-smart-action,
+.assistant-panel .assistant-bottom.lx-smart-actions-motion > .lx-smart-actions .lx-smart-actions-close {
+  opacity: 0;
+  transform: translateY(8px) scale(.98);
+}
+
+.lx-smart-actions-guide {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  overflow: hidden;
+  border: 2px solid #bcb4c1;
+  background: #FFFFFF;
+  box-shadow: 0 22px 64px rgba(50,29,57,.18), 0 0 0 5px rgba(226,221,235,.46);
+  transform-origin: 0 0;
+  will-change: transform, opacity, border-radius;
+}
+
+.lx-smart-actions-snapshot-content {
+  position: absolute !important;
+  inset: 0 auto auto 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  background: #FFFFFF !important;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-actions-title {
+  animation: lx-smart-actions-title-arrive .28s ease-out both;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-action {
+  animation:
+    lx-smart-action-arrive .38s cubic-bezier(.22,.78,.22,1) both,
+    lx-smart-action-attention .72s cubic-bezier(.22,.78,.22,1) 1;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-action:nth-child(1) {
+  animation-delay: .04s, .48s;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-action:nth-child(2) {
+  animation-delay: .12s, 1.18s;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-action::before {
+  animation: lx-smart-action-gradient-ring .72s cubic-bezier(.22,.78,.22,1) 1;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-action:nth-child(1)::before {
+  animation-delay: .48s;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-action:nth-child(2)::before {
+  animation-delay: 1.18s;
+}
+
+.assistant-panel .assistant-bottom.lx-smart-actions-arrived > .lx-smart-actions .lx-smart-actions-close {
+  animation: lx-smart-actions-title-arrive .24s .14s ease-out both;
+}
+
+.lx-smart-actions-close {
+  position: absolute;
+  z-index: 2;
+  top: -2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.lx-smart-actions-close::before,
+.lx-smart-actions-close::after {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 5px;
+  width: 10px;
+  height: 1px;
+  border-radius: 1px;
+  background: #979797;
+}
+
+.lx-smart-actions-close::before { transform: rotate(45deg); }
+.lx-smart-actions-close::after { transform: rotate(-45deg); }
+
+.lx-smart-actions-close:hover,
+.lx-smart-actions-close:focus-visible {
+  background: #f3f0f7;
+  outline: 0;
+}
+
+.lx-smart-actions-title {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
+  margin: 0 0 6px 7px;
+  color: #979797;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lx-smart-actions-title img {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+}
+
+.lx-smart-actions-list {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.lx-smart-action {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 37px;
+  max-width: 100%;
+  padding: 0 11px 0 13px;
+  border: 1px solid #e2ddeb;
+  border-radius: 10px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(50,29,57,.08);
+  color: #252525;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease, background-color .18s ease;
+}
+
+.lx-smart-action::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: -0.8px;
+  padding: 0.8px;
+  border-radius: 10px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(105deg, #9256d6 0%, #4d144a 48%, #b8252e 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  box-shadow: 0 8px 22px rgba(146,86,214,.16);
+}
+
+.lx-smart-action:hover,
+.lx-smart-action:focus-visible {
+  border-color: #bcb4c1;
+  background: #f3f0f7;
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.lx-smart-action img {
+  width: 9px;
+  height: 5px;
+  flex: 0 0 9px;
+  transform: rotate(-90deg);
+}
+
+@keyframes lx-smart-actions-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lx-smart-actions-title-arrive {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lx-smart-action-arrive {
+  0% { opacity: 0; transform: translateY(10px) scale(.96); }
+  68% { opacity: 1; transform: translateY(-1px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lx-smart-action-attention {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    background: #FFFFFF;
+  }
+  42%, 68% {
+    transform: translateY(-1px) scale(1.045);
+    background: linear-gradient(96deg, #fdf8fb 22.83%, #f3f5fd 98.41%);
+  }
+}
+
+@keyframes lx-shortcut-attention {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-1px) scale(1.045); }
+}
+
+@keyframes lx-smart-action-gradient-ring {
+  0%, 100% { opacity: 0; }
+  28%, 72% { opacity: 1; }
+}
+
+@keyframes lx-smart-actions-collapse {
+  0% {
+    max-height: 120px;
+    margin-bottom: 8px;
+    opacity: 1;
+    transform: translate3d(0,0,0) scale(1);
+    filter: blur(0);
+  }
+  58% {
+    max-height: 72px;
+    margin-bottom: 4px;
+    opacity: .56;
+    transform: translate3d(-3px,8px,0) scale(.72);
+    filter: blur(0);
+  }
+  100% {
+    max-height: 0;
+    margin-bottom: 0;
+    opacity: 0;
+    transform: translate3d(-6px,14px,0) scale(.42);
+    filter: blur(1px);
+  }
+}
+
+@keyframes lx-smart-actions-compact-arrive {
+  0% {
+    opacity: 0;
+    transform: translate3d(-4px,6px,0) scale(.78);
+  }
+  68% {
+    opacity: 1;
+    transform: translate3d(0,-1px,0) scale(1.025);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0,0,0) scale(1);
+  }
+}
+
+/* Loading never exposes the previous detail's actions or in-flight snapshot. */
+body:has(.content.is-generating-tab) .lx-smart-actions,
+body:has(.content[aria-busy="true"]) .lx-smart-actions,
+body:has(.content .lx-page-generating) .lx-smart-actions,
+body:has(.content.is-generating-tab) .lx-smart-actions-guide,
+body:has(.content[aria-busy="true"]) .lx-smart-actions-guide,
+body:has(.content .lx-page-generating) .lx-smart-actions-guide {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-panel .assistant-bottom.lx-smart-actions-active > .lx-smart-actions {
+    animation: none;
+  }
+  .assistant-panel .assistant-bottom.lx-smart-actions-motion > .lx-smart-actions .lx-smart-actions-title,
+  .assistant-panel .assistant-bottom.lx-smart-actions-motion > .lx-smart-actions .lx-smart-action,
+  .assistant-panel .assistant-bottom.lx-smart-actions-motion > .lx-smart-actions .lx-smart-actions-close {
+    opacity: 1;
+    transform: none;
+  }
+  .lx-smart-action {
+    transition: none;
+  }
+}

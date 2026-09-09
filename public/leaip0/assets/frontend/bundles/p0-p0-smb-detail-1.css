@@ -1,0 +1,126 @@
+
+/* public/leaip0/assets/frontend/css/core/product-detail-benefits-v200.css */
+.content[data-view="detail"] .lx-detail-benefits-v182,
+.product-detail .lx-detail-benefits-v182 {
+  display: block;
+  margin: 10px 0 20px;
+  border-top: 1px solid #ece7ee;
+  border-bottom: 1px solid #ece7ee;
+  background: #fff;
+  color: #242126;
+}
+.product-detail [data-detail-price][hidden],
+.product-detail .detail-price[hidden] {
+  display: none !important;
+}
+.product-detail .detail-tags {
+  display: none !important;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-price {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  min-height: 78px;
+  padding: 12px 14px;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #fff3f4;
+  color: #c5232d;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-price strong {
+  display: inline-flex;
+  align-items: baseline;
+  color: #c5232d;
+  font-size: clamp(34px, 2.65vw, 48px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-price strong > span {
+  margin-right: 7px;
+  font-size: .58em;
+  letter-spacing: 0;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-price strong small {
+  margin-left: 7px;
+  font-size: .7em;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-top: 1px solid #ece7ee;
+  color: #99949d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.lx-detail-benefits-v182 .lx-detail-benefits-meta b { color: #6e6972; font-weight: 800; }
+.lx-detail-benefits-v182 .lx-detail-benefits-meta i { width: 1px; height: 18px; background: #e6e0e8; }
+.product-detail .lx-buybar .lx-buybar-info b {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.product-detail .lx-buybar .lx-buybar-info b small {
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: #fff0f2;
+  color: #c5232d;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.product-detail .lx-buybar .lx-buybar-info b span {
+  color: #c5232d;
+  font: inherit;
+  white-space: nowrap;
+}
+.product-detail .lx-buybar .lx-buybar-info .lx-buybar-original-price {
+  margin-left: 2px;
+  color: #979797;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 400;
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+  white-space: nowrap;
+}
+.product-detail .lx-detail-product-code-v188 {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 10px 0 0;
+  color: #99949d;
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: .1px;
+}
+.product-detail .lx-detail-product-code-v188 span { font-weight: 400; }
+.product-detail .lx-detail-product-code-v188 strong {
+  color: #68636d;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .35px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1280px) {
+  .lx-detail-benefits-v182 .lx-detail-benefits-price { min-height: 68px; gap: 14px; }
+  .lx-detail-benefits-v182 .lx-detail-benefits-meta { flex-wrap: wrap; gap: 8px 12px; }
+}

@@ -13,7 +13,7 @@
   host.setAttribute('aria-label', '个人及家庭场景推荐');
   const frame = document.createElement('iframe');
   frame.title = '个人及家庭场景 Banner';
-  frame.src = '/assets/components/scene-banner-v154/scene-banner.html?v=20260903-responsive-tray-v181';
+  frame.src = '/assets/components/scene-banner-v154/scene-banner.html?v=20260907-campus-gradient';
   frame.setAttribute('scrolling', 'no');
   frame.setAttribute('loading', 'eager');
   frame.style.cssText = 'display:block;border:0;position:absolute;left:0;top:0;transform-origin:0 0;width:1280px;height:650px;max-width:none;';
@@ -47,6 +47,15 @@
         : Math.max(1280, width);
     const scale = width / naturalWidth;
     frameDocument.documentElement.classList.toggle('is-compact-host', compactHost);
+    // Keep enough of the first product floor visible on short laptop panels.
+    // The target is expressed in host pixels and converted back to the iframe's
+    // natural canvas, so compact and wide layouts land at the same visual height.
+    const baseNaturalHeroHeight = compactHost ? 500 : 560;
+    const baseVisibleHeroHeight = baseNaturalHeroHeight * scale;
+    const targetVisibleHeroHeight = Math.max(360, Math.min(baseVisibleHeroHeight, window.innerHeight - 360));
+    const shortHost = window.innerWidth > 760 && targetVisibleHeroHeight < baseVisibleHeroHeight - 1;
+    frameDocument.documentElement.classList.toggle('is-short-host', shortHost);
+    frameDocument.documentElement.style.setProperty('--short-hero-height', (targetVisibleHeroHeight / scale) + 'px');
     frame.style.width = naturalWidth + 'px';
     const page = frameDocument.querySelector('.page');
     if (!page) return;

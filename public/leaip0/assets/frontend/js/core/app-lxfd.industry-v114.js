@@ -1,3 +1,38 @@
+/* p0-stream-view:start */
+/* Incremental mirror for already-normalized assistant markup. No network or storage. */
+(() => {
+  'use strict';
+  if(window.__lxStreamView)return;
+  const active=new WeakMap();
+  function key(node){return node.nodeType===1?(node.id||node.getAttribute('data-id')||''):'';}
+  function patchNode(node,next){
+    if(node.isEqualNode(next))return;
+    if(node.nodeType!==next.nodeType||node.nodeName!==next.nodeName||key(node)!==key(next)){node.replaceWith(next.cloneNode(true));return;}
+    if(node.nodeType===3||node.nodeType===8){node.data=next.data;return;}
+    if(node.nodeType!==1)return;
+    for(const a of [...node.attributes])if(!next.hasAttribute(a.name))node.removeAttribute(a.name);
+    for(const a of [...next.attributes])if(node.getAttribute(a.name)!==a.value)node.setAttribute(a.name,a.value);
+    patchChildren(node,next);
+  }
+  function patchChildren(host,next){
+    const old=[...host.childNodes],fresh=[...next.childNodes];
+    for(let i=0;i<fresh.length;i++){if(old[i])patchNode(old[i],fresh[i]);else host.appendChild(fresh[i].cloneNode(true));}
+    for(let i=fresh.length;i<old.length;i++)old[i].remove();
+  }
+  function patch(host,html){const template=document.createElement('template');template.innerHTML=html;patchChildren(host,template.content);}
+  function mirror({source,target,scroll,normalize,isGenerating,onFinish,timeout=60000}){
+    active.get(target)?.();let stopped=false,raf=0,poll,timer,lastRaw=null;
+    function flush(){raf=0;if(stopped||!target.isConnected||!source.isConnected)return;const raw=source.innerHTML;if(raw===lastRaw)return;lastRaw=raw;const stick=!scroll||scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<80;patch(target,normalize(raw));if(scroll&&stick)scroll.scrollTop=scroll.scrollHeight;}
+    function stop(finish=false){if(stopped)return;if(finish)flush();stopped=true;observer.disconnect();cancelAnimationFrame(raf);clearInterval(poll);clearTimeout(timer);if(active.get(target)===stop)active.delete(target);if(finish&&target.isConnected)onFinish();}
+    const observer=new MutationObserver(()=>{if(!raf&&!stopped)raf=requestAnimationFrame(flush);});
+    observer.observe(source,{subtree:true,childList:true,characterData:true,attributes:true});
+    poll=setInterval(()=>{if(!source.isConnected||!target.isConnected)stop();else if(!isGenerating())stop(true);},750);
+    timer=setTimeout(()=>stop(true),timeout);active.set(target,stop);flush();return stop;
+  }
+  window.__lxStreamView=Object.freeze({patch,mirror});
+})();
+
+/* p0-stream-view:end */
 // ── 乐享全屏对话（lxfd）独立模块 ─────────────────────────────────────────────
 // 从 app.js 拆出（原 L7746-L9426，天然 IIFE 边界，行为零变化）。
 // 与主面板通过 window.__lxBridge / window.lxfdSubmit / window.__lxIntent 通信。
@@ -45,7 +80,7 @@
   let helloAnimating = false;
   let helloTimer = null;
   let railManuallyCollapsed = true;
-  const chatState = { convId: null, sending: false, conversationNonce: 0, localId: null };
+  const chatState = { convId: null, sending: false, conversationNonce: 0, localId: null };;window.__lxGeneration.register(chatState,"fullscreen");window.__lxPersistStoppedFullscreen=()=>{lxfdPersistCurrent();};
   const navPaths = { home: "/", personal: "/shop-chat/", business: "/b-chat/", enterprise: "/biz-chat/", brand: "/brand/" };
   const LXFD_DEFAULT_HELLO_WORDS = ["找商品", "找门店", "找服务", "职场认证", "教育优惠", "找解决方案"];
   let helloWords = LXFD_DEFAULT_HELLO_WORDS.slice();
@@ -127,9 +162,12 @@
     if (!chatState.localId) lxfdNewLocalConv();
     const firstUser = thread.querySelector(".lxfd-msg-user");
     const title = (firstUser ? firstUser.textContent : "新对话").trim().slice(0, 24) || "新对话";
-    const previous = lxfdLoadStore().find(c => c.id === chatState.localId);
-    const store = lxfdLoadStore().filter(c => c.id !== chatState.localId);
-    store.unshift({ id: chatState.localId, title, convId: chatState.convId || null, threadHtml: thread.innerHTML, ts: Date.now(), pinned: !!previous?.pinned });
+    const snapshot = lxfdLoadStore();
+    const previous = snapshot.find(c => c.id === chatState.localId);
+    const threadHtml = thread.innerHTML, convId = chatState.convId || null;
+    if (previous?.threadHtml === threadHtml && previous.title === title && previous.convId === convId) { lxfdSyncToMainConvKey(); return; }
+    const store = snapshot.filter(c => c.id !== chatState.localId);
+    store.unshift({ id: chatState.localId, title, convId, threadHtml, ts: Date.now(), pinned: !!previous?.pinned });
     lxfdSaveStore(store);
     // 同步一份到子站切换/刷新恢复用的 key（lexiang.conversation.v1）——否则首页对话切子站后丢失
     lxfdSyncToMainConvKey();
@@ -167,11 +205,10 @@
       });
       while (messages.length && messages[messages.length - 1].role === "user") messages.pop();
       if (!messages.length) return;
-      localStorage.setItem("lexiang.conversation.v1", JSON.stringify({
-        convId: chatState.convId || null,
-        messages: messages.slice(-50),
-        ts: Date.now()
-      }));
+      const payload = {convId: chatState.convId || null, messages: messages.slice(-50)};
+      const saved = JSON.parse(localStorage.getItem("lexiang.conversation.v1") || "null");
+      if (saved && saved.convId === payload.convId && JSON.stringify(saved.messages) === JSON.stringify(payload.messages)) return;
+      localStorage.setItem("lexiang.conversation.v1", JSON.stringify({...payload, ts: Date.now()}));
     } catch (_e) {}
   }
   function lxfdRenderHist(query) {
@@ -304,18 +341,7 @@
       const fsBodies = thread.querySelectorAll(".lxfd-msg-ai .lxfd-ai-body");
       const fsAiBody = fsBodies[fsBodies.length - 1];
       if (mainAi && fsAiBody) {
-        let tries = 0;
-        const iv = setInterval(function() {
-          tries++;
-          fsAiBody.innerHTML = lxfdNormalizeImportedAiHtml(mainAi.innerHTML);          // 镜像最新流式内容
-          thread.scrollTop = thread.scrollHeight;
-          if (!lxfdMainGenerating() || tries > 400) {     // 60s 上限兜底
-            clearInterval(iv);
-            fsAiBody.innerHTML = lxfdNormalizeImportedAiHtml(mainAi.innerHTML);          // 收尾再同步最终一帧
-            lxfdPersistCurrent();
-            lxfdRenderHist();
-          }
-        }, 150);
+        window.__lxStreamView.mirror({source:mainAi,target:fsAiBody,scroll:thread,normalize:lxfdNormalizeImportedAiHtml,isGenerating:lxfdMainGenerating,onFinish:()=>{lfxdPersistCurrent();lfxdRenderHist();}});
       }
     }
     return true;
@@ -1075,7 +1101,7 @@
     });
   }
 
-  async function lxfdRunHomeCommerceEntry(kind) {
+  async function lxfdRunHomeCommerceEntry(kind) {const __lxGenerationToken=window.__lxGeneration.capture();try{
     const logicalPath = String(window.__LX_TEMPLATE_PATH || location.pathname || "/").replace(/\/+$/, "") || "/";
     // 这条“全屏生成 → 结果卡 → 左右结构”链路只属于根首页。
     // 子频道即使误调用，也立即回退到其原有商务入口，不改变频道交互。
@@ -1117,18 +1143,18 @@
 
     try {
       // 严格串行：正文逐字完成后才挂结果卡；结果卡完成布局后才退出全屏并创建右页。
-      await lxfdAnimateFinal(ai, reply);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, reply)));
       const body = ai.querySelector(".lxfd-ai-body");
       if (body && meta) body.insertAdjacentHTML("beforeend", renderLxfdPageCta(meta));
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await window.__lxGeneration.wait(__lxGenerationToken,(new Promise((resolve) => window.__lxGeneration.frame(__lxGenerationToken,() => window.__lxGeneration.frame(__lxGenerationToken,resolve)))));
       lxfdPersistCurrent();
       lxfdExportToMain();
-      await lxfdWait(reduceMotion ? 0 : 560);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 560)));
       exitFullscreenWithReveal(() => lxfdRevealFeature(feature));
-    } finally {
+    } finally {if(window.__lxGeneration.current(__lxGenerationToken)){
       chatState.sending = false;
-    }
-  }
+    }}
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
   window.__lxfdRunHomeCommerceEntry = lxfdRunHomeCommerceEntry;
 
   function appendLxfdSuggestions(ai, suggestions) {
@@ -1186,7 +1212,7 @@
     });
   }
 
-  function lxfdTypeNodes(sourceParent, targetParent, speed, done) {
+  function lxfdTypeNodes(sourceParent, targetParent, speed, done) {const __lxGenerationToken=window.__lxGeneration.capture();
     const cursor = document.createElement("span");
     cursor.className = "typing-cursor";
     const scroll = () => { if (thread) thread.scrollTop = thread.scrollHeight; };
@@ -1199,7 +1225,7 @@
       const tick = () => {
         textNode.nodeValue = String(text).slice(0, index);
         index += 1;
-        if (index <= String(text).length) window.setTimeout(tick, speed);
+        if (index <= String(text).length) window.__lxGeneration.timeout(__lxGenerationToken,tick, speed);
         else next();
       };
       tick();
@@ -1243,7 +1269,7 @@
     if (thread) thread.scrollTop = thread.scrollHeight;
   }
 
-  function lxfdAnimateFinal(ai, rawText) {
+  function lxfdAnimateFinal(ai, rawText) {const __lxGenerationToken=window.__lxGeneration.capture();
     const body = ai?.querySelector(".lxfd-ai-body");
     if (!body) return Promise.resolve();
     // 收尾把时间线折叠态 HTML 拼进最终正文——本函数会整体替换 ai-body，生成阶段的实时 DOM
@@ -1267,11 +1293,11 @@
     }
     return new Promise((resolve) => {
       const waitTime = Math.max(0, 5000 - (Date.now() - loadingStarted));
-      window.setTimeout(() => {
+      window.__lxGeneration.timeout(__lxGenerationToken,() => {
         const source = document.createElement("div");
         source.innerHTML = html;
         lxfdTypeNodes(source, body, 18, () => {
-          window.setTimeout(() => {
+          window.__lxGeneration.timeout(__lxGenerationToken,() => {
             body.innerHTML = html;
             if (thread) thread.scrollTop = thread.scrollHeight;
             resolve();
@@ -1316,7 +1342,7 @@
   const lxfdWait = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
   const lxfdIsDocumentInsight = (text) => /(文档解读|解读.*文档|分析.*(?:文档|文件|PDF)|提炼.*(?:文档|文件)|核心结论.*关键数据)/i.test(String(text || ""));
 
-  async function lxfdRunDocumentInsight() {
+  async function lxfdRunDocumentInsight() {const __lxGenerationToken=window.__lxGeneration.capture();try{
     const renderTrace = window.__lxBridge && window.__lxBridge.renderSkillTrace;
     const ai = document.createElement("div");
     ai.className = "lxfd-msg-ai lx-chat-skin";
@@ -1340,24 +1366,24 @@
       thread.scrollTop = thread.scrollHeight;
     };
     const pushTrace = async (line, delay, hideGenerating) => {
-      await lxfdWait(reduceMotion ? 0 : delay);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : delay)));
       if (hideGenerating) showGenerating = false;
       ai._traceLines.push(line);
       paintTrace();
     };
 
     thread.scrollTop = thread.scrollHeight;
-    await pushTrace("联想乐享正在判断", 1240, true);
-    await pushTrace("已判断：文档解读任务", 840);
-    await pushTrace("联想乐享官方 SKILL：正在调用 Skill(文档解读)", 1040);
-    await pushTrace("正在读取文档结构与正文", 1240);
+    await window.__lxGeneration.wait(__lxGenerationToken,(pushTrace("联想乐享正在判断", 1240, true)));
+    await window.__lxGeneration.wait(__lxGenerationToken,(pushTrace("已判断：文档解读任务", 840)));
+    await window.__lxGeneration.wait(__lxGenerationToken,(pushTrace("联想乐享官方 SKILL：正在调用 Skill(文档解读)", 1040)));
+    await window.__lxGeneration.wait(__lxGenerationToken,(pushTrace("正在读取文档结构与正文", 1240)));
 
     const traceHtml = renderTrace
       ? renderTrace(ai._traceLines.concat(["已完成文档内容提取"]), { collapsed: true, foldable: true, skillCount: ai._traceSkills.size })
       : "";
     body.innerHTML = traceHtml;
     thread.scrollTop = thread.scrollHeight;
-    await lxfdWait(reduceMotion ? 0 : 3000);
+    await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 3000)));
 
     const answerHtml = '<p>我已读取文档内容，下面是重点解读。</p>'
       + '<h4>核心结论</h4><ul><li>文档围绕当前业务目标、实施路径与结果要求展开，主线清晰。</li><li>重点任务已拆分为可执行阶段，需继续确认责任人、时间节点和验收口径。</li></ul>'
@@ -1374,15 +1400,15 @@
     if (reduceMotion) {
       answerHost.innerHTML = answerHtml;
     } else {
-      await new Promise((resolve) => lxfdTypeNodes(answerSource, answerHost, 18, resolve));
+      await window.__lxGeneration.wait(__lxGenerationToken,(new Promise((resolve) => lxfdTypeNodes(answerSource, answerHost, 18, resolve))));
     }
     answerHost.insertAdjacentHTML("afterend", extrasHtml);
     chatState.sending = false;
     thread.scrollTop = thread.scrollHeight;
     lxfdPersistCurrent();
     lxfdRenderHist();
-    window.setTimeout(() => lxfdOpenFeatureInSplit("documents"), reduceMotion ? 0 : 600);
-  }
+    window.__lxGeneration.timeout(__lxGenerationToken,() => lxfdOpenFeatureInSplit("documents"), reduceMotion ? 0 : 600);
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
 
 
 
@@ -1391,7 +1417,7 @@
     return value.length <= 24 && !/预约|库存|营业|电话|服务权益|导航/.test(value) && /附近门店|联想门店|门店查询|查.{0,4}门店|找.{0,4}门店|推荐.{0,4}门店|^(门店|实体店|体验店|专卖店)$/.test(value);
   }
 
-  async function lxfdRunUnifiedStoreAnswer() {
+  async function lxfdRunUnifiedStoreAnswer() {const __lxGenerationToken=window.__lxGeneration.capture();try{
     chatState.sending = true;
     const ai = document.createElement("div");
     ai.className = "lxfd-msg-ai";
@@ -1401,26 +1427,26 @@
     ai.innerHTML = '<div class="lxfd-ai-body"></div>';
     thread?.appendChild(ai);
     lxfdRenderTraceLive(ai);
-    await lxfdWait(420);
+    await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(420)));
     ai._traceLines.push("已判断：需要查询当前位置附近的联想授权门店");
     lxfdRenderTraceLive(ai);
-    await lxfdWait(520);
+    await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(520)));
     ai._traceSkills.add("Skill(附近门店查询)");
     ai._traceLines.push("联想乐享官方 SKILL：正在调用 Skill(附近门店查询)");
     lxfdRenderTraceLive(ai);
-    await lxfdWait(760);
+    await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(760)));
     ai._traceLines[ai._traceLines.length - 1] = "联想乐享官方 SKILL：Skill(附近门店查询) 已完成";
     lxfdRenderTraceLive(ai);
     const copy = "我已结合**当前位置**为你整理附近的**联想授权门店**，优先推荐距离较近、营业时间明确且支持产品体验、库存咨询和到店服务的门店。你可以先查看下方推荐，再到右侧比较**地址、营业状态与联系方式**，并按需发起**导航或预约**。";
-    await lxfdAnimateFinal(ai, copy);
+    await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, copy)));
     const body = ai.querySelector(".lxfd-ai-body");
     if (body) body.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "stores", title: "查看附近门店", desc: "已为你整理附近授权门店、距离与营业状态" }));
     lxfdPersistCurrent();
-    await lxfdWait(reduceMotion ? 0 : 680);
+    await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 680)));
     chatState.sending = false;
     lxfdExportToMain();
     exitFullscreenWithReveal(() => lxfdRevealFeature("stores"));
-  }
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
 
   function lxfdEducationAuthKind(text) {
     const value = String(text || "").trim();
@@ -1462,7 +1488,7 @@
     return `<button class="answer-cta lx-answer-page lx-auth-answer-card lx-enterprise-lead-reco" type="button" data-open-enterprise-lead data-lx-result-id="modal:enterprise-lead" aria-label="打开企业留资弹窗" aria-pressed="false"><span class="answer-cta-title">提交企业留资</span><span class="answer-cta-icon" aria-hidden="true">${window.__lxApprovedIcon("global-next")}</span></button>`;
   }
 
-  async function lxfdRunUnifiedEnterpriseLeadAnswer() {
+  async function lxfdRunUnifiedEnterpriseLeadAnswer() {const __lxGenerationToken=window.__lxGeneration.capture();try{
     chatState.sending = true;
     const ai = document.createElement("div");
     ai.className = "lxfd-msg-ai lx-chat-skin lx-auth-flow-answer";
@@ -1473,37 +1499,37 @@
     thread?.appendChild(ai);
     lxfdRenderTraceLive(ai);
     try {
-      await lxfdWait(reduceMotion ? 0 : 420);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 420)));
       ai._traceLines.push("已判断：需要进入企业采购需求留资流程");
       lxfdRenderTraceLive(ai);
-      await lxfdWait(reduceMotion ? 0 : 520);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 520)));
       const skillName = "Skill(企业采购需求留资)";
       ai._traceSkills.add(skillName);
       ai._traceLines.push(`联想乐享官方 SKILL：正在调用 ${skillName}`);
       lxfdRenderTraceLive(ai);
-      await lxfdWait(reduceMotion ? 0 : 760);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 760)));
       ai._traceLines[ai._traceLines.length - 1] = `联想乐享官方 SKILL：${skillName} 已完成`;
       ai._traceCollapsed = true;
       lxfdRenderTraceLive(ai);
       const copy = "提交**企业采购需求**后，联想企业顾问可结合采购规模、预算、应用场景与交付周期提供进一步支持。请准备**联系人、联系方式及需求说明**，提交前核对关键信息，后续沟通以企业顾问联系为准。";
-      await lxfdAnimateFinal(ai, copy);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, copy)));
       const body = ai.querySelector(".lxfd-ai-body");
       if (body) body.insertAdjacentHTML("beforeend", lxfdEnterpriseLeadCard());
       const card = body?.querySelector(".lx-enterprise-lead-reco");
       card?.classList.add("lx-document-card-enter");
       lxfdPersistCurrent();
-      await new Promise((resolve) => {
-        if (!card || reduceMotion) { requestAnimationFrame(() => requestAnimationFrame(resolve)); return; }
+      await window.__lxGeneration.wait(__lxGenerationToken,(new Promise((resolve) => {
+        if (!card || reduceMotion) { window.__lxGeneration.frame(__lxGenerationToken,() => window.__lxGeneration.frame(__lxGenerationToken,resolve)); return; }
         const done = () => resolve();
         card.addEventListener("animationend", done, { once: true });
-        window.setTimeout(done, 700);
-      });
+        window.__lxGeneration.timeout(__lxGenerationToken,done, 700);
+      })));
       window.openLeadPanel?.();
-    } finally {
+    } finally {if(window.__lxGeneration.current(__lxGenerationToken)){
       chatState.sending = false;
       lxfdPersistCurrent();
-    }
-  }
+    }}
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
 
   function lxfdAuthRecommendationCard(type, kind) {
     if (type === "enterprise" || type === "enterprise-diamond") {
@@ -1526,14 +1552,14 @@
     return `<button class="answer-cta lx-answer-page lx-auth-answer-card lx-edu-auth-reco lx-payment-confirm-reco" type="button" data-open-payment-confirm data-lx-result-id="modal:pending-payment" aria-label="打开待支付订单弹窗" aria-pressed="false"><span class="answer-cta-title">待支付订单</span><span class="answer-cta-icon" aria-hidden="true">${window.__lxApprovedIcon("global-next")}</span></button>`;
   }
 
-  async function lxfdRunUnifiedDiscountOrderAnswer() {
+  async function lxfdRunUnifiedDiscountOrderAnswer() {const __lxGenerationToken=window.__lxGeneration.capture();try{
     const product = window.__lxState?._pendingDiscountOrderProduct || window.__lxState?.currentProduct;
     if (!product || !window.__lxAgentAPI?.lxPreparePendingPayment) {
       const ai = document.createElement("div");
       ai.className = "lxfd-msg-ai lx-chat-skin";
       ai.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(ai);
-      await lxfdAnimateFinal(ai, "请先打开一款商品详情，我再为你领取全部可用优惠并生成待支付订单。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, "请先打开一款商品详情，我再为你领取全部可用优惠并生成待支付订单。")));
       return;
     }
     chatState.sending = true;
@@ -1550,40 +1576,40 @@
     thread?.appendChild(ai);
     lxfdRenderTraceLive(ai);
     try {
-      await lxfdWait(reduceMotion ? 0 : 420);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 420)));
       ai._traceLines.push(`已判断：需要核对${item.name || "当前商品"}与当前账户可用优惠`);
       lxfdRenderTraceLive(ai);
-      await lxfdWait(reduceMotion ? 0 : 520);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 520)));
       ai._traceSkills.add("Skill(优惠领取与订单生成)");
       ai._traceLines.push("联想乐享官方 SKILL：正在调用 Skill(优惠领取与订单生成)");
       lxfdRenderTraceLive(ai);
-      await lxfdWait(reduceMotion ? 0 : 760);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 760)));
       ai._traceLines[ai._traceLines.length - 1] = `联想乐享官方 SKILL：已自动领取全部 ${claimed.length} 项可用优惠`;
       ai._traceCollapsed = true;
       lxfdRenderTraceLive(ai);
       const copy = claimed.length
         ? `已为你自动领取**${claimed.length}项可用优惠**，共节省¥${saved}。商品、优惠与收货信息已核对，请在**待支付订单**中确认后继续。`
         : "当前商品暂无可叠加优惠，已按现价生成订单。商品与收货信息已核对，请在**待支付订单**中确认后继续。";
-      await lxfdAnimateFinal(ai, copy);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, copy)));
       const body = ai.querySelector(".lxfd-ai-body");
       if (body) body.insertAdjacentHTML("beforeend", lxfdPaymentRecommendationCard());
       const card = body?.querySelector(".lx-payment-confirm-reco");
       card?.classList.add("lx-document-card-enter");
       lxfdPersistCurrent();
-      await new Promise((resolve) => {
-        if (!card || reduceMotion) { requestAnimationFrame(() => requestAnimationFrame(resolve)); return; }
+      await window.__lxGeneration.wait(__lxGenerationToken,(new Promise((resolve) => {
+        if (!card || reduceMotion) { window.__lxGeneration.frame(__lxGenerationToken,() => window.__lxGeneration.frame(__lxGenerationToken,resolve)); return; }
         const done = () => resolve();
         card.addEventListener("animationend", done, { once: true });
-        window.setTimeout(done, 700);
-      });
+        window.__lxGeneration.timeout(__lxGenerationToken,done, 700);
+      })));
       window.__lxAgentAPI?.lxOpenPendingPaymentModal?.();
-    } finally {
+    } finally {if(window.__lxGeneration.current(__lxGenerationToken)){
       chatState.sending = false;
       lxfdPersistCurrent();
-    }
-  }
+    }}
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
 
-  async function lxfdRunUnifiedAuthAnswer(type, kind = "college") {
+  async function lxfdRunUnifiedAuthAnswer(type, kind = "college") {const __lxGenerationToken=window.__lxGeneration.capture();try{
     chatState.sending = true;
     const isWorkplace = type === "workplace";
     const isDiamond = type === "enterprise-diamond";
@@ -1597,15 +1623,15 @@
     thread?.appendChild(ai);
     lxfdRenderTraceLive(ai);
     try {
-      await lxfdWait(reduceMotion ? 0 : 420);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 420)));
       ai._traceLines.push(isDiamond ? "已判断：需要进入企业钻石会员升级认证流程" : (isEnterprise ? "已判断：需要进入企业采购负责人认证流程" : (isWorkplace ? "已判断：需要进入企业在职身份认证流程" : "已判断：需要进入教育身份认证流程")));
       lxfdRenderTraceLive(ai);
-      await lxfdWait(reduceMotion ? 0 : 520);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 520)));
       const skillName = isDiamond ? "Skill(企业钻石会员升级认证)" : (isEnterprise ? "Skill(企业会员身份认证)" : (isWorkplace ? "Skill(职场身份认证)" : "Skill(教育身份认证)"));
       ai._traceSkills.add(skillName);
       ai._traceLines.push(`联想乐享官方 SKILL：正在调用 ${skillName}`);
       lxfdRenderTraceLive(ai);
-      await lxfdWait(reduceMotion ? 0 : 760);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 760)));
       ai._traceLines[ai._traceLines.length - 1] = `联想乐享官方 SKILL：${skillName} 已完成`;
       ai._traceCollapsed = true;
       lxfdRenderTraceLive(ai);
@@ -1617,33 +1643,33 @@
         ? "**职场认证**可用于核验企业在职身份，并解锁员工购机优惠、会员权益及相关服务。请按真实情况填写个人与企业资料，提交前核对**企业信息与在职材料**，认证结果以正式身份核验信息为准。"
         : "**教育认证**可用于核验在校生、教师或高考生身份，并解锁教育专享价格与会员权益。请按真实身份选择认证方式并填写资料，提交前核对**适用范围、有效期和材料**，结果以正式核验信息为准。";
       ai.classList.add("lx-auth-flow-answer");
-      await lxfdAnimateFinal(ai, copy);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, copy)));
       const body = ai.querySelector(".lxfd-ai-body");
       if (body) body.insertAdjacentHTML("beforeend", lxfdAuthRecommendationCard(type, kind));
       const card = body?.querySelector(".lx-edu-auth-reco");
       card?.classList.add("lx-document-card-enter");
       lxfdPersistCurrent();
-      await new Promise((resolve) => {
-        if (!card || reduceMotion) { requestAnimationFrame(() => requestAnimationFrame(resolve)); return; }
+      await window.__lxGeneration.wait(__lxGenerationToken,(new Promise((resolve) => {
+        if (!card || reduceMotion) { window.__lxGeneration.frame(__lxGenerationToken,() => window.__lxGeneration.frame(__lxGenerationToken,resolve)); return; }
         const done = () => resolve();
         card.addEventListener("animationend", done, { once: true });
-        window.setTimeout(done, 700);
-      });
+        window.__lxGeneration.timeout(__lxGenerationToken,done, 700);
+      })));
       if (isEnterprise) window.__lxOpenEnterpriseAuthModal?.();
       else if (isWorkplace) window.openWorkplaceAuth?.();
       else window.__lxAgentAPI?.openStudentAuth?.(kind);
-    } finally {
+    } finally {if(window.__lxGeneration.current(__lxGenerationToken)){
       chatState.sending = false;
       lxfdPersistCurrent();
-    }
-  }
+    }}
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
 
-  async function submit(text) {
+  async function submit(text) {const __lxGenerationToken=window.__lxGeneration.capture();try{
     const value = String(text || "").trim();
     if (!value || chatState.sending) return;
     if (typeof window.__lxRequireQueryAccess === "function" && !window.__lxRequireQueryAccess()) return;
     // 用户真正发出下一条消息后，新会话成立，恢复正常持久化。
-    try { localStorage.removeItem("lexiang.newChatEmpty.v1"); } catch (_e) {}
+    try { localStorage.removeItem("lexiang.newChatEmpty.v1"); } catch (_e) {if(!window.__lxGeneration.current(__lxGenerationToken))throw new DOMException('已停止生成','AbortError');}
     // 发送问题时强制收起顶部灵动岛，保持与首页项目一致的紧凑标题态：
     // 「首页：当前问题 + 下拉箭头」。避免用户刚操作过导航时把整排频道带进对话态。
     setNav(false);
@@ -1658,7 +1684,7 @@
     let finalized = false;
     let finalizePromise = null;
     lxfdArchiveClaimProgressCards(thread);
-    try { window.__lxHideSuggest && window.__lxHideSuggest(); } catch (_e) {} // 发送即收起输入联想浮层（程序性清空不触发 input，不收会残留）
+    try { window.__lxHideSuggest && window.__lxHideSuggest(); } catch (_e) {if(!window.__lxGeneration.current(__lxGenerationToken))throw new DOMException('已停止生成','AbortError');} // 发送即收起输入联想浮层（程序性清空不触发 input，不收会残留）
     thread?.querySelectorAll(".lxfd-followups, .followups, .lx-p0-suggest[data-followups]").forEach((el) => el.remove());
     // 开始聊天后隐藏 actionbar（对齐官方；客服模式下 enterHuman 会恢复）
     if (!chatState.started && !chatState.human) {
@@ -1687,31 +1713,31 @@
     renderTurnIndex(turnId);
     if (ta) { ta.value = ""; fit(); syncSend(); }
     // 发出提问就先存一次（含 lxfd key + 同步子站 key），AI 答完再存完整——避免答得慢时切站啥都没存
-    try { lxfdPersistCurrent(); } catch (_e) {}
+    try { lxfdPersistCurrent(); } catch (_e) {if(!window.__lxGeneration.current(__lxGenerationToken))throw new DOMException('已停止生成','AbortError');}
 
     const educationAuthKind = lxfdEducationAuthKind(value);
     if (lxfdIsDiscountOrderQuery(value)) {
-      await lxfdRunUnifiedDiscountOrderAnswer();
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedDiscountOrderAnswer()));
       return;
     }
     if (educationAuthKind) {
-      await lxfdRunUnifiedAuthAnswer("education", educationAuthKind);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedAuthAnswer("education", educationAuthKind)));
       return;
     }
     if (lxfdIsEnterpriseLeadQuery(value)) {
-      await lxfdRunUnifiedEnterpriseLeadAnswer();
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedEnterpriseLeadAnswer()));
       return;
     }
     if (lxfdIsWorkplaceAuthQuery(value)) {
-      await lxfdRunUnifiedAuthAnswer("workplace");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedAuthAnswer("workplace")));
       return;
     }
     if (lxfdIsEnterpriseDiamondMemberAuthQuery(value)) {
-      await lxfdRunUnifiedAuthAnswer("enterprise-diamond");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedAuthAnswer("enterprise-diamond")));
       return;
     }
     if (lxfdIsEnterpriseMemberAuthQuery(value)) {
-      await lxfdRunUnifiedAuthAnswer("enterprise");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedAuthAnswer("enterprise")));
       return;
     }
 
@@ -1725,19 +1751,19 @@
       serviceAi.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(serviceAi);
       try {
-        await lxfdAnimateFinal(serviceAi, `已按“拯救者游戏本 + **${region}** + **深度清灰/换硅脂**”匹配服务商品。你可以比较服务内容、适用性与预约方式。`);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(serviceAi, `已按“拯救者游戏本 + **${region}** + **深度清灰/换硅脂**”匹配服务商品。你可以比较服务内容、适用性与预约方式。`)));
         const body = serviceAi.querySelector(".lxfd-ai-body");
         if (body) body.insertAdjacentHTML("beforeend", renderLxfdProducts(products, { serviceProduct: true }));
         const card = body?.querySelector("[data-lxfd-reco-id]");
         const recoId = card?.getAttribute("data-lxfd-reco-id") || "";
-        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await window.__lxGeneration.wait(__lxGenerationToken,(new Promise((resolve) => window.__lxGeneration.frame(__lxGenerationToken,() => window.__lxGeneration.frame(__lxGenerationToken,resolve)))));
         lxfdPersistCurrent();
         lxfdExportToMain();
-        await lxfdWait(reduceMotion ? 0 : 560);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 560)));
         exitFullscreenWithReveal(() => window.__lxBridge?.revealProducts?.(products, { title: "推荐服务产品", recoId }));
-      } finally {
+      } finally {if(window.__lxGeneration.current(__lxGenerationToken)){
         chatState.sending = false;
-      }
+      }}
       return;
     }
 
@@ -1752,22 +1778,22 @@
       thread?.appendChild(deviceAi);
       lxfdRenderTraceLive(deviceAi);
       deviceAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdWait(reduceMotion ? 0 : 420);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 420)));
       deviceAi._traceLines.push("已判断：需要查询当前 Lenovo ID 下的设备资产");
       lxfdRenderTraceLive(deviceAi);
-      await lxfdWait(reduceMotion ? 0 : 520);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 520)));
       deviceAi._traceSkills.add("Skill(设备资产查询)");
       deviceAi._traceLines.push("联想乐享官方 SKILL：正在调用 Skill(设备资产查询)");
       lxfdRenderTraceLive(deviceAi);
-      await lxfdWait(reduceMotion ? 0 : 760);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 760)));
       deviceAi._traceLines[deviceAi._traceLines.length - 1] = "联想乐享官方 SKILL：Skill(设备资产查询) 已完成";
       deviceAi._traceCollapsed = true;
       lxfdRenderTraceLive(deviceAi);
-      await lxfdAnimateFinal(deviceAi, "当前账号共有**8 台已绑定设备**，另有**1 台待绑定**。最近使用的是 ThinkBook 16p、拯救者 Y7000P、YOGA Air 14s；右侧已打开设备列表。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(deviceAi, "当前账号共有**8 台已绑定设备**，另有**1 台待绑定**。最近使用的是 ThinkBook 16p、拯救者 Y7000P、YOGA Air 14s；右侧已打开设备列表。")));
       const deviceBody = deviceAi.querySelector(".lxfd-ai-body");
       if (deviceBody) deviceBody.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "devices", title: "查看我的设备", desc: "8 台已绑定 · 1 台待绑定" }));
       lxfdPersistCurrent();
-      await lxfdWait(reduceMotion ? 0 : 720);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
       chatState.sending = false;
       lxfdExportToMain();
       lxfdExitToResultAtomically(() => {
@@ -1779,7 +1805,7 @@
     }
 
     if (lxfdIsNearbyStoreQuery(value)) {
-      await lxfdRunUnifiedStoreAnswer();
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunUnifiedStoreAnswer()));
       return;
     }
 
@@ -1795,18 +1821,18 @@
       thread?.appendChild(serviceAi);
       lxfdRenderTraceLive(serviceAi);
       serviceAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdWait(reduceMotion ? 0 : 420);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 420)));
       serviceAi._traceLines.push("已判断：清灰/换硅脂服务商品匹配");
       lxfdRenderTraceLive(serviceAi);
-      await lxfdWait(reduceMotion ? 0 : 520);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 520)));
       serviceAi._traceSkills.add("Skill(服务产品推荐)");
       serviceAi._traceLines.push("联想乐享官方 SKILL：正在调用 Skill(服务产品推荐)");
       lxfdRenderTraceLive(serviceAi);
-      await lxfdWait(reduceMotion ? 0 : 760);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 760)));
       serviceAi._traceLines[serviceAi._traceLines.length - 1] = "联想乐享官方 SKILL：Skill(服务产品推荐) 已完成";
       serviceAi._traceCollapsed = true;
       lxfdRenderTraceLive(serviceAi);
-      await lxfdAnimateFinal(serviceAi, "已经明确是**清灰/换硅脂服务**。还需要确认**目标设备和所在地区**，才能匹配可购买、可预约的服务商品。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(serviceAi, "已经明确是**清灰/换硅脂服务**。还需要确认**目标设备和所在地区**，才能匹配可购买、可预约的服务商品。")));
       const serviceBody = serviceAi.querySelector(".lxfd-ai-body");
       const choices = window.__lxServiceIntake && window.__lxServiceIntake.renderChoices ? window.__lxServiceIntake.renderChoices() : "";
       if (serviceBody && choices) serviceBody.insertAdjacentHTML("beforeend", choices);
@@ -1825,14 +1851,14 @@
       voucherAi.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(voucherAi);
       voucherAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdAnimateFinal(voucherAi, "已为你查询当前账户的**代金券资产**：共有 2 张可用券，分别适用于教育认证与以旧换新场景。你可以继续查看券面金额、适用范围和使用条件。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(voucherAi, "已为你查询当前账户的**代金券资产**：共有 2 张可用券，分别适用于教育认证与以旧换新场景。你可以继续查看券面金额、适用范围和使用条件。")));
       const voucherBody = voucherAi.querySelector(".lxfd-ai-body");
       if (voucherBody) {
         voucherBody.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "vouchers", title: "查看代金券详情", desc: "2 张可用 · 教育认证 / 以旧换新" }));
         voucherBody.querySelector('[data-lx-result-id="info:vouchers"]')?.classList.add("lx-document-card-enter");
       }
       lxfdPersistCurrent();
-      await lxfdWait(reduceMotion ? 0 : 720);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
       chatState.sending = false;
       lxfdExportToMain();
       exitFullscreenWithReveal(() => lxfdRevealFeature("vouchers"));
@@ -1847,14 +1873,14 @@
       redPacketAi.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(redPacketAi);
       redPacketAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdAnimateFinal(redPacketAi, "已为你查询当前账户的**限时红包资产**：现有 2 个红包，合计 ¥84，其中 1 个将在明日到期。你可以继续查看适用活动、有效期与使用范围。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(redPacketAi, "已为你查询当前账户的**限时红包资产**：现有 2 个红包，合计 ¥84，其中 1 个将在明日到期。你可以继续查看适用活动、有效期与使用范围。")));
       const redPacketBody = redPacketAi.querySelector(".lxfd-ai-body");
       if (redPacketBody) {
         redPacketBody.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "redpacket", title: "查看限时红包详情", desc: "2 个可用 · 合计 ¥84 · 1 个明日到期" }));
         redPacketBody.querySelector('[data-lx-result-id="info:redpacket"]')?.classList.add("lx-document-card-enter");
       }
       lxfdPersistCurrent();
-      await lxfdWait(reduceMotion ? 0 : 720);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
       chatState.sending = false;
       lxfdExportToMain();
       exitFullscreenWithReveal(() => lxfdRevealFeature("redpacket"));
@@ -1869,14 +1895,14 @@
       couponAi.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(couponAi);
       couponAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdAnimateFinal(couponAi, "已为你查询当前账户的**优惠券资产**：共有 3 张可用券，其中 1 张将在 7 天后到期。你可以查看每张券的使用门槛、适用范围和有效期。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(couponAi, "已为你查询当前账户的**优惠券资产**：共有 3 张可用券，其中 1 张将在 7 天后到期。你可以查看每张券的使用门槛、适用范围和有效期。")));
       const couponBody = couponAi.querySelector(".lxfd-ai-body");
       if (couponBody) {
         couponBody.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "coupon", title: "查看优惠券详情", desc: "3 张可用 · 1 张即将到期" }));
         couponBody.querySelector('[data-lx-result-id="info:coupon"]')?.classList.add("lx-document-card-enter");
       }
       lxfdPersistCurrent();
-      await lxfdWait(reduceMotion ? 0 : 720);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
       chatState.sending = false;
       lxfdExportToMain();
       exitFullscreenWithReveal(() => lxfdRevealFeature("coupon"));
@@ -1891,14 +1917,14 @@
       pointsAi.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(pointsAi);
       pointsAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdAnimateFinal(pointsAi, "已为你查询当前账户的**乐豆资产**：现有 2,580 乐豆，近 30 天获得 860、使用 300。你可以继续查看获取与使用记录，以及当前适用规则。");
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(pointsAi, "已为你查询当前账户的**乐豆资产**：现有 2,580 乐豆，近 30 天获得 860、使用 300。你可以继续查看获取与使用记录，以及当前适用规则。")));
       const pointsBody = pointsAi.querySelector(".lxfd-ai-body");
       if (pointsBody) {
         pointsBody.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "points", title: "查看乐豆详情", desc: "可用 2,580 · 近 30 天 +860 / -300" }));
         pointsBody.querySelector('[data-lx-result-id="info:points"]')?.classList.add("lx-document-card-enter");
       }
       lxfdPersistCurrent();
-      await lxfdWait(reduceMotion ? 0 : 720);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
       chatState.sending = false;
       lxfdExportToMain();
       exitFullscreenWithReveal(() => lxfdRevealFeature("points"));
@@ -1916,14 +1942,14 @@
       memberAi.innerHTML = '<div class="lxfd-ai-body"></div>';
       thread?.appendChild(memberAi);
       memberAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-      await lxfdAnimateFinal(memberAi, profile.copy);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(memberAi, profile.copy)));
       const memberBody = memberAi.querySelector(".lxfd-ai-body");
       if (memberBody) {
         memberBody.insertAdjacentHTML("beforeend", renderLxfdPageCta({ feature: "member", title: "查看会员中心", desc: profile.cardDesc }));
         memberBody.querySelector('[data-lx-result-id="info:member"]')?.classList.add("lx-document-card-enter");
       }
       lxfdPersistCurrent();
-      await lxfdWait(reduceMotion ? 0 : 720);
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
       chatState.sending = false;
       lxfdExportToMain();
       exitFullscreenWithReveal(() => lxfdRevealFeature("member"));
@@ -1932,7 +1958,7 @@
 
     // 文档解读是全屏对话内的生成任务，不走 open_documents 页面跳转快路径。
     if (lxfdIsDocumentInsight(value)) {
-      await lxfdRunDocumentInsight();
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdRunDocumentInsight()));
       return;
     }
 
@@ -1965,15 +1991,15 @@
         lxfdRenderTraceLive(solutionAi);
         solutionAi.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
 
-        await lxfdWait(reduceMotion ? 0 : 520);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 520)));
         solutionAi._traceLines.push("已判断："+(scoped?scoped.title:"全集解决方案")+"检索任务");
         lxfdRenderTraceLive(solutionAi);
-        await lxfdWait(reduceMotion ? 0 : 680);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 680)));
         solutionAi._traceSkills.add("Skill(解决方案推荐)");
         solutionAi._traceLines.push(scoped?"正在调用 Skill(解决方案推荐)":"联想乐享官方 SKILL：正在调用 Skill(解决方案推荐)");
         lxfdRenderTraceLive(solutionAi);
-        if (scoped) scoped = await window.__lxIndustrySolutions.run(industry);
-        await lxfdWait(reduceMotion ? 0 : 760);
+        if (scoped) scoped = await window.__lxGeneration.wait(__lxGenerationToken,(window.__lxIndustrySolutions.run(industry)));
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 760)));
         if (solutionNonce !== chatState.conversationNonce) { solutionAi.remove(); return; }
         solutionAi._traceLines.push("已完成：行业方案全集与分类楼层已生成");
         solutionAi._traceCollapsed = true;
@@ -1984,7 +2010,7 @@
           "每个行业都按照**独立楼层**组织，并结合核心业务场景、终端部署、基础设施与持续服务，方便你快速浏览和比较。",
           "你可以进入全集后**按行业标签定位**；当前视口会在每个楼层单排自适应展示 4–6 个方案。"
         ].join("\n\n");
-        await lxfdAnimateFinal(solutionAi, solutionCopy);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(solutionAi, solutionCopy)));
         if (solutionNonce !== chatState.conversationNonce) return;
         const solutionMeta = scoped ? {feature:scoped.feature,resultId:scoped.tabId,title:scoped.cardTitle,desc:scoped.desc} : lxfdPageCtaMeta("open_solution");
         const solutionBody = solutionAi.querySelector(".lxfd-ai-body");
@@ -1997,11 +2023,11 @@
           }
         }
         lxfdPersistCurrent();
-        await lxfdWait(reduceMotion ? 0 : 720);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdWait(reduceMotion ? 0 : 720)));
         lxfdExportToMain();
         if (solutionNonce !== chatState.conversationNonce) return;
         exitFullscreenWithReveal(() => { if (solutionNonce === chatState.conversationNonce) lxfdRevealFeature(scoped ? scoped.feature : "solution"); });
-        } finally { if (solutionNonce === chatState.conversationNonce) chatState.sending = false; }
+        } finally {if(window.__lxGeneration.current(__lxGenerationToken)){ if (solutionNonce === chatState.conversationNonce) chatState.sending = false; }}
         return;
       }
       const _lxfdCtrlAi = document.createElement("div");
@@ -2063,16 +2089,16 @@
     let _lxfdIntentResult = null;
     if (!_lxfdAutoBuy) try {
       const _lxfdIntentAbort = new AbortController();
-      const _lxfdIntentTimer = setTimeout(() => _lxfdIntentAbort.abort(), 4500);
-      const _lxfdIntentRes = await fetch("/api/leai/intent", {
+      const _lxfdIntentTimer = window.__lxGeneration.timeout(__lxGenerationToken,() => _lxfdIntentAbort.abort(), 4500);
+      const _lxfdIntentRes = await window.__lxGeneration.wait(__lxGenerationToken,(window.__lxGeneration.fetch(__lxGenerationToken,"/api/leai/intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: value }),
         signal: _lxfdIntentAbort.signal
-      });
+      })));
       clearTimeout(_lxfdIntentTimer);
-      if (_lxfdIntentRes.ok) _lxfdIntentResult = await _lxfdIntentRes.json();
-    } catch (_lxfdIntentErr) { /* 超时/失败 → 降级 chat */ }
+      if (_lxfdIntentRes.ok) _lxfdIntentResult = await window.__lxGeneration.wait(__lxGenerationToken,(_lxfdIntentRes.json()));
+    } catch (_lxfdIntentErr) {if(!window.__lxGeneration.current(__lxGenerationToken))throw new DOMException('已停止生成','AbortError'); /* 超时/失败 → 降级 chat */ }
     if (_lxfdIntentResult && _lxfdIntentResult.type === "control" && _lxfdIntentResult.op) {
       ai.remove(); // 操作指令：撤掉"正在判断"时间线气泡，走操作确认消息（同主面板做法）
       const _lxfdCtrlAi = document.createElement("div");
@@ -2110,7 +2136,7 @@
 
     // 走到这里说明不是操作指令：补"已判断"行——意图路由刚落定，天然有 0.5~4.5s 节奏，
     // 不和首行同帧蹦出；代买跳过了意图路由没有天然节奏，给 500ms 微延迟（同主面板做法）。
-    if (_lxfdAutoBuy) setTimeout(_lxfdPushJudged, 500); else _lxfdPushJudged();
+    if (_lxfdAutoBuy) window.__lxGeneration.timeout(__lxGenerationToken,_lxfdPushJudged, 500); else _lxfdPushJudged();
     const body = ai.querySelector(".lxfd-ai-body");
     const nonce = chatState.conversationNonce;
     chatState.sending = true;
@@ -2132,7 +2158,7 @@
       });
     };
     // lxfd 前端兜底超时：50秒后强制解锁
-    const _lxfdSendTimeout = setTimeout(() => {
+    const _lxfdSendTimeout = window.__lxGeneration.timeout(__lxGenerationToken,() => {
       if (chatState.sending && chatState.conversationNonce === nonce) {
         chatState.sending = false;
         ai._raw = "响应超时，请重试。";
@@ -2154,7 +2180,7 @@
       if (imgTipEl) imgTipEl.remove();
       const lxfdUseHuoshan = !!lxfdImgUrl || !!window.__lxWebSearch;
       const response = lxfdUseHuoshan
-        ? await fetch("/api/chat/stream", {
+        ? await window.__lxGeneration.wait(__lxGenerationToken,(window.__lxGeneration.fetch(__lxGenerationToken,"/api/chat/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2164,8 +2190,8 @@
               thinking_mode: !!window.__lxThinking,
               conv_id: chatState.convId || undefined
             })
-          })
-        : await fetch("/api/leai/stream", {
+          })))
+        : await window.__lxGeneration.wait(__lxGenerationToken,(window.__lxGeneration.fetch(__lxGenerationToken,"/api/leai/stream", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -2175,7 +2201,7 @@
               enableThinking: !!window.__lxThinking,
               ...(window.__lxGeo || {})
             })
-          });
+          })));
       if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
       const lxfdHandlers = {
         chunk: (data) => {
@@ -2293,10 +2319,10 @@
             window.clearTimeout(_lxfdSendTimeout);
             const payload = parseJson(data);
             if (payload.conv_id || payload.convId) chatState.convId = payload.conv_id || payload.convId;
-            await lxfdAnimateFinal(ai, ai._raw);
+            await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, ai._raw)));
             const finalBody = ai.querySelector(".lxfd-ai-body");
             if (pendingExtras && finalBody) { finalBody.insertAdjacentHTML("beforeend", pendingExtras); if (thread) thread.scrollTop = thread.scrollHeight; }
-            if (!pendingFollowups.length) pendingFollowups = await lxfdFetchFollowups(value, ai._raw);
+            if (!pendingFollowups.length) pendingFollowups = await window.__lxGeneration.wait(__lxGenerationToken,(lxfdFetchFollowups(value, ai._raw)));
             pendingFollowups = lxfdFill3(lxfdActionChips(turnProducts).concat(pendingFollowups));
             if (pendingFollowups.length) appendLxfdSuggestions(ai, pendingFollowups);
             lxfdPersistCurrent();
@@ -2342,14 +2368,14 @@
           if (chatState._fallbackFired) return;
           chatState._fallbackFired = true;
           try {
-            const huoRes = await fetch('/api/chat/stream', {
+            const huoRes = await window.__lxGeneration.wait(__lxGenerationToken,(window.__lxGeneration.fetch(__lxGenerationToken,'/api/chat/stream', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ message: sendMsg, conv_id: chatState.convId || undefined })
-            });
+            })));
             if (!huoRes.ok || !huoRes.body) throw new Error('fallback upstream ' + huoRes.status);
-            await readSse(huoRes, lxfdHandlers);
-          } catch (_e) {
+            await window.__lxGeneration.wait(__lxGenerationToken,(readSse(huoRes, lxfdHandlers)));
+          } catch (_e) {if(!window.__lxGeneration.current(__lxGenerationToken))throw new DOMException('已停止生成','AbortError');
             ai._raw = '当前服务暂时不可用，请稍后再试。';
             if (!finalized) {
               finalized = true;
@@ -2358,19 +2384,19 @@
           }
         }
       };
-      await readSse(response, lxfdHandlers);
+      await window.__lxGeneration.wait(__lxGenerationToken,(readSse(response, lxfdHandlers)));
       if (nonce !== chatState.conversationNonce) return;
       if (finalizePromise) {
-        await finalizePromise;
+        await window.__lxGeneration.wait(__lxGenerationToken,(finalizePromise));
       } else if (!finalized) {
         finalized = true;
         if (!hasContent && !ai._raw && !pendingExtras) {
           ai._raw = "我已经收到请求，可以继续补充预算、用途或偏好的机型。";
         }
-        await lxfdAnimateFinal(ai, ai._raw);
+        await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, ai._raw)));
         const finalBody = ai.querySelector(".lxfd-ai-body");
         if (pendingExtras && finalBody) finalBody.insertAdjacentHTML("beforeend", pendingExtras);
-        if (!pendingFollowups.length) pendingFollowups = await lxfdFetchFollowups(value, ai._raw);
+        if (!pendingFollowups.length) pendingFollowups = await window.__lxGeneration.wait(__lxGenerationToken,(lxfdFetchFollowups(value, ai._raw)));
         pendingFollowups = lxfdFill3(lxfdActionChips(turnProducts).concat(pendingFollowups));
         if (pendingFollowups.length) appendLxfdSuggestions(ai, pendingFollowups);
         lxfdPersistCurrent();
@@ -2404,17 +2430,17 @@
           });
         }
       }
-    } catch (error) {
+    } catch (error) {if(!window.__lxGeneration.current(__lxGenerationToken))throw new DOMException('已停止生成','AbortError');
       console.error("[lxfd] submit 流程异常（此前静默吞掉，排障困难）:", error);
       if (nonce !== chatState.conversationNonce) return;
       ai._raw = "当前 AI 服务暂时不可用，请稍后重试。";
-      await lxfdAnimateFinal(ai, ai._raw);
-    } finally {
+      await window.__lxGeneration.wait(__lxGenerationToken,(lxfdAnimateFinal(ai, ai._raw)));
+    } finally {if(window.__lxGeneration.current(__lxGenerationToken)){
       clearTimeout(_lxfdSendTimeout);
       if (nonce === chatState.conversationNonce) chatState.sending = false;
       ai.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "end" });
-    }
-  }
+    }}
+  }catch(__lxStopError){if(!window.__lxGeneration.current(__lxGenerationToken))return;throw __lxStopError;}}
 
   window.lxfdSubmit = submit;
   window.lxfdReset = resetConversation;

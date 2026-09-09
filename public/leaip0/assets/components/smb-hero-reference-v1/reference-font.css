@@ -1,0 +1,5 @@
+/* Preserve the reference hero font without changing the production shell. */
+body[data-page="business"] .content > .device-scene-hall,
+body[data-page="business"] .content > .device-scene-hall * {
+  font-family: "Source Han Sans CN", "PingFang SC", "Microsoft YaHei", Arial, sans-serif !important;
+}

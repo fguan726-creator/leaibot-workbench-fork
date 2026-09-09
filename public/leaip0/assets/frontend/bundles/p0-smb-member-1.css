@@ -1,0 +1,17 @@
+
+/* public/leaip0/assets/frontend/css/components/member-insights-v134.css */
+/* Final member insight strip tuning: stronger tint and 4px tighter overall height. */
+body .leai-member-page .leai-member-overview > .leai-member-insights {
+  min-height: 78px !important;
+  padding-bottom: 3px !important;
+}
+
+body .leai-member-page .leai-member-overview > .leai-member-insights .leai-member-insights-head {
+  background-color: transparent !important;
+  background-image: linear-gradient(96deg,
+    #f9eaf5 0%,
+    #f4edf9 42%,
+    rgba(224, 229, 248, .48) 70%,
+    rgba(232, 236, 251, .20) 86%,
+    rgba(227, 234, 253, 0) 100%) !important;
+}

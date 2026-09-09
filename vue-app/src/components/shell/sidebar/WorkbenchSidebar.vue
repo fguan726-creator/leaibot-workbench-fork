@@ -146,6 +146,15 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-09-03 12:52',
+    releaseKey: 'pageless-skill-context-20260903',
+    title: 'Skill 创建支持无页面接口能力',
+    changePoint: 'Skill 创建可选择“私人订制”，并匹配接口能力“私定 TOP 榜单”；不新增左侧菜单、页面或路由。',
+    detail: '为只有接口、没有二级或三级页面支撑的场景补充能力上下文目录。用户在 Skill 创建中选择“私人订制”后，可主动勾选“私定 TOP 榜单”，上下文描述为“用户针对私定官方喷绘中TOP 甄选榜进行图片或顺序调整”；推荐项不会自动选中，现有页面能力、跨业务域选择、保存提审和右侧 Agent 行为保持不变。',
+    deployTargets: ['new', 'formal'],
+    status: '已合并正式'
+  },
+  {
     time: '2026-09-02 17:57',
     releaseKey: 'lead-dashboard-agreement-order-20260902',
     title: '线索看板与协议采购订单更新',

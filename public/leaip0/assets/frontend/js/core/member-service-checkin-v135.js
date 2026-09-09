@@ -2639,7 +2639,7 @@
     var pageHeading = isQueryEmbed ? '' : '<h1 class="leai-page-title" id="leaiDevicesTitle">我的设备</h1>';
     var pageLabel = isQueryEmbed ? ' aria-label="我的设备列表"' : ' aria-labelledby="leaiDevicesTitle"';
     return '<section class="leai-page" data-member-device-page' + pageLabel + '><header class="leai-page-header"><div>' + pageHeading + '<p class="leai-page-desc">查看 Lenovo ID 下的绑定设备、保修信息和可用服务。</p></div><span class="leai-status-pill"><img src="' + icons.check + '" alt="">' + keys.length + ' 台已绑定 · ' + pendingCount + ' 台待绑定</span></header>' +
-      '<section class="leai-panel leai-device-center"><div class="leai-panel-head"><div><h2 class="leai-panel-title">设备列表</h2><p>按节点筛选设备，查看完整详情或维保方案。</p></div><button class="leai-secondary" type="button" data-device-add>绑定新设备</button></div>' +
+      '<section class="leai-panel leai-device-center"><div class="leai-panel-head"><div><h2 class="leai-panel-title">设备列表</h2><p>按节点筛选设备，查看保障状态与可用维保方案。</p></div><button class="leai-secondary" type="button" data-device-add>绑定新设备</button></div>' +
       '<div class="leai-device-filters" role="group" aria-label="设备筛选">' + Object.keys(filterLabels).map(function (key) { return deviceFilterButton(key, filterLabels[key][0], filterLabels[key][1], filter); }).join("") + '</div>' +
       '<div class="leai-device-list" data-device-unified-list aria-live="polite">' + list + '</div>' +
       (list ? "" : '<div class="leai-device-empty"><strong>当前筛选下暂无设备</strong><span>可切换到“全部”查看设备。</span></div>') +
@@ -2767,7 +2767,7 @@
 
   function servicePage() {
     if (state.serviceMode === "warranty") return warrantyServicePage();
-    return '<section class="leai-page" aria-labelledby="leaiServiceTitle">' + recommendationBrief("拯救者游戏本") +
+    return '<section class="leai-page" data-member-service-page aria-labelledby="leaiServiceTitle">' + recommendationBrief("拯救者游戏本") +
       '<div class="leai-service-list" aria-label="推荐服务商品列表">' +
       serviceCard(serviceCatalog.clean, false, 1) + serviceCard(serviceCatalog.thermal, false, 2) + serviceCard(serviceCatalog.care, false, 3) +
       '</div><p class="leai-member-disclaimer">推荐由联想乐享基于当前 Mock 设备与地区条件生成；价格、适用性、库存与履约范围以服务商品详情页和结算页为准。</p>' +
@@ -2777,7 +2777,7 @@
   function warrantyServicePage() {
     var device = deviceCatalog[state.serviceDeviceId] || deviceCatalog.legiony7000p;
     var services = Object.keys(warrantyCatalog).map(function (key, index) { return serviceCard(warrantyCatalog[key], true, index + 1); }).join("");
-    return '<section class="leai-page leai-warranty-page" aria-labelledby="leaiServiceTitle">' + warrantyRecommendationBrief(device) +
+    return '<section class="leai-page leai-warranty-page" data-member-service-page data-warranty-service-page aria-labelledby="leaiServiceTitle">' + warrantyRecommendationBrief(device) +
       '<div class="leai-service-list" aria-label="推荐延保服务商品列表">' + services + '</div><p class="leai-member-disclaimer">具体可购买性、价格与服务范围以服务商品系统实时校验结果为准。</p>' + compareBar() + '</section>';
   }
 
@@ -2803,7 +2803,7 @@
   function serviceCard(service, isWarranty, index) {
     var selected = state.serviceCompare.indexOf(service.id) >= 0;
     var recommended = state.serviceRecommended === service.id;
-    return '<article class="reco-row' + (recommended ? " is-recommended" : "") + '" data-service-id="' + service.id + '"' + (isWarranty ? ' data-warranty-service' : '') + '><span class="leai-service-rank" aria-hidden="true">' + index + '</span><img src="' + service.image + '" alt=""><div class="reco-row-main"><div class="leai-service-labels"><button class="leai-service-tag leai-tooltip-trigger" type="button" data-tooltip-trigger><span>' + service.tag + '</span><span class="leai-tooltip" role="tooltip">' + service.scope + '</span></button>' + (recommended ? '<span class="leai-recommended-badge">乐享推荐</span>' : "") + '</div><h2>' + service.name + '</h2><p class="reco-row-desc">' + service.description + '</p><button class="leai-service-compare-link" type="button" data-service-compare="' + service.id + '" aria-pressed="' + selected + '">' + (selected ? "已加入比较" : "加入比较") + '</button></div><div class="reco-row-side"><strong class="reco-row-price">' + service.price + '</strong><div class="reco-row-actions"><button class="lx-p0-btn" type="button" data-service-detail="' + service.id + '">查看详情</button><button class="lx-p0-btn primary" type="button" data-service-buy="' + service.id + '">立即购买</button></div></div></article>';
+    return '<article class="reco-row' + (recommended ? " is-recommended" : "") + '" data-service-id="' + service.id + '"' + (isWarranty ? ' data-warranty-service' : '') + '><img src="' + service.image + '" alt=""><div class="reco-row-main"><div class="leai-service-labels"><button class="leai-service-tag leai-tooltip-trigger" type="button" data-tooltip-trigger><span>' + service.tag + '</span><span class="leai-tooltip" role="tooltip">' + service.scope + '</span></button>' + (recommended ? '<span class="leai-recommended-badge">乐享推荐</span>' : "") + '</div><h2>' + service.name + '</h2><p class="reco-row-desc">' + service.description + '</p><button class="leai-service-compare-link" type="button" data-service-compare="' + service.id + '" aria-pressed="' + selected + '">' + (selected ? "已加入比较" : "加入比较") + '</button></div><div class="reco-row-side"><div class="reco-row-actions"><strong class="reco-row-price">' + service.price + '</strong><button class="lx-p0-btn primary" type="button" data-service-buy="' + service.id + '">立即购买</button></div></div></article>';
   }
 
   function serviceOrdersPage() {

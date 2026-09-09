@@ -1,0 +1,159 @@
+.product-detail .lx-review-tab-pane {
+  padding-top: 0;
+  min-height: 560px;
+  background: var(--lx-surface, #FFFFFF);
+}
+
+.product-detail .lx-market-reviews {
+  width: 100%;
+  padding: 30px 34px 10px;
+  color: var(--lx-text-primary, #252525);
+  background: var(--lx-surface, #FFFFFF);
+}
+
+.product-detail .lx-market-review-summary {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
+  padding: 0 0 28px;
+  border-bottom: 1px solid var(--lx-border, #e2ddeb);
+}
+
+.product-detail .lx-market-satisfaction {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  font-size: 22px;
+  line-height: 32px;
+  font-weight: 500;
+}
+
+.product-detail .lx-market-satisfaction strong {
+  color: var(--lx-brand-red, #B8252E);
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 500;
+}
+
+.product-detail .lx-market-review-tools,
+.product-detail .lx-market-impressions,
+.product-detail .lx-market-filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.product-detail .lx-market-review-tools { gap: 18px; }
+.product-detail .lx-market-filter-row { width: 100%; gap: 18px; }
+
+.product-detail .lx-market-filter-row > button {
+  position: relative;
+  padding: 0 0 0 20px;
+  border: 0;
+  color: var(--lx-text-primary, #252525);
+  background: transparent;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.product-detail .lx-market-filter-row > button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--lx-border-strong, #bcb4c1);
+  border-radius: 50%;
+  background: var(--lx-surface, #FFFFFF);
+}
+
+.product-detail .lx-market-filter-row > button.is-active::before {
+  border-color: var(--lx-brand-red, #B8252E);
+  box-shadow: inset 0 0 0 3px var(--lx-surface, #FFFFFF);
+  background: var(--lx-brand-red, #B8252E);
+}
+
+.product-detail .lx-market-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--lx-text-secondary, #625b68);
+}
+
+.product-detail .lx-market-impressions { gap: 10px; }
+.product-detail .lx-market-impressions > span { margin-right: 2px; font-size: 13px; color: var(--lx-text-secondary, #625b68); }
+.product-detail .lx-market-impressions button {
+  min-width: 118px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--lx-border, #e2ddeb);
+  border-radius: 6px;
+  color: var(--lx-text-secondary, #625b68);
+  background: var(--lx-surface, #FFFFFF);
+  font-size: 13px;
+}
+.product-detail .lx-market-impressions button:hover { border-color: var(--lx-aubergine-2, #5b1452); color: var(--lx-aubergine-2, #5b1452); }
+
+.product-detail .lx-market-review-item {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 28px;
+  min-height: 210px;
+  padding: 30px 0;
+  border-bottom: 1px solid var(--lx-border, #e2ddeb);
+}
+
+.product-detail .lx-market-review-user,
+.product-detail .lx-market-review-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-detail .lx-market-review-user { gap: 10px; }
+.product-detail .lx-market-review-user strong { font-size: 14px; line-height: 22px; font-weight: 500; }
+.product-detail .lx-market-review-user time { color: var(--lx-text-secondary, #625b68); font-size: 13px; line-height: 22px; }
+.product-detail .lx-market-stars { color: var(--lx-brand-red, #B8252E); font-size: 18px; line-height: 22px; letter-spacing: 2px; }
+.product-detail .lx-market-review-body { gap: 18px; }
+.product-detail .lx-market-review-body p { margin: 0; font-size: 14px; line-height: 24px; color: var(--lx-text-primary, #252525); }
+.product-detail .lx-market-review-media { display: flex; flex-wrap: wrap; gap: 8px; }
+.product-detail .lx-market-review-media button {
+  width: 72px;
+  height: 72px;
+  padding: 3px;
+  border: 1px solid var(--lx-border-strong, #bcb4c1);
+  border-radius: 4px;
+  background: var(--lx-surface, #FFFFFF);
+  overflow: hidden;
+}
+.product-detail .lx-market-review-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+@media (max-width: 1280px) {
+  .product-detail .lx-market-reviews { padding: 24px 26px 8px; }
+  .product-detail .lx-market-review-summary,
+  .product-detail .lx-market-review-item { grid-template-columns: 200px minmax(0, 1fr); gap: 22px; }
+  .product-detail .lx-market-only { margin-left: 0; }
+}
+
+.product-detail .lx-review-tab-pane:not(.is-active) {
+  display: none;
+}
+
+.product-detail .lx-review-tab-content {
+  margin: 0;
+}
+
+.product-detail .lx-review-tab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  overflow: visible;
+}
+
+@media (max-width: 1280px) {
+  .product-detail .lx-review-tab-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

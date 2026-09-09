@@ -261,7 +261,7 @@
         price: "30,299",
         product: "联想智慧教育解决方案",
         specs: "智慧教学 · 科研计算 · 校园管理",
-        image: "/assets/img/solution/智慧教室解决方案-hero.webp",
+        image: "/assets/img/enterprise-banner-2.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.58) 48%,transparent 80%)",
         hotspotLeft: "75%",
         hotspotTop: "40%"
@@ -273,7 +273,7 @@
         price: "34,799",
         product: "联想数字政府解决方案",
         specs: "政务云 · 数据治理 · 统一运维",
-        image: "/assets/img/solution/数字政府统一运维方案-hero.webp",
+        image: "/assets/img/anli3.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.62) 48%,transparent 82%)",
         hotspotLeft: "74%",
         hotspotTop: "38%"
@@ -285,7 +285,7 @@
         price: "34,799",
         product: "联想智慧医院解决方案",
         specs: "智慧诊疗 · 数据安全 · 高效运营",
-        image: "/assets/img/solution/智慧医院整体解决方案-hero.webp",
+        image: "/assets/img/fangan2.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.62) 48%,transparent 82%)",
         hotspotLeft: "74%",
         hotspotTop: "38%"
@@ -297,7 +297,7 @@
         price: "34,799",
         product: "联想金融行业解决方案",
         specs: "核心业务 · 数据中心 · 智能应用",
-        image: "/assets/img/solution/金融行业DCM数据中心管理平台-hero.webp",
+        image: "/assets/img/fanan1.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.62) 48%,transparent 82%)",
         hotspotLeft: "74%",
         hotspotTop: "38%"
@@ -309,7 +309,7 @@
         price: "34,799",
         product: "联想智慧能源解决方案",
         specs: "智能巡检 · 安全生产 · 绿色运营",
-        image: "/assets/img/solution/智慧电厂解决方案-hero.webp",
+        image: "/assets/img/business-banner-2.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.62) 48%,transparent 82%)",
         hotspotLeft: "74%",
         hotspotTop: "38%"
@@ -321,7 +321,7 @@
         price: "34,799",
         product: "联想智慧交通解决方案",
         specs: "轨道交通 · 机场云 · 高速运营",
-        image: "/assets/img/solution/轨交智能运营解决方案-hero.webp",
+        image: "/assets/img/enterprise-banner-1.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.62) 48%,transparent 82%)",
         hotspotLeft: "74%",
         hotspotTop: "38%"
@@ -333,7 +333,7 @@
         price: "34,799",
         product: "联想智慧服务解决方案",
         specs: "智慧门店 · 智能客服 · 供应链协同",
-        image: "/assets/img/solution/智慧零售连锁门店解决方案-hero.webp",
+        image: "/assets/img/brand-20260626-2.jpg",
         overlay: "linear-gradient(90deg,rgba(18,7,28,.96) 0%,rgba(77,20,74,.62) 48%,transparent 82%)",
         hotspotLeft: "74%",
         hotspotTop: "38%"
