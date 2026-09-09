@@ -9,6 +9,7 @@ const FIELD = Object.freeze({
   email: 'email',
   applicantManager: 'applicantManager',
   targetManager: 'targetManager',
+  businessApprover: 'businessApprover',
   reason: 'reason'
 })
 
@@ -24,9 +25,10 @@ export const APPLICATION_INFO_SCHEMAS = Object.freeze({
       FIELD.email,
       FIELD.applicantManager,
       FIELD.targetManager,
+      FIELD.businessApprover,
       FIELD.reason
     ]),
-    requiredFields: Object.freeze([FIELD.targetItcode, FIELD.targetManager, FIELD.reason])
+    requiredFields: Object.freeze([FIELD.targetItcode, FIELD.targetManager, FIELD.businessApprover, FIELD.reason])
   }),
   changeExternal: Object.freeze({
     key: 'change-external',
@@ -37,9 +39,10 @@ export const APPLICATION_INFO_SCHEMAS = Object.freeze({
       FIELD.mobile,
       FIELD.email,
       FIELD.applicantManager,
+      FIELD.businessApprover,
       FIELD.reason
     ]),
-    requiredFields: Object.freeze([FIELD.targetUser, FIELD.relatedAccount, FIELD.reason])
+    requiredFields: Object.freeze([FIELD.targetUser, FIELD.relatedAccount, FIELD.businessApprover, FIELD.reason])
   }),
   create: Object.freeze({
     key: 'create',
@@ -52,6 +55,7 @@ export const APPLICATION_INFO_SCHEMAS = Object.freeze({
       FIELD.mobile,
       FIELD.email,
       FIELD.applicantManager,
+      FIELD.businessApprover,
       FIELD.reason
     ]),
     requiredFields: Object.freeze([
@@ -59,6 +63,7 @@ export const APPLICATION_INFO_SCHEMAS = Object.freeze({
       FIELD.accountPassword,
       FIELD.confirmAccountPassword,
       FIELD.relatedAccount,
+      FIELD.businessApprover,
       FIELD.reason
     ])
   }),

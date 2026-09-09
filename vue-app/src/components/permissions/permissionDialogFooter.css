@@ -1,0 +1,22 @@
+/* Domain-only scoped styles. Short dialogs remain in normal document flow. */
+.modal-panel, .picker-dialog, .access-denied-page { --radius-lg: 12px; }
+.modal-actions[data-scroll-state],
+.picker-actions[data-scroll-state] {
+  justify-content: flex-end;
+  box-shadow: none;
+  background: var(--color-surface);
+}
+.modal-actions[data-scroll-state="static"],
+.picker-actions[data-scroll-state="static"] { position: static; }
+.modal-actions[data-scroll-state="more"],
+.modal-actions[data-scroll-state="end"],
+.picker-actions[data-scroll-state="more"],
+.picker-actions[data-scroll-state="end"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+.modal-actions[data-scroll-state="more"],
+.picker-actions[data-scroll-state="more"] {
+  box-shadow: 0 -4px 12px color-mix(in srgb, var(--color-text) 8%, transparent);
+}

@@ -374,6 +374,7 @@ assert.ok(savedOpsColumnSummary.includes('流量') && !savedOpsColumnSummary.inc
 await editor.getByRole('button', { name: '取消', exact: true }).click()
 
 await page.goto(`${baseUrl}/access-denied?itcode=qa-conflict`, { waitUntil: 'domcontentloaded' })
+await page.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangyi44')
 await page.getByRole('button', { name: '下一步', exact: true }).click()
 await page.getByRole('button', { name: '添加角色', exact: true }).click()
 const roleDialog = page.getByRole('dialog', { name: '添加角色', exact: true })

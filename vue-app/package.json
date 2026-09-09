@@ -14,6 +14,10 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "test:product-contract": "node --test scripts/product-contract-regression.test.mjs",
+    "test:permission-ui": "node scripts/test-permission-ui-0908.mjs",
+    "test:permission-ui:browser": "node scripts/verify-permission-ui-0908-browser.mjs",
+    "test:business-approver": "node --experimental-strip-types scripts/test-business-approver.mjs",
+    "test:business-approver:browser": "node scripts/verify-business-approver-browser.mjs",
     "test:application-info": "node scripts/test-application-info.mjs",
     "test:permission-scope": "node --experimental-strip-types scripts/test-permission-scope.mjs",
     "test:user-management": "node scripts/test-user-management.mjs",
@@ -22,6 +26,7 @@
     "test:custom-table-authorization:browser": "node scripts/verify-custom-table-authorization-browser.mjs",
     "test:user-management:browser": "node scripts/verify-user-management-browser.mjs",
     "test:permission-scope:browser": "node scripts/verify-permission-scope-browser.mjs",
+    "test:permission-data-tree:browser": "node scripts/verify-permission-data-tree-browser.mjs",
     "test:login-password-recovery:browser": "node scripts/verify-login-password-recovery-browser.mjs",
     "smoke:shell": "node scripts/smoke-shell.mjs",
     "format": "prettier --write ."

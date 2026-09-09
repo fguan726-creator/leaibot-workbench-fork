@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { createPermissionScopeCatalog, groupDataPermissionsByDirectory } from '../src/components/permissions/permissionScopeCatalog.ts'
+import { createPermissionDataSources, createPermissionScopeCatalog, groupDataPermissionsByDirectory } from '../src/components/permissions/permissionScopeCatalog.ts'
 import { hasPermissionScopeChanged, normalizePermissionScopeSnapshot, permissionScopeDiff, permissionScopeValidation, resolvePermissionScopeFunctionIds } from '../src/components/permissions/permissionScopeSnapshot.js'
 
 const baseline = {
@@ -29,10 +29,32 @@ const catalog = createPermissionScopeCatalog()
 assert.equal(catalog.tenantOptions.length, 4, '三个场景必须使用同一租户目录')
 assert.ok(catalog.roles.length > 0 && catalog.functionPermissions.length > 0 && catalog.dataPermissions.length > 0, '共享权限目录不能为空')
 const dataDirectories = groupDataPermissionsByDirectory(catalog.dataPermissions)
-assert.deepEqual(dataDirectories.map((directory) => directory.name), ['乐享运营', 'GEO 看板', '企业客户管理'], '数据权限一级目录必须与门户工作台目录一致')
-assert.deepEqual(dataDirectories.flatMap((directory) => directory.datasets.map((dataset) => dataset.id)).sort(), catalog.dataPermissions.map((permission) => permission.id).sort(), '一级目录化不得丢失或重复数据权限')
-assert.equal(dataDirectories.some((directory) => directory.datasets.some((dataset) => dataset.name.includes('·'))), false, '数据集名称不得拼接目录或类型前缀')
-assert.ok(dataDirectories.find((directory) => directory.name === '乐享运营')?.datasets.some((dataset) => dataset.name === '华东区'), '一级目录下必须直接使用原始数据集名称')
+assert.deepEqual(dataDirectories.map((directory) => directory.name), ['乐享运营', 'GEO 看板', '在职员工管理', '企业客户管理'], '四个业务目录必须完整展示')
+const dataSources = createPermissionDataSources()
+const leaves = dataDirectories.flatMap((directory) => directory.sources.flatMap((source) => source.datasets))
+assert.deepEqual(leaves.map((leaf) => leaf.id).sort(), catalog.dataPermissions.map((permission) => permission.id).sort(), '三级分组不得丢失或重复授权项')
+for (const directory of dataDirectories) {
+  for (const source of directory.sources) {
+    const definition = dataSources.find((item) => item.id === source.id)
+    assert.ok(definition, '第二层必须使用真实 mock 数据源 ID')
+    assert.equal(source.name, definition.name, '第二层名称必须来自数据源管理')
+    assert.equal(directory.name, definition.menu, '一级目录必须与数据源绑定目录一致')
+    assert.ok(source.datasets.length > 0, '每个数据源至少提供一个可勾选 mock 授权项')
+    assert.ok(source.datasets.every((leaf) => leaf.sourceId === source.id), '授权项不得跨源错挂')
+  }
+}
+assert.deepEqual(dataDirectories[0].sources.map((source) => source.name), ['运营指标查询', '订单状态查询'])
+assert.deepEqual(groupDataPermissionsByDirectory([]), [], '空目录不得生成可选择的虚假权限')
+assert.deepEqual(groupDataPermissionsByDirectory([...catalog.dataPermissions, catalog.dataPermissions[0]]), dataDirectories, '重复叶子 ID 必须去重')
+const product = catalog.roles.find((role) => role.id === 'product-op')
+const subset = groupDataPermissionsByDirectory(catalog.dataPermissions.filter((leaf) => product.dataIds.includes(leaf.id)))
+assert.deepEqual(subset.flatMap((directory) => directory.sources.flatMap((source) => source.datasets.map((leaf) => leaf.id))), ['data.ops.region.north', 'data.ops.metric.gmv'], '角色范围过滤不得补入该源其他授权项或新订单权限')
+const stableIds = ['data.ops.region.east', 'data.ops.region.north', 'data.ops.region.south', 'data.ops.metric.flow', 'data.ops.metric.gmv', 'data.member.profile.level', 'data.member.profile.rights', 'data.geo.source.official', 'data.geo.source.community', 'data.lead.pool.all', 'data.lead.pool.assigned']
+assert.ok(stableIds.every((id) => leaves.some((leaf) => leaf.id === id)), '历史授权 ID 必须保留用于回显与审批快照')
+dataSources[0].name = '隔离测试'
+assert.equal(createPermissionDataSources()[0].name, '运营指标查询', '管理草稿不得污染共享种子')
+dataDirectories[0].sources[0].datasets[0].name = '隔离测试'
+assert.equal(createPermissionScopeCatalog().dataPermissions[0].name, '华东区', '分组结果不得污染权限种子')
 catalog.copyableUsers.forEach((user) => {
   assert.ok(user.roleIds.length > 0, user.itcode + ' 必须包含可复制角色')
   assert.ok(Array.isArray(user.extraDataPermissionIds), user.itcode + ' 必须显式提供用户单独授权的数据权限')
@@ -73,8 +95,10 @@ assert.ok(accessDeniedSource.includes('function toggleRoleFunctionDraft(permissi
 assert.ok(dataPickerSource.includes(':directories="directories"') && !dataPickerSource.includes('permission-tree-branch'), '独立数据权限弹窗不得保留页面/二级菜单层')
 assert.ok(dataDirectorySource.includes('directory-search-trigger') && dataDirectorySource.includes('directoryKeyword(directory.id)'), '每个一级目录必须拥有独立搜索入口和关键词状态')
 assert.ok(dataDirectorySource.includes('defaultExpanded: true'), '所有数据权限一级目录必须默认展开')
-assert.ok(dataDirectorySource.includes("dataset.name.toLowerCase().includes(keyword)"), '目录内搜索必须只按当前目录的数据集名称过滤')
-assert.ok(dataDirectorySource.includes('暂无匹配的数据集') && dataDirectorySource.includes("searchKeywords[id] = ''"), '目录搜索必须覆盖局部空态和关闭清空')
+assert.ok(dataDirectorySource.includes('source.name.toLowerCase().includes(keyword)') && dataDirectorySource.includes('dataset.name.toLowerCase().includes(keyword)'), '目录搜索必须同时支持数据源和授权项名称')
+assert.ok(dataDirectorySource.includes('暂无匹配的数据源或授权项') && dataDirectorySource.includes("searchKeywords[id] = ''"), '目录搜索必须覆盖局部空态和关闭清空')
+assert.equal((dataDirectorySource.match(/type="checkbox"/g) || []).length, 1, '仅叶子模板可渲染复选框')
+assert.ok(dataDirectorySource.includes('data-source-toggle') && dataDirectorySource.includes(':aria-expanded="isSourceExpanded(directory.id, source.id)"'), '第二层必须有语义化展开按钮')
 assert.ok(agentPermissionsSource.includes('<PermissionDataDirectoryList') && agentPermissionsSource.includes(':directories="dataPermissionDirectories"'), '角色管理和用户详情必须复用一级目录组件')
 assert.equal(accessDeniedSource.includes('errors.roles'), false, '首次访问不得把角色或数据权限设为必填')
 assert.ok(agentPermissionsSource.includes('permissionScopeDiff('), '权限变更必须使用归一化最终结果比较')

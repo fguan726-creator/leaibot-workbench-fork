@@ -3,7 +3,7 @@
     <section ref="dialog" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="data-picker-title" tabindex="-1" @keydown.tab="trapFocus">
       <button type="button" class="modal-close" aria-label="关闭" @click="$emit('close')">×</button>
       <h3 id="data-picker-title">选择数据权限</h3>
-      <p class="modal-note">数据集按门户工作台一级目录展示；点击目录右侧放大镜，可只搜索该目录下的数据集。复制带入的数据权限保持锁定。</p>
+      <p class="modal-note">按目录、数据源和授权项分层展示；点击目录或数据源右侧放大镜搜索对应范围。复制带入的数据权限保持锁定。</p>
       <div class="data-directory-picker">
         <PermissionDataDirectoryList
           :directories="directories"
@@ -69,15 +69,23 @@ function trapFocus(event: KeyboardEvent) {
 </script>
 
 <style scoped>
-.permission-modal.permission-scope-picker-modal { position: fixed; inset: 0; z-index: 1400; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: rgba(17, 24, 39, .25); backdrop-filter: blur(8px); }
-.modal-panel { position: relative; box-sizing: border-box; width: min(820px, 100%); max-height: min(720px, calc(100vh - 48px)); overflow: auto; border: 1px solid #dfe7f3; border-radius: 8px; padding: 24px; background: #fff; box-shadow: 0 24px 70px rgba(15, 23, 42, .18); }
-h3 { margin: 0; color: #172033; font-size: 20px; }
-.modal-note { margin: 7px 42px 0 0; color: #667085; font-size: 13px; line-height: 1.6; }
-.modal-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: 1px solid #d8e1ee; border-radius: 8px; background: #fff; color: #667085; font-size: 20px; cursor: pointer; }
-.data-directory-picker { max-height: 520px; margin-top: 14px; overflow: auto; }
-.modal-actions { display: flex; justify-content: flex-start; gap: 10px; margin-top: 18px; border-top: 1px solid #e6edf5; padding-top: 14px; }
-.primary-btn, .secondary-btn { min-height: 38px; border-radius: 8px; padding: 0 18px; font-weight: 800; cursor: pointer; }
-.primary-btn { border: 1px solid #316dff; background: #316dff; color: #fff; }
-.secondary-btn { border: 1px solid #d8e1ee; background: #fff; color: #455468; }
-@media (max-width: 520px) { .permission-modal.permission-scope-picker-modal { padding: 12px; } .modal-panel { max-height: calc(100vh - 24px); padding: 18px; } }
+.permission-modal.permission-scope-picker-modal { position: fixed; inset: 0; z-index: 1400; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: color-mix(in srgb, var(--color-text) 45%, transparent); backdrop-filter: none; }
+.modal-panel { position: relative; box-sizing: border-box; width: min(820px, 100%); max-height: min(720px, calc(100vh - 48px)); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 24px; background: var(--color-surface); box-shadow: var(--shadow-popover); }
+h3 { margin: 0; color: var(--color-text); font-size: 20px; }
+.modal-note { margin: 8px calc(40px + 4px) 0 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; }
+.modal-close { position: absolute; top: 16px; right: 16px; width: var(--control-height-md); height: var(--control-height-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-secondary); font-size: 20px; cursor: pointer; }
+.data-directory-picker { max-height: 520px; margin-top: 16px; overflow: auto; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; border-top: 1px solid var(--color-border-subtle); padding-top: 16px; }
+.primary-btn, .secondary-btn { min-height: var(--control-height-md); border-radius: var(--radius-md); padding: 0 20px; font-weight: 700; cursor: pointer; }
+.primary-btn { border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
+.secondary-btn { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-secondary); }
+@media (max-width: 520px) { .permission-modal.permission-scope-picker-modal { padding: 12px; } .modal-panel { max-height: calc(100vh - 24px); padding: 20px; } }
+
+
+.primary-btn, .secondary-btn { font-family: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.primary-btn:hover:not(:disabled) { border-color: var(--color-primary-hover); background: var(--color-primary-hover); }
+.secondary-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.primary-btn:focus-visible, .secondary-btn:focus-visible, .modal-close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 </style>
+
+<style scoped src="./permissionDialogFooter.css"></style>

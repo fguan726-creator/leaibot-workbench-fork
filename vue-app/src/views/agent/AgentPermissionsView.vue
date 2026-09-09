@@ -1,5 +1,5 @@
 <template>
-  <div class="permission-page-vue">
+  <div v-permission-dialog-footer class="permission-page-vue">
     <ContentPageHeader
       title="权限管理"
       description="按原型链路整理权限申请、审批、角色、用户、组织、数据源、功能和删除备份能力，供 POC 演示真实串联。"
@@ -307,6 +307,7 @@
                 >
                 <small v-if="formErrors.targetManager" class="field-error">{{ formErrors.targetManager }}</small>
               </label>
+              <BusinessApproverField v-if="showsApplicationInfoField(APPLICATION_INFO_FIELD.businessApprover)" v-model="form.businessApprover" :error="formErrors.businessApprover" @update:model-value="formErrors.businessApprover = ''" />
               <label class="full" :data-info-field="APPLICATION_INFO_FIELD.reason">
                 <span class="field-label required">申请原因 <em>必填</em></span>
                 <textarea
@@ -1469,7 +1470,7 @@
             <div class="scope-panel-head">
               <div>
                 <b>业务归属</b>
-                <small>业务负责人填写自己负责角色的所属组织，最终执行时系统取并集。</small>
+                <small>业务负责人确认本申请的所属组织，审批通过后系统统一执行。</small>
               </div>
             </div>
             <div class="permission-form-grid approval-business-form">
@@ -1876,6 +1877,7 @@
               </div>
               <small v-if="userWorkspace.errors.tenant" class="field-error">{{ userWorkspace.errors.tenant }}</small>
             </div>
+            <BusinessApproverField v-if="!userWorkspaceReadonly && (userWorkspace.mode === 'create' || userPermissionChanged)" v-model="userWorkspace.draft.businessApprover" :error="userWorkspace.errors.businessApprover" :disabled="userWorkspacePermissionReadonly" @update:model-value="userWorkspace.errors.businessApprover = ''" />
             <label><span class="field-label required">有效期 <em>必填</em></span><input v-model.trim="userWorkspace.draft.validUntil" :readonly="userWorkspaceReadonly" :class="{ invalid: userWorkspace.errors.validUntil }" placeholder="例如 2026-12-31"><small v-if="userWorkspace.errors.validUntil" class="field-error">{{ userWorkspace.errors.validUntil }}</small></label>
             <div class="permission-form-field full">
               <span>所属组织（可多选）</span>
@@ -2188,6 +2190,7 @@
 </template>
 
 <script setup>
+import { vPermissionDialogFooter } from '../../components/permissions/permissionDialogFooter'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MENU_TREE } from '@/stores/app'
@@ -2198,7 +2201,9 @@ import CustomTableAuthorizationEditor from '@/components/permissions/CustomTable
 import PermissionDataDirectoryList from '@/components/permissions/PermissionDataDirectoryList.vue'
 import PermissionDataPickerModal from '@/components/permissions/PermissionDataPickerModal.vue'
 import PermissionScopeEditor from '@/components/permissions/PermissionScopeEditor.vue'
-import { createPermissionScopeCatalog, groupPermissionCatalog } from '@/components/permissions/permissionScopeCatalog'
+import BusinessApproverField from '@/components/permissions/BusinessApproverField.vue'
+import { BUSINESS_APPROVER_GROUPS, businessApproverError, businessApproverLabel, createSelectedBusinessApprovalTasks } from '@/components/permissions/businessApprovers.js'
+import { createPermissionDataSources, createPermissionScopeCatalog, groupDataPermissionsByDirectory, groupPermissionCatalog } from '@/components/permissions/permissionScopeCatalog'
 import { permissionScopeDiff, permissionScopeValidation, resolvePermissionScopeFunctionIds } from '@/components/permissions/permissionScopeSnapshot.js'
 import { APPLICATION_INFO_FIELD, resolveApplicationInfoSchema, schemaHasField, schemaRequiresField } from '@/components/permissions/applicationInfoSchema.js'
 import PermissionRolePickerModal from '@/components/permissions/PermissionRolePickerModal.vue'
@@ -2330,7 +2335,7 @@ const form = reactive({
   email: '',
   applicantManager: 'sunll1',
   targetManager: 'wangxt8',
-  businessApprover: 'zhangjq4（消费业务 to C）',
+  businessApprover: '',
   tenant: ['leaibot-cn'],
   systemApprover: 'sunzh4',
   reason: '需要联动运营看板、商品管理和 Skill Hub 进行日常数据查询、报告生成和配置确认。',
@@ -2376,12 +2381,7 @@ const passwordReset = reactive({
   }
 })
 
-const businessApprovers = [
-  'zhangjq4（消费业务 to C）',
-  'huangjq5（商用业务 to B/b）',
-  'zhangxy43（to C 相关）',
-  'zhangrui32（to B/b 相关）'
-]
+const businessApprovers = BUSINESS_APPROVER_GROUPS.flatMap((group) => group.options.map((option) => option.label))
 
 function portalGroupLabel(groupKey, fallback) {
   return MENU_TREE[groupKey]?.label || fallback
@@ -2403,7 +2403,7 @@ function customPermissionId(prefix, value) {
 const permissionScopeCatalog = createPermissionScopeCatalog()
 const allFunctionPermissions = permissionScopeCatalog.functionPermissions
 const functionPermissionTree = groupPermissionCatalog(permissionScopeCatalog.functionPermissions)
-const dataPermissionTree = groupPermissionCatalog(permissionScopeCatalog.dataPermissions)
+const dataPermissionTree = reactive(groupPermissionCatalog(permissionScopeCatalog.dataPermissions))
 const allRoles = reactive([
   {
     id: 'ops-pm',
@@ -2628,13 +2628,7 @@ const dataSourceSensitivityOptions = [
   { value: 'sensitive-action', label: '敏感操作（中风险）' },
   { value: 'it-config-data', label: 'IT 配置数据（高风险）' }
 ]
-const dataSources = reactive([
-  { id: 'ds-ops-region', group: '乐享运营', menu: '乐享运营', name: '运营指标查询', apiUrl: '/api/ops/metrics', permissionParam: 'regionCode', key: 'scope', value: 'east', remark: '用于运营日报和活动复盘，按区域控制可见范围。', sensitivity: 'sensitive-data' },
-  { id: 'ds-member-tag', group: '在职员工管理', menu: '在职员工管理', name: '会员标签查询', apiUrl: '/api/member/tags', permissionParam: 'tagGroup', key: 'tag_group', value: 'rights', remark: '涉及会员权益使用情况，默认需要业务负责人确认。', sensitivity: 'it-config-data' },
-  { id: 'ds-geo-source', group: 'GEO 看板', menu: 'GEO 看板', name: '信源引用查询', apiUrl: '/api/geo/sources', permissionParam: 'sourceType', key: 'source_type', value: 'official', remark: '用于 GEO 信源监测和引用趋势分析。', sensitivity: 'sensitive-data' },
-  { id: 'ds-lead-pool', group: '企业客户管理', menu: '企业客户管理', name: '线索池查询', apiUrl: '/api/biz/leads', permissionParam: 'ownerOrg', key: 'owner_org', value: 'enterprise', remark: '包含客户线索和跟进状态，仅企业客户相关组织可申请。', sensitivity: 'it-config-data' },
-  { id: 'ds-mall-order', group: '乐享运营', menu: '乐享运营', name: '订单状态查询', apiUrl: '/api/mall/orders', permissionParam: 'orderScope', key: 'order_scope', value: 'summary', remark: '用于订单状态和售后进展查看，暂不开放明细字段。', sensitivity: 'it-config-data' }
-])
+const dataSources = reactive(createPermissionDataSources())
 const dataSourceNotice = ref('')
 let dataSourceNoticeTimer = null
 const selectedDataSourceId = ref('')
@@ -3268,6 +3262,7 @@ const userWorkspace = reactive({
     targetManager: '',
     tenant: '',
     validUntil: '',
+    businessApprover: '',
     dataMode: ''
   }
 })
@@ -3727,15 +3722,17 @@ function syncDataSourcePermissionToTree(source) {
   if (!source?.id) return ''
   const permissionId = dataPermissionIdFromSource(source)
   source.dataPermissionId = permissionId
-  removePermissionLeaf(dataPermissionTree, permissionId)
-  const branch = ensureDataPermissionBranch(menuBranchMeta(source.menu))
-  branch.children.push({
-    id: permissionId,
-    name: source.name,
-    sourceId: source.id,
-    apiUrl: source.apiUrl,
-    permissionParam: source.permissionParam
+  const existing = dataPermissionTree.flatMap((root) => root.children.flatMap((branch) => branch.children))
+    .filter((leaf) => leaf.sourceId === source.id || leaf.id === permissionId)
+  existing.forEach((leaf) => removePermissionLeaf(dataPermissionTree, leaf.id))
+  const branch = ensureDataPermissionBranch({
+    rootId: source.menu, rootName: source.menu, branchId: source.id, branchName: source.name
   })
+  const leaves = existing.length ? existing : [{ id: permissionId, name: source.value || '默认范围' }]
+  branch.children.push(...leaves.map((leaf) => ({
+    ...leaf, sourceId: source.id, group: source.menu, page: source.name,
+    apiUrl: source.apiUrl, permissionParam: source.permissionParam
+  })))
   return permissionId
 }
 
@@ -3745,7 +3742,15 @@ function removeIdFromArray(target, id) {
 }
 
 function removeDataSourcePermission(source) {
-  const permissionId = dataPermissionIdFromSource(source)
+  const permissionIds = new Set([
+    dataPermissionIdFromSource(source),
+    ...dataPermissionTree.flatMap((root) => root.children.flatMap((branch) => branch.children))
+      .filter((leaf) => leaf.sourceId === source.id).map((leaf) => leaf.id)
+  ])
+  permissionIds.forEach(removeDataPermissionById)
+}
+
+function removeDataPermissionById(permissionId) {
   removePermissionLeaf(dataPermissionTree, permissionId)
   allRoles.forEach((role) => removeIdFromArray(role.dataPermissionIds, permissionId))
   users.forEach((user) => {
@@ -4134,7 +4139,7 @@ const approvalNodes = computed(() => {
   }
   if (hasPermissionScopeStep.value) {
     const businessOwners = createBusinessApprovalTasks(createPermissionSnapshot()).map((task) => task.approver)
-    nodes.push({ label: '全部业务负责人审批', owner: businessOwners.join('、') || '按角色带出', done: false })
+    nodes.push({ label: '业务负责人审批', owner: businessOwners.join('、') || '请先选择业务负责人', done: false })
   }
   nodes.push({ label: '系统自动生效', owner: '全部必要审批通过后整体生效', done: false })
   return nodes.map((node, index) => ({ ...node, step: String(index + 1) }))
@@ -4224,6 +4229,7 @@ const activeApprovalBasicFields = computed(() => {
       ]
   const fields = [
     { label: '申请单号', value: row.id },
+    ...(schemaHasField(infoSchema, APPLICATION_INFO_FIELD.businessApprover) ? [{ label: '业务负责人', value: businessApproverLabel(row.businessApprover) }] : []),
     ...(row.sourceApplicationNo ? [{ label: '原申请单号', value: row.sourceApplicationNo }] : []),
     { label: '申请类型', value: row.type },
     infoSchema
@@ -4269,9 +4275,9 @@ const approvalDecisionHint = computed(() => {
   if (approvalWorkspace.nodeType === 'applicant-manager') return rowNeedsTargetManager(activeApproval.value)
     ? '申请人直线经理确认申请合理性，通过后流转给被申请人直线经理。'
     : '申请人直线经理确认申请合理性，通过后流转给全部业务负责人。'
-  if (approvalWorkspace.nodeType === 'target-manager') return '被申请人直线经理确认最终角色范围后，系统会按角色业务负责人重新生成审批任务。'
+  if (approvalWorkspace.nodeType === 'target-manager') return '被申请人直线经理确认最终权限范围后，流转至申请中指定的业务负责人。'
   if (approvalWorkspace.nodeType === 'system-admin') return '系统管理员确认启用、禁用等需要实际管理操作的账号申请。'
-  return '业务负责人需填写自己负责角色的所属组织，权限范围只读不可修改。'
+  return '业务负责人需确认本申请的所属组织，权限范围只读不可修改。'
 })
 const approvalSubmitImpact = computed(() => {
   if (!approvalWorkspace.result) return '请选择审批结果后提交。'
@@ -4282,7 +4288,7 @@ const approvalSubmitImpact = computed(() => {
   if (approvalWorkspace.nodeType === 'applicant-manager') return rowNeedsTargetManager(activeApproval.value)
     ? '申请人直线经理审批通过后，申请进入被申请人直线经理审批。'
     : '申请人直线经理审批通过后，申请进入全部业务负责人审批。'
-  if (approvalWorkspace.nodeType === 'target-manager') return '被申请人直线经理审批通过后，系统按最终角色范围生成业务负责人审批任务。'
+  if (approvalWorkspace.nodeType === 'target-manager') return '被申请人直线经理审批通过后，流转至申请中指定的业务负责人。'
   if (approvalWorkspace.nodeType === 'system-admin') return '系统管理员确认通过后，系统执行启用或禁用等账号管理操作并记录结果。'
   return '当前业务负责人审批通过后，若仍有人待审则继续等待；全部通过后权限一次性自动生效。'
 })
@@ -5204,6 +5210,7 @@ function applicationInfoFieldMap() {
     email: APPLICATION_INFO_FIELD.email,
     applicantManager: APPLICATION_INFO_FIELD.applicantManager,
     targetManager: APPLICATION_INFO_FIELD.targetManager,
+    businessApprover: APPLICATION_INFO_FIELD.businessApprover,
     reason: APPLICATION_INFO_FIELD.reason
   }
 }
@@ -5215,7 +5222,8 @@ function clearHiddenApplicationInfoFields(schema = applicationInfoSchema.value) 
     relatedAccount: APPLICATION_INFO_FIELD.relatedAccount,
     accountPassword: APPLICATION_INFO_FIELD.accountPassword,
     confirmAccountPassword: APPLICATION_INFO_FIELD.confirmAccountPassword,
-    targetManager: APPLICATION_INFO_FIELD.targetManager
+    targetManager: APPLICATION_INFO_FIELD.targetManager,
+    businessApprover: APPLICATION_INFO_FIELD.businessApprover
   }
   Object.entries(clearableFieldMap).forEach(([formKey, field]) => {
     if (!schemaHasField(schema, field)) form[formKey] = ''
@@ -5319,6 +5327,7 @@ function validateInfoForm() {
   formErrors.targetManager = schemaRequiresField(schema, APPLICATION_INFO_FIELD.targetManager) && !form.targetManager
     ? '请填写被申请人直线经理 ITCode。'
     : ''
+  formErrors.businessApprover = schemaRequiresField(schema, APPLICATION_INFO_FIELD.businessApprover) ? businessApproverError(form.businessApprover) : ''
   formErrors.reason = schemaRequiresField(schema, APPLICATION_INFO_FIELD.reason) && !form.reason
     ? '请补充申请原因，说明业务场景和需要使用的权限范围。'
     : ''
@@ -6208,15 +6217,15 @@ function findDataPermission(id) {
 
 function dataPermissionDirectoriesForIds(permissionIds = null) {
   const allowedIds = permissionIds ? new Set(permissionIds) : null
-  return dataPermissionTree.map((group) => {
-    const seenIds = new Set()
-    const datasets = group.children.flatMap((child) => child.children).filter((dataset) => {
-      if (seenIds.has(dataset.id) || (allowedIds && !allowedIds.has(dataset.id))) return false
-      seenIds.add(dataset.id)
-      return true
-    })
-    return { id: group.id, name: group.name, datasets }
-  }).filter((directory) => directory.datasets.length)
+  const permissions = dataPermissionTree.flatMap((group) => group.children.flatMap((child) => child.children
+    .filter((permission) => !allowedIds || allowedIds.has(permission.id))
+    .map((permission) => ({
+      ...permission,
+      group: group.name,
+      page: child.name,
+      description: permission.description || ''
+    }))))
+  return groupDataPermissionsByDirectory(permissions)
 }
 
 const dataPermissionDirectories = computed(() => dataPermissionDirectoriesForIds())
@@ -6249,6 +6258,7 @@ function createPermissionSnapshot(context = {}) {
   const baseSnapshot = currentPermissionSnapshotBase()
   return {
     ...baseSnapshot,
+    ...(context.legacyBusinessApproval || (!hasPermissionScopeStep.value && !Object.hasOwn(context, 'businessApprover')) ? {} : { businessApprover: context.businessApprover ?? form.businessApprover }),
     changeSummary: buildPermissionChangeSummary(baseSnapshot, { targetItcode, tenant, baseline }),
     baseline,
     tenant
@@ -6291,6 +6301,10 @@ function selectedApprovalRoleIds(snapshot = {}) {
 }
 
 function createBusinessApprovalTasks(permissionSnapshot = {}, existingTasks = []) {
+  if (Object.hasOwn(permissionSnapshot, 'businessApprover')) {
+    return createSelectedBusinessApprovalTasks(permissionSnapshot, allRoles, existingTasks)
+  }
+  // 仅兼容旧申请；新申请始终使用提交时选定的业务负责人。
   const roleIds = selectedApprovalRoleIds(permissionSnapshot)
   const taskMap = new Map()
   roleIds.forEach((roleId) => {
@@ -6392,6 +6406,11 @@ function applyApprovedUserPermissionChange(row, time) {
 }
 
 function completeApprovalExecution(row, time = '2026-07-13 16:30') {
+  if (Object.hasOwn(row.permissionSnapshot || {}, 'businessApprover') && (businessApproverError(row.permissionSnapshot.businessApprover) || row.businessApprovalTasks?.length !== 1 || row.businessApprovalTasks[0].approver !== row.permissionSnapshot.businessApprover || row.businessApprovalTasks[0].status !== 'approved')) {
+    updateApprovalNode(row, 'rework', { status: '已驳回', statusKey: 'rejected', approverItcode: row.applicantItcode, handlers: [row.applicantItcode] })
+    row.approvalLogs.push({ node: '业务审批校验', action: 'reject', operator: 'system', opinion: '指定的业务负责人缺失、无效或尚未审批通过，请重新确认申请。', time })
+    return
+  }
   row.businessInfo.organizations = businessOrganizationsUnion(row)
   updateApprovalNode(row, 'done', {
     status: '已完成',
@@ -6436,7 +6455,7 @@ function createApprovalRow(payload) {
     applicantManager: payload.applicantManager ?? payload.manager ?? 'sunll1',
     targetManager: payload.targetManager ?? payload.manager ?? 'wangxt8',
     manager: payload.applicantManager ?? payload.manager ?? 'sunll1',
-    businessApprover: payload.businessApprover || 'zhangjq4（消费业务 to C）',
+    businessApprover: Object.hasOwn(permissionSnapshot, 'businessApprover') ? permissionSnapshot.businessApprover : (payload.businessApprover || ''),
     systemApprover: payload.systemApprover || 'sunzh4',
     reason: payload.reason || '需要根据业务职责开通或调整乐享 AI 工作台权限。',
     sourceApplicationNo: payload.sourceApplicationNo || '',
@@ -6452,6 +6471,7 @@ function createApprovalRow(payload) {
       tenant: normalizeTenantList(payload.businessInfo?.tenant || payload.tenant || payload.permissionSnapshot?.tenant)
     },
     permissionSnapshot: {
+      ...(Object.hasOwn(permissionSnapshot, 'businessApprover') ? { businessApprover: permissionSnapshot.businessApprover } : {}),
       selectedRoleIds: [...(permissionSnapshot.selectedRoleIds || [])],
       copiedFromItcode: permissionSnapshot.copiedFromItcode || '',
       copiedRoleIds: [...(permissionSnapshot.copiedRoleIds || [])],
@@ -6467,7 +6487,9 @@ function createApprovalRow(payload) {
       baseline: permissionSnapshot.baseline || userPermissionBaselineByItcode(payload.targetItcode || payload.target),
       tenant: normalizeTenantList(payload.businessInfo?.tenant || payload.tenant || permissionSnapshot.tenant)
     },
-    businessApprovalTasks: (payload.businessApprovalTasks?.length ? payload.businessApprovalTasks : createBusinessApprovalTasks(permissionSnapshot, payload.businessApprovalTasks || [])).map((task) => ({
+    businessApprovalTasks: (Object.hasOwn(permissionSnapshot, 'businessApprover')
+      ? createBusinessApprovalTasks(permissionSnapshot, payload.businessApprovalTasks || [])
+      : (payload.businessApprovalTasks?.length ? payload.businessApprovalTasks : createBusinessApprovalTasks(permissionSnapshot))).map((task) => ({
       approver: parseApproverItcode(task.approver),
       approverName: task.approverName || parseApproverItcode(task.approver),
       roleIds: [...(task.roleIds || [])],
@@ -6686,6 +6708,9 @@ function validateApprovalDecision() {
   if (!approvalWorkspace.result) {
     approvalWorkspace.errors.result = '请选择审批结果，例如同意或驳回。'
   }
+  if (approvalWorkspace.result === 'agree' && Object.hasOwn(activeApproval.value?.permissionSnapshot || {}, 'businessApprover') && businessApproverError(activeApproval.value.permissionSnapshot.businessApprover)) {
+    approvalWorkspace.errors.result = '业务负责人无效，请驳回申请后重新选择。'
+  }
   if (canEditBusinessOwnership.value && approvalWorkspace.result === 'agree') {
     approvalWorkspace.errors.organizations = approvalWorkspace.organizations.length ? '' : '请选择至少一个所属组织，便于后台按组织授权。'
   }
@@ -6704,7 +6729,9 @@ function submitApprovalDecision() {
     row.permissionSnapshot = createPermissionSnapshot({
       targetItcode: row.targetItcode || row.target,
       tenant: normalizeTenantList(row.businessInfo?.tenant || row.permissionSnapshot?.tenant),
-      baseline: row.permissionSnapshot?.baseline
+      baseline: row.permissionSnapshot?.baseline,
+      businessApprover: row.permissionSnapshot?.businessApprover,
+      legacyBusinessApproval: !Object.hasOwn(row.permissionSnapshot || {}, 'businessApprover')
     })
   }
   if (canEditBusinessOwnership.value) {
@@ -7222,6 +7249,7 @@ function applyMailApprovalActionToRow(row, actionRecord) {
   if (!row || row.approvalLogs.some((log) => log.mailActionId === actionRecord.id)) return false
   if (!mailActionMatchesCurrentNode(row, actionRecord)) return false
   const approve = actionRecord.action === 'approve'
+  if (approve && Object.hasOwn(row.permissionSnapshot || {}, 'businessApprover') && businessApproverError(row.permissionSnapshot.businessApprover)) return false
   row.approvalLogs.push({
     node: row.node,
     action: approve ? 'agree' : 'reject',
@@ -7601,6 +7629,7 @@ function cloneUser(user) {
   nextUser.applicant ||= 'admin'
   nextUser.applicantItcode ||= 'admin'
   nextUser.relatedAccount ||= ''
+  nextUser.businessApprover ||= ''
   nextUser.applicantManager ||= 'sunll1'
   nextUser.targetManager ||= 'wangxt8'
   nextUser.requestReason ||= nextUser.remark || '需要根据业务职责开通或调整乐享 AI 工作台权限。'
@@ -7637,6 +7666,7 @@ function openUserWorkspace(mode, user = null) {
   userWorkspace.generatedApplicationNo = ''
   userWorkspace.notice = mode === 'view' ? '当前为只读详情。' : ''
   userWorkspace.draft = cloneUser(user || emptyUserDraft())
+  if (mode !== 'view') userWorkspace.draft.businessApprover = ''
   userWorkspace.dataTab = userWorkspace.draft.customDataRules.length ? 'custom' : 'normal'
 }
 
@@ -7647,6 +7677,7 @@ function closeUserWorkspace() {
 }
 
 function switchUserWorkspaceToEdit() {
+  if (userWorkspace.draft) userWorkspace.draft.businessApprover = ''
   userWorkspace.mode = userWorkspace.userAccount ? 'edit' : 'create'
   userWorkspace.dataTab = userWorkspace.draft?.customDataRules?.length ? 'custom' : 'normal'
   userWorkspace.notice = activePendingUserPermissionApproval.value
@@ -7684,6 +7715,7 @@ function validateUserWorkspace() {
   userWorkspace.errors.relatedAccount = externalUser && !draft.relatedAccount ? '外部人员必须填写关联人 ITCode。' : ''
   userWorkspace.errors.targetManager = !externalUser && !draft.targetManager ? '内部人员必须填写用户直线经理。' : ''
   userWorkspace.errors.tenant = normalizeTenantList(draft.tenant).length ? '' : '请至少选择一个所属租户。'
+  userWorkspace.errors.businessApprover = (userWorkspace.mode === 'create' || userPermissionChanged.value) ? businessApproverError(draft.businessApprover) : ''
   userWorkspace.errors.validUntil = draft.validUntil ? '' : '请填写有效期，例如 2026-12-31 或长期有效。'
   const customRuleError = validateCustomTableRules(draft.customDataRules)
   userWorkspace.errors.dataMode = draft.extraDataPermissionIds.length && draft.customDataRules.length ? '普通授权和自定义授权只能选择一种，请先删除其中一类数据权限。' : customRuleError
@@ -7850,8 +7882,8 @@ function userApprovalTargetManagerItcode(user) {
   return user?.targetManager || 'wangxt8'
 }
 
-function userApprovalBusinessApprover() {
-  return 'zhangjq4（消费业务 to C）'
+function userApprovalBusinessApprover(user) {
+  return user?.businessApprover || ''
 }
 
 function userApprovalStartState(user, typeKey = '') {
@@ -7873,7 +7905,7 @@ function userApprovalStartState(user, typeKey = '') {
     applicantManager: applicantManagerItcode,
     targetManager: targetManagerItcode,
     manager: applicantManagerItcode,
-    businessApprover: userApprovalBusinessApprover(),
+    businessApprover: userApprovalBusinessApprover(user),
     systemApprover: 'sunzh4'
   }
 }
@@ -7897,7 +7929,7 @@ function upsertUserApproval(user, applicationNo, typeKey, type, detail, options 
     mobile: user.mobile,
     email: user.email,
     reason: user.requestReason || detail,
-    permissionSnapshot: userPermissionSnapshot(user, options.baselineUser || null),
+    permissionSnapshot: { ...userPermissionSnapshot(user, options.baselineUser || null), ...(['create', 'change'].includes(typeKey) ? { businessApprover: user.businessApprover || '' } : {}) },
     businessInfo: { tenant: user.tenant || tenantOptions[0], organizations: [] },
     time: '2026-07-14 18:30'
   }
@@ -8556,6 +8588,8 @@ onUnmounted(() => {
 
 <style scoped>
 .permission-page-vue {
+  --radius-lg: 12px;
+  --form-control-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -8580,7 +8614,7 @@ onUnmounted(() => {
 }
 
 .demo-reset-trigger span {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
@@ -8592,20 +8626,20 @@ onUnmounted(() => {
   display: grid;
   gap: 4px;
   width: 190px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  padding: 6px;
-  background: #fff;
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.14);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
 }
 
 .demo-reset-options button {
-  min-height: 34px;
+  min-height: var(--control-height-md);
   border: 0;
-  border-radius: 6px;
-  padding: 0 10px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
   background: transparent;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
   text-align: left;
@@ -8614,8 +8648,8 @@ onUnmounted(() => {
 
 .demo-reset-options button:hover,
 .demo-reset-options button.active {
-  background: #eef4ff;
-  color: #316dff;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 
@@ -8625,7 +8659,7 @@ onUnmounted(() => {
 }
 
 .permission-step h3 {
-  color: #172033;
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.45;
@@ -8633,8 +8667,8 @@ onUnmounted(() => {
 
 .permission-step p,
 .modal-panel p {
-  margin: 6px 0 0;
-  color: #6b778c;
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -8718,7 +8752,7 @@ onUnmounted(() => {
   position: absolute;
   width: 1px;
   height: 1px;
-  margin: -1px;
+  margin: 0;
   padding: 0;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
@@ -8801,7 +8835,7 @@ onUnmounted(() => {
   align-items: center;
   width: 100%;
   min-height: 44px;
-  padding: 6px 8px;
+  padding: 8px 8px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: transparent;
@@ -8817,7 +8851,7 @@ onUnmounted(() => {
   bottom: 0;
   left: -1px;
   width: 4px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: transparent;
   content: '';
 }
@@ -8831,7 +8865,7 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
   background: var(--color-surface-subtle);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .permission-module-icon :deep(svg) {
@@ -8897,7 +8931,7 @@ onUnmounted(() => {
   place-items: center;
   min-width: 24px;
   height: 24px;
-  padding: 0 6px;
+  padding: 0 8px;
   border-radius: 9999px;
   background: var(--color-danger);
   color: var(--color-on-primary);
@@ -9112,10 +9146,10 @@ onUnmounted(() => {
 .scope-head small {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
-  padding: 5px 10px;
-  background: #eef4ff;
-  color: #316dff;
+  border-radius: 9999px;
+  padding: 4px 12px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -9124,7 +9158,7 @@ onUnmounted(() => {
 .permission-stage-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 0 0 auto;
   width: 100%;
   padding: 4px;
@@ -9145,12 +9179,12 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   min-width: 118px;
-  min-height: 36px;
+  min-height: var(--control-height-md);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 0 16px;
   background: transparent;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
   line-height: 1;
@@ -9160,13 +9194,13 @@ onUnmounted(() => {
 }
 
 .permission-stage-tabs button.active {
-  background: #316dff;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .permission-stage-tabs button.locked,
 .permission-stage-tabs button:disabled {
-  color: #98a2b3;
+  color: var(--color-text-tertiary);
   cursor: not-allowed;
   opacity: 0.58;
 }
@@ -9178,7 +9212,7 @@ onUnmounted(() => {
   overscroll-behavior: contain;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(31, 35, 41, 0.14) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-text) 45%, transparent) transparent;
 }
 
 .permission-step::-webkit-scrollbar,
@@ -9191,8 +9225,8 @@ onUnmounted(() => {
 .permission-step::-webkit-scrollbar-thumb,
 .permission-module-rail::-webkit-scrollbar-thumb,
 .permission-table-wrap::-webkit-scrollbar-thumb {
-  background: rgba(31, 35, 41, 0.14);
-  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text) 45%, transparent);
+  border-radius: 9999px;
 }
 
 .permission-type-grid,
@@ -9200,8 +9234,8 @@ onUnmounted(() => {
 .permission-grid-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .permission-type-grid button,
@@ -9209,9 +9243,9 @@ onUnmounted(() => {
 .permission-grid-list article,
 .relation-grid article {
   min-width: 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   box-shadow: none;
 }
 
@@ -9229,12 +9263,12 @@ onUnmounted(() => {
   display: grid;
   place-items: center;
   width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #edf3ff;
-  color: #316dff;
+  height: var(--control-height-md);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .permission-type-grid button b,
@@ -9242,7 +9276,7 @@ onUnmounted(() => {
 .relation-grid b {
   display: block;
   margin-top: 12px;
-  color: #111827;
+  color: var(--color-text);
   font-size: 14px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -9255,7 +9289,7 @@ onUnmounted(() => {
 .confirm-box p {
   display: block;
   margin-top: 8px;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-style: normal;
   line-height: 1.55;
@@ -9263,30 +9297,30 @@ onUnmounted(() => {
 }
 
 .permission-type-grid button.active {
-  border-color: #8cb2ff;
-  background: linear-gradient(135deg, #fff 0%, #f7faff 100%);
-  box-shadow: 0 0 0 2px rgba(49, 109, 255, 0.12);
+  border-color: var(--color-primary-border);
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-subtle) 100%);
+  box-shadow: var(--focus-ring);
 }
 
 .permission-type-grid button:hover,
 .permission-scope-grid article:hover,
 .permission-grid-list article:hover,
 .relation-grid article:hover {
-  border-color: rgba(49, 109, 255, 0.32);
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+  border-color: var(--color-primary-subtle);
+  box-shadow: var(--shadow-popover);
 }
 
 .permission-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 18px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .permission-form-grid label {
   display: grid;
   gap: 8px;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -9327,18 +9361,18 @@ onUnmounted(() => {
 }
 
 .permission-form-grid textarea {
-  padding: 10px 12px;
+  padding: 12px 12px;
 }
 
 .permission-form-grid input[readonly] {
-  background: #f3f6fa;
-  color: #6b778c;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .permission-form-field {
   display: grid;
   gap: 8px;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -9346,116 +9380,116 @@ onUnmounted(() => {
 .field-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: #667085;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
 
 .field-label.required::before {
   content: '*';
-  color: #e53935;
-  font-weight: 800;
+  color: var(--color-danger);
+  font-weight: 700;
 }
 
 .field-label em {
   display: inline-flex;
   align-items: center;
   min-height: 18px;
-  border-radius: 999px;
-  padding: 0 7px;
-  background: #fff1f1;
-  color: #e53935;
-  font-size: 11px;
+  border-radius: 9999px;
+  padding: 0 8px;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+  font-size: 12px;
   font-style: normal;
   font-weight: 700;
 }
 
 .field-label em.optional,
 .field-label em.autofill {
-  background: #eef3f8;
-  color: #667085;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .field-error,
 .field-help {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.45;
 }
 
 .field-error {
-  color: #e53935;
+  color: var(--color-danger);
 }
 
 .permission-form-grid input.invalid,
 .permission-form-grid select.invalid,
 .permission-form-grid textarea.invalid,
 .modal-form-field input.invalid {
-  border-color: #e53935;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-popover);
 }
 
 .person-type-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .person-type-switch button {
   display: grid;
-  gap: 5px;
+  gap: 4px;
   min-height: 64px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  padding: 11px 12px;
-  background: #fff;
-  color: #455468;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 12px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   text-align: left;
   cursor: pointer;
 }
 
 .person-type-switch button b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.35;
 }
 
 .person-type-switch button small {
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
 
 .person-type-switch button.active {
-  border-color: #8cb2ff;
-  background: #f3f7ff;
-  box-shadow: 0 0 0 2px rgba(49, 109, 255, 0.12);
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-subtle);
+  box-shadow: var(--focus-ring);
 }
 
 .scope-action-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   margin-top: 16px;
 }
 
 .copy-source-banner {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-top: 12px;
-  border: 1px solid #bcd3ff;
-  border-radius: 8px;
-  padding: 12px 14px;
-  background: #f7fbff;
-  color: #455468;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  background: var(--color-primary-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
 .copy-source-banner b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
@@ -9466,34 +9500,34 @@ onUnmounted(() => {
 
 .scope-source-stack {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   margin-top: 16px;
 }
 
 .scope-source-panel {
   min-width: 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 16px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .source-role-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .source-role-card {
   display: grid;
   gap: 12px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .source-role-card.copied {
-  background: #fbfcff;
+  background: var(--color-bg-subtle);
 }
 
 .approval-role-summary-row {
@@ -9501,17 +9535,17 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .approval-role-summary-row span:not(.sensitivity-badge) {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
-  border-radius: 999px;
-  padding: 0 10px;
-  background: #f4f7fb;
-  color: #455468;
+  border-radius: 9999px;
+  padding: 0 12px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -9520,12 +9554,12 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .source-role-title b {
   display: block;
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -9533,7 +9567,7 @@ onUnmounted(() => {
 .source-role-title small {
   display: block;
   margin-top: 4px;
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -9546,10 +9580,10 @@ onUnmounted(() => {
 
 .bound-permission-grid > div {
   min-width: 0;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--color-surface);
 }
 
 .source-empty {
@@ -9573,39 +9607,39 @@ onUnmounted(() => {
   place-items: center;
   width: 24px;
   height: 24px;
-  border: 1px solid #d8e1ee;
-  border-radius: 6px;
-  background: #fff;
-  color: #316dff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-primary);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
 }
 
 .refresh-btn:hover {
-  border-color: rgba(49, 109, 255, 0.42);
-  background: #eef4ff;
+  border-color: var(--color-primary-subtle);
+  background: var(--color-primary-subtle);
 }
 
 .bound-empty {
   display: block;
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.5;
 }
 .bound-title {
   display: block;
   margin-bottom: 8px;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
 }
 
 .permission-chip-list.compact span {
-  gap: 6px;
+  gap: 8px;
   min-height: 26px;
-  padding: 0 9px;
+  padding: 0 8px;
 }
 
 .role-function-card-preview {
@@ -9616,13 +9650,13 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 26px;
-  border-radius: 999px;
-  padding: 0 9px;
-  background: #f4f7fb;
-  color: #667085;
+  border-radius: 9999px;
+  padding: 0 8px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -9637,7 +9671,7 @@ onUnmounted(() => {
 }
 
 .role-card-detail-modal h3 {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 .card-detail-table-wrap {
@@ -9645,7 +9679,7 @@ onUnmounted(() => {
 }
 .permission-chip-list span .source-tag {
   min-height: 18px;
-  padding: 0 6px;
+  padding: 0 8px;
 }
 
 .chip-remove {
@@ -9654,31 +9688,31 @@ onUnmounted(() => {
   width: 18px;
   height: 18px;
   border: 0;
-  border-radius: 999px;
-  background: #eef1f5;
-  color: #667085;
+  border-radius: 9999px;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
 }
 
 .chip-remove:hover {
-  background: #fff1f1;
-  color: #e53935;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
 }
 .scope-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
   margin-top: 16px;
 }
 
 .scope-panel {
   min-width: 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 16px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .scope-panel.full {
@@ -9692,7 +9726,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .scope-panel-head {
@@ -9702,7 +9736,7 @@ onUnmounted(() => {
 .scope-panel-head b,
 .selected-role-card b,
 .scope-empty b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -9712,7 +9746,7 @@ onUnmounted(() => {
 .scope-empty p {
   display: block;
   margin-top: 4px;
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -9722,15 +9756,15 @@ onUnmounted(() => {
 .role-picker-list,
 .data-tree-picker {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .selected-role-card {
   align-items: flex-start;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .permission-chip-list {
@@ -9743,40 +9777,40 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
-  border: 1px solid #d8e1ee;
-  border-radius: 999px;
-  padding: 0 10px;
-  background: #f8fafc;
-  color: #455468;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 0 12px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
 
 .scope-empty {
-  border: 1px dashed #d8e1ee;
-  border-radius: 8px;
-  padding: 18px;
-  background: #f8fafc;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  background: var(--color-bg-subtle);
   text-align: center;
 }
 
 .selected-tree-node {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .selected-tree-child {
-  margin-top: 10px;
-  padding-left: 14px;
-  border-left: 1px solid #e6edf5;
+  margin-top: 12px;
+  padding-left: 16px;
+  border-left: 1px solid var(--color-border-subtle);
 }
 
 .selected-tree-leaf {
   margin-top: 8px;
-  padding-left: 14px;
-  color: #455468;
+  padding-left: 16px;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
@@ -9784,24 +9818,24 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 22px;
-  border-radius: 999px;
+  border-radius: 9999px;
   padding: 0 8px;
-  background: #eef4ff;
-  color: #316dff;
-  font-size: 11px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  font-size: 12px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .source-tag.user {
-  background: #fff4df;
-  color: #d97706;
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
 .source-tag.manual {
-  background: #eafaf0;
-  color: #18a058;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .readonly-source-badge,
@@ -9809,11 +9843,11 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 30px;
-  border: 1px solid #d8e1ee;
-  border-radius: 6px;
-  padding: 0 10px;
-  background: #f5f7fa;
-  color: #667085;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -9835,11 +9869,11 @@ onUnmounted(() => {
 .modal-form-field input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  color: #172033;
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
@@ -9850,7 +9884,7 @@ onUnmounted(() => {
 
 .role-picker-list,
 .data-tree-picker {
-  margin-top: 14px;
+  margin-top: 16px;
   max-height: 420px;
   overflow: auto;
 }
@@ -9858,13 +9892,13 @@ onUnmounted(() => {
 .role-picker-row {
   display: grid;
   grid-template-columns: 18px 1fr;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
-  color: #455468;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
@@ -9872,25 +9906,25 @@ onUnmounted(() => {
 .data-tree-leaf input {
   width: 16px;
   height: 16px;
-  accent-color: #316dff;
+  accent-color: var(--color-primary);
 }
 
 .role-picker-row b,
 .data-tree-group > b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .role-picker-row p {
   margin: 4px 0 8px;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .role-picker-row small {
   display: block;
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -9898,7 +9932,7 @@ onUnmounted(() => {
 .role-picker-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 .role-picker-modal.with-detail .role-picker-layout {
@@ -9909,13 +9943,13 @@ onUnmounted(() => {
 .role-picker-check {
   display: flex;
   align-items: flex-start;
-  padding-top: 2px;
+  padding-top: 4px;
 }
 
 .role-picker-row.active {
-  border-color: #8fb2ff;
-  background: #f7fbff;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.08);
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-subtle);
+  box-shadow: var(--focus-ring);
 }
 
 .role-picker-content {
@@ -9926,13 +9960,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .role-function-preview {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   margin: 8px 0;
 }
 
@@ -9941,10 +9975,10 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 0 8px;
-  background: #eef4ff;
-  color: #316dff;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 12px;
   font-style: normal;
   font-weight: 700;
@@ -9952,8 +9986,8 @@ onUnmounted(() => {
 }
 
 .role-function-preview em {
-  background: #f4f7fb;
-  color: #667085;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .role-detail-drawer {
@@ -9962,10 +9996,10 @@ onUnmounted(() => {
   flex-direction: column;
   min-height: 0;
   max-height: 520px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  padding: 14px;
-  background: #fbfdff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--color-bg-subtle);
 }
 
 .drawer-close {
@@ -9974,21 +10008,21 @@ onUnmounted(() => {
 }
 
 .drawer-eyebrow {
-  color: #316dff;
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .role-detail-drawer h4 {
-  margin: 6px 32px 4px 0;
-  color: #172033;
+  margin: 8px 32px 4px 0;
+  color: var(--color-text);
   font-size: 16px;
   line-height: 1.35;
 }
 
 .role-detail-drawer p {
   margin: 0;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -10003,9 +10037,9 @@ onUnmounted(() => {
   min-height: 0;
   margin-top: 12px;
   overflow: auto;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .role-detail-table {
@@ -10015,9 +10049,9 @@ onUnmounted(() => {
 
 .role-detail-table th,
 .role-detail-table td {
-  border-bottom: 1px solid #e6edf5;
-  padding: 10px;
-  color: #455468;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 12px;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
   text-align: left;
@@ -10028,9 +10062,9 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 1;
-  background: #f8fafc;
-  color: #8a96a8;
-  font-weight: 800;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-tertiary);
+  font-weight: 700;
 }
 
 .role-detail-table tr:last-child td {
@@ -10039,7 +10073,7 @@ onUnmounted(() => {
 
 .role-detail-table td:first-child {
   width: 34%;
-  color: #172033;
+  color: var(--color-text);
   font-weight: 700;
 }
 
@@ -10053,10 +10087,10 @@ onUnmounted(() => {
   }
 }
 .modal-actions {
-  justify-content: flex-start;
-  margin-top: 18px;
-  border-top: 1px solid #e6edf5;
-  padding-top: 14px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 16px;
 }
 
 .modal-form-field {
@@ -10066,25 +10100,25 @@ onUnmounted(() => {
 }
 
 .copy-user-hints {
-  margin-top: 10px;
-  color: #8a96a8;
+  margin-top: 12px;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .data-tree-group {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .data-tree-child {
   display: grid;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
   padding-left: 12px;
-  border-left: 1px solid #e6edf5;
-  color: #6b778c;
+  border-left: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -10094,87 +10128,87 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   min-height: 28px;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 500;
 }
 
 .portal-permission-tree,
 .role-permission-tree {
-  gap: 6px;
+  gap: 8px;
 }
 
 .permission-tree-root,
 .data-tree-group {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
   overflow: hidden;
 }
 
 .permission-tree-branch,
 .data-tree-child {
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
 }
 
 .permission-tree-root > summary,
 .data-tree-group > summary {
-  min-height: 34px;
-  padding: 0 10px;
-  background: #f8fafc;
-  color: #172033;
+  min-height: var(--control-height-md);
+  padding: 0 12px;
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
 }
 
 .permission-tree-branch > summary,
 .data-tree-child > summary {
   min-height: 32px;
-  padding: 0 10px;
+  padding: 0 12px;
   background: transparent;
-  color: #172033;
+  color: var(--color-text);
 }
 
 .permission-tree-root > summary:hover,
 .permission-tree-branch > summary:hover,
 .data-tree-group > summary:hover,
 .data-tree-child > summary:hover {
-  background: #f4f7fb;
+  background: var(--color-bg-subtle);
 }
 
 .permission-tree-branch-list,
 .data-tree-branch-list {
   gap: 4px;
-  padding: 6px 8px 8px 22px;
-  border-top: 1px solid #edf2f8;
+  padding: 8px 8px 8px 24px;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .data-tree-leaf-list {
   display: grid;
-  gap: 2px;
+  gap: 4px;
   margin: 0 8px 8px 24px;
-  padding-left: 10px;
-  border-left: 1px solid #e6edf5;
+  padding-left: 12px;
+  border-left: 1px solid var(--color-border-subtle);
 }
 
 .permission-matrix {
   margin: 0 8px 8px 24px;
-  border-color: #edf2f8;
-  border-radius: 6px;
+  border-color: var(--color-border-subtle);
+  border-radius: var(--radius-md);
 }
 
 .permission-matrix-head {
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .permission-data-check,
 .data-tree-leaf {
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .permission-data-check:hover,
 .data-tree-leaf:hover {
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .data-tree-group {
@@ -10182,11 +10216,11 @@ onUnmounted(() => {
 }
 
 .data-modal-search {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 
 .data-search-empty {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .data-tree-child {
@@ -10194,7 +10228,7 @@ onUnmounted(() => {
   margin-top: 0;
   padding-left: 0;
   border-left: 0;
-  color: #172033;
+  color: var(--color-text);
 }
 
 .data-tree-leaf {
@@ -10206,7 +10240,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .permission-scope-grid article {
@@ -10218,21 +10252,21 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   min-height: 32px;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
 .check-row input {
   width: 16px;
   height: 16px;
-  accent-color: #316dff;
+  accent-color: var(--color-primary);
 }
 
 .relation-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .relation-grid article {
@@ -10242,10 +10276,10 @@ onUnmounted(() => {
 .confirm-box,
 .execute-summary {
   margin-top: 16px;
-  border: 1px solid #bcd3ff;
-  border-radius: 8px;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f7fbff;
+  background: var(--color-primary-subtle);
 }
 
 .scope-tenant-grid {
@@ -10256,78 +10290,78 @@ onUnmounted(() => {
 .tenant-multi-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  border: 1px solid #d9e2ef;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
+  gap: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--color-surface);
 }
 
 .tenant-multi-options.invalid {
-  border-color: #d92d20;
+  border-color: var(--color-danger);
 }
 
 .tenant-multi-options label {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  border: 1px solid #d9e2ef;
-  border-radius: 7px;
-  padding: 0 11px;
-  color: #52637a;
+  gap: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
 .tenant-multi-options label.selected {
-  border-color: #316dff;
-  background: #f1f6ff;
-  color: #245dde;
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
 }
 
 .tenant-multi-options input {
   width: 15px;
   height: 15px;
-  accent-color: #316dff;
+  accent-color: var(--color-primary);
 }
 
 .change-summary-panel {
-  margin-top: 14px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  padding: 14px;
-  background: #fff;
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--color-surface);
 }
 
 .change-summary-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-top: 12px;
 }
 
 .change-summary-item {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fbff;
+  background: var(--color-bg-subtle);
 }
 
 .change-summary-item b {
   display: block;
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
 }
 
 .change-summary-item p {
-  margin: 6px 0 0;
-  color: #516173;
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
 
 .readonly-change-summary {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .approval-change-actions {
@@ -10336,7 +10370,7 @@ onUnmounted(() => {
 
 .confirm-box b,
 .execute-summary b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -10345,15 +10379,15 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 20px;
 }
 
 .approval-route div {
   position: relative;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .approval-route span {
@@ -10361,47 +10395,47 @@ onUnmounted(() => {
   place-items: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
-  background: #edf3ff;
-  color: #316dff;
+  border-radius: 9999px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .approval-route b {
   display: block;
-  margin-top: 10px;
-  color: #172033;
+  margin-top: 12px;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
 }
 
 .approval-route small {
   display: block;
-  margin-top: 6px;
-  color: #7a8798;
+  margin-top: 8px;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .approval-route .done {
-  border-color: #93e1ad;
-  background: #f2fff6;
+  border-color: var(--color-success);
+  background: var(--color-success-subtle);
 }
 
 .flow-actions {
   flex: 0 0 auto;
-  justify-content: flex-start;
-  margin-top: 10px;
-  border-top: 1px solid #e6edf5;
-  padding-top: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 12px;
   min-height: 56px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), #fff 30%);
+  background: linear-gradient(180deg, var(--color-surface), var(--color-surface) 30%);
 }
 
 .primary-btn,
 .ghost-btn {
-  min-height: 36px;
+  min-height: var(--control-height-md);
   border-radius: var(--radius-md);
   padding: 0 16px;
   font-size: 13px;
@@ -10449,10 +10483,10 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #ffb4b4;
-  border-radius: 8px;
-  background: #fff;
-  color: #e53935;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-danger);
   font-weight: 700;
   cursor: pointer;
   transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
@@ -10465,9 +10499,9 @@ onUnmounted(() => {
 }
 
 .danger-outline-btn:hover {
-  border-color: #e53935;
-  background: #fff7f7;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  box-shadow: var(--shadow-popover);
 }
 
 .ghost-btn:disabled {
@@ -10478,25 +10512,25 @@ onUnmounted(() => {
 .segmented {
   display: inline-flex;
   gap: 4px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 4px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .segmented button {
   border: 0;
-  border-radius: 6px;
-  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
   background: transparent;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   cursor: pointer;
 }
 
 .segmented button.active {
-  background: #316dff;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .permission-table-wrap {
@@ -10534,38 +10568,38 @@ onUnmounted(() => {
 }
 
 .table-status.done {
-  background: #eafaf0;
-  color: #18a058;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .table-status.pending {
-  background: #fff4df;
-  color: #d97706;
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
 .table-status.rejected {
-  background: #fff1f1;
-  color: #e53935;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
 }
 
 .link-btn {
   border: 0;
   background: transparent;
-  color: #316dff;
+  color: var(--color-primary);
   font-weight: 700;
   cursor: pointer;
 }
 
 .link-btn.success {
-  color: #18a058;
+  color: var(--color-success);
 }
 
 .link-btn.danger {
-  color: #e53935;
+  color: var(--color-danger);
 }
 
 .permission-grid-list article {
-  padding: 18px;
+  padding: 20px;
 }
 
 .permission-grid-list.compact {
@@ -10579,8 +10613,8 @@ onUnmounted(() => {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(17, 24, 39, 0.25);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--color-text) 45%, transparent);
+  backdrop-filter: none;
 }
 
 .permission-picker-layer {
@@ -10600,11 +10634,11 @@ onUnmounted(() => {
   width: min(680px, 100%);
   max-height: min(720px, calc(100vh - 48px));
   overflow: auto;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
   padding: 24px;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--shadow-popover);
 }
 
 .modal-panel.small {
@@ -10613,14 +10647,14 @@ onUnmounted(() => {
 
 .modal-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 34px;
-  height: 34px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  background: #fff;
-  color: #667085;
+  top: 16px;
+  right: 16px;
+  width: var(--control-height-md);
+  height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 20px;
   cursor: pointer;
 }
@@ -10632,37 +10666,37 @@ onUnmounted(() => {
 }
 
 .picker-list button {
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 12px;
   text-align: left;
-  background: #f8fafc;
-  color: #172033;
+  background: var(--color-bg-subtle);
+  color: var(--color-text);
   cursor: pointer;
 }
 
 .detail-list {
   display: grid;
   grid-template-columns: 140px 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .detail-list dt {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
 }
 
 .detail-list dd {
   margin: 0;
-  color: #172033;
+  color: var(--color-text);
 }
 
 .modal-note {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
 }
 
 .record-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-top: 16px;
 }
 
@@ -10670,24 +10704,24 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 150px 1fr auto;
   gap: 8px 12px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .record-list time {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
 }
 
 .record-list p {
   grid-column: 2 / -1;
   margin: 0;
-  color: #5b6678;
+  color: var(--color-text-secondary);
 }
 
 .record-list span {
-  color: #316dff;
+  color: var(--color-primary);
   font-weight: 700;
 }
 
@@ -10696,19 +10730,19 @@ onUnmounted(() => {
   grid-template-columns: minmax(220px, 260px) minmax(360px, 1fr) auto;
   gap: 12px;
   align-items: start;
-  margin-bottom: 14px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .approval-filter-bar label,
 .approval-handler-filter {
   display: grid;
   grid-template-rows: 18px auto;
-  gap: 6px;
-  color: #667085;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -10722,7 +10756,7 @@ onUnmounted(() => {
 }
 
 .filter-label-row em {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-style: normal;
   font-weight: 500;
@@ -10738,19 +10772,19 @@ onUnmounted(() => {
 .approval-decision-panel textarea {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
 
 .approval-decision-panel textarea {
   min-height: 96px;
-  padding: 10px 8px;
+  padding: 12px 8px;
   resize: vertical;
 }
 
@@ -10759,17 +10793,17 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  padding: 3px 8px;
-  background: #fff;
+  gap: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  background: var(--color-surface);
 }
 
 .handler-combobox.focused {
-  border-color: #316dff;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .approval-filter-bar .approval-handler-filter .handler-combobox input {
@@ -10779,7 +10813,7 @@ onUnmounted(() => {
   min-height: 28px;
   border: 0;
   border-radius: 0;
-  padding: 0 2px;
+  padding: 0 4px;
   box-shadow: none;
 }
 
@@ -10793,15 +10827,15 @@ onUnmounted(() => {
 .handler-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 26px;
-  border: 1px solid #bcd3ff;
-  border-radius: 999px;
-  padding: 0 8px 0 10px;
-  background: #eef4ff;
-  color: #316dff;
+  border: 1px solid var(--color-primary-border);
+  border-radius: 9999px;
+  padding: 0 8px 0 12px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .handler-chip button {
@@ -10810,16 +10844,16 @@ onUnmounted(() => {
   width: 18px;
   height: 18px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 9999px;
   padding: 0;
-  background: rgba(49, 109, 255, 0.12);
-  color: #316dff;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   cursor: pointer;
 }
 
 .handler-chip button:hover {
-  background: #fff1f1;
-  color: #e53935;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
 }
 
 .handler-suggestion-list {
@@ -10832,20 +10866,20 @@ onUnmounted(() => {
   gap: 4px;
   max-height: 220px;
   overflow: auto;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  padding: 6px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
 }
 
 .handler-suggestion-list button {
   min-height: 30px;
   border: 0;
-  border-radius: 6px;
-  padding: 0 10px;
+  border-radius: var(--radius-md);
+  padding: 0 12px;
   background: transparent;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
   text-align: left;
@@ -10853,8 +10887,8 @@ onUnmounted(() => {
 }
 
 .handler-suggestion-list button:hover {
-  background: #eef4ff;
-  color: #316dff;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .handler-chip-list,
@@ -10867,11 +10901,11 @@ onUnmounted(() => {
 .handler-chip-list button,
 .approval-result-options button {
   min-height: 32px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #455468;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -10879,9 +10913,9 @@ onUnmounted(() => {
 
 .handler-chip-list button.active,
 .approval-result-options button.active {
-  border-color: #316dff;
-  background: #316dff;
-  color: #fff;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .handler-chip-list button:disabled {
@@ -10891,14 +10925,14 @@ onUnmounted(() => {
 .table-empty {
   display: grid;
   place-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 120px;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   text-align: center;
 }
 
 .table-empty b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
@@ -10922,57 +10956,57 @@ onUnmounted(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #e6edf5;
-  padding: 20px 64px 16px 24px;
-  background: #fff;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 20px calc(48px + 16px) 16px 24px;
+  background: var(--color-surface);
 }
 
 .approval-workspace-head h3 {
   margin: 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 16px;
   line-height: 1.4;
 }
 
 .approval-workspace-head p {
-  margin: 6px 0 0;
-  color: #7a8798;
+  margin: 8px 0 0;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .approval-workspace-body {
   display: grid;
   flex: 1 1 auto;
-  gap: 14px;
+  gap: 16px;
   min-height: 0;
   overflow: auto;
-  padding: 18px 24px 20px;
-  background: #f8fafc;
+  padding: 20px 24px 20px;
+  background: var(--color-bg-subtle);
 }
 
 .approval-readonly-panel,
 .approval-edit-panel,
 .approval-decision-panel {
   min-width: 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 16px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .approval-edit-panel {
-  background: #fbfcff;
+  background: var(--color-bg-subtle);
 }
 
 .approval-decision-panel {
-  border-color: #bcd3ff;
-  background: #f7fbff;
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-subtle);
 }
 
 .approval-detail-grid {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr) 140px minmax(0, 1fr);
-  gap: 10px 14px;
+  gap: 12px 16px;
   margin: 0;
 }
 
@@ -11033,7 +11067,7 @@ onUnmounted(() => {
 }
 
 .approval-detail-grid dt {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -11041,7 +11075,7 @@ onUnmounted(() => {
 .approval-detail-grid dd {
   min-width: 0;
   margin: 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -11062,28 +11096,28 @@ onUnmounted(() => {
 
 .business-task-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .business-task-card {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   padding: 12px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 }
 
 .business-task-card.approved {
-  border-color: #bfecd3;
-  background: #f5fff9;
+  border-color: var(--color-success);
+  background: var(--color-success-subtle);
 }
 
 .business-task-card.rejected {
-  border-color: #ffd2d2;
-  background: #fff8f8;
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
 }
 
 .business-task-card b,
@@ -11094,35 +11128,35 @@ onUnmounted(() => {
 
 .business-task-card p {
   margin: 4px 0;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
 .business-task-card small {
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .organization-picker {
-  padding: 2px 0;
+  padding: 4px 0;
 }
 
 .approval-submit-note {
-  margin-top: 14px;
-  border: 1px solid #bcd3ff;
-  border-radius: 8px;
+  margin-top: 16px;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .approval-submit-note b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .approval-submit-note p {
-  margin: 6px 0 0;
-  color: #6b778c;
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
@@ -11131,21 +11165,21 @@ onUnmounted(() => {
   z-index: 2;
   flex: 0 0 auto;
   margin-top: 0;
-  border-top: 1px solid #e6edf5;
+  border-top: 1px solid var(--color-border-subtle);
   padding: 12px 24px;
-  background: #fff;
-  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.04);
+  background: var(--color-surface);
+  box-shadow: none;
 }
 
 .approval-feedback {
   margin-right: auto;
-  color: #18a058;
+  color: var(--color-success);
   font-size: 12px;
   font-weight: 700;
 }
 
 .apply-submit-feedback {
-  color: #d92d20;
+  color: var(--color-danger);
 }
 
 .approval-notification-modal {
@@ -11159,10 +11193,10 @@ onUnmounted(() => {
 }
 
 .simple-notice-title {
-  border-bottom: 1px solid #dfe3ea;
-  padding: 30px 44px 12px;
-  color: #172033;
-  font-size: 22px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 32px calc(40px + 4px) 12px;
+  color: var(--color-text);
+  font-size: 20px;
   line-height: 1.4;
 }
 
@@ -11170,102 +11204,102 @@ onUnmounted(() => {
   display: grid;
   gap: 24px;
   min-height: 300px;
-  padding: 42px 70px 28px;
-  color: #070833;
+  padding: calc(40px + 4px) calc(48px + 24px) 24px;
+  color: var(--color-text);
 }
 
 .simple-notice-body h3 {
   margin: 0;
-  color: #070833;
+  color: var(--color-text);
   font-size: 24px;
   line-height: 1.55;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .simple-notice-body p {
   margin: 0;
-  color: #101138;
+  color: var(--color-text);
   font-size: 20px;
   line-height: 1.75;
 }
 
 .simple-notice-body b {
-  color: #070833;
-  font-weight: 900;
+  color: var(--color-text);
+  font-weight: 700;
 }
 
 .notice-ticket-link {
   border: 0;
   padding: 0 4px;
   background: transparent;
-  color: #2b8fdf;
+  color: var(--color-primary);
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: underline;
   cursor: pointer;
 }
 
 .simple-notice-actions {
-  margin: 0 44px;
-  border-top: 1px solid #cfd4dc;
-  padding: 20px 6px 16px;
+  margin: 0 calc(40px + 4px);
+  border-top: 1px solid var(--color-border);
+  padding: 20px 8px 16px;
 }
 .approval-notification-head {
   display: grid;
   gap: 8px;
-  padding-right: 44px;
+  padding-right: calc(40px + 4px);
 }
 
 .approval-notification-head h3 {
   margin: 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 18px;
   line-height: 1.4;
 }
 
 .approval-notification-head p {
   margin: 0;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
 .approval-notification-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 18px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .approval-notification-summary div {
   min-width: 0;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .approval-notification-summary span {
   display: block;
-  margin-bottom: 6px;
-  color: #8a96a8;
+  margin-bottom: 8px;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 700;
 }
 
 .approval-notification-summary b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   overflow-wrap: anywhere;
 }
 
 .approval-mail-panel {
-  border-color: #cdebd7;
-  background: #fbfffd;
+  border-color: var(--color-success);
+  background: var(--color-success-subtle);
 }
 
 .approval-mail-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-top: 16px;
 }
 
@@ -11278,27 +11312,27 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: start;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .approval-mail-list article b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .approval-mail-list article p {
-  margin: 6px 0;
-  color: #455468;
+  margin: 8px 0;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .approval-mail-list article small {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
@@ -11313,8 +11347,8 @@ onUnmounted(() => {
 .approval-business-form select.invalid,
 .approval-decision-panel input.invalid,
 .approval-decision-panel textarea.invalid {
-  border-color: #e53935;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-popover);
 }
 .user-filter-bar {
   display: grid;
@@ -11322,16 +11356,16 @@ onUnmounted(() => {
   gap: 12px;
   align-items: end;
   margin-bottom: 12px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .user-filter-bar label {
   display: grid;
-  gap: 6px;
-  color: #667085;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -11340,21 +11374,21 @@ onUnmounted(() => {
 .user-filter-bar select {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
 
 .user-filter-bar input:focus,
 .user-filter-bar select:focus {
-  border-color: #316dff;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .user-management-table {
@@ -11365,17 +11399,17 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: 20px;
   margin-top: 16px;
   margin-bottom: 16px;
-  border: 1px solid #bcd3ff;
-  border-radius: 8px;
-  padding: 14px;
-  background: #f7fbff;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--color-primary-subtle);
 }
 
 .admin-cleanup-panel b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 14px;
 }
 
@@ -11383,7 +11417,7 @@ onUnmounted(() => {
 .admin-cleanup-panel small {
   display: block;
   margin: 4px 0 0;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -11391,49 +11425,49 @@ onUnmounted(() => {
 .admin-cleanup-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 0 0 auto;
 }
 
 .admin-cleanup-notice {
-  margin-top: -6px;
+  margin-top: 4px;
   margin-bottom: 16px;
-  border: 1px solid #cdebd7;
-  border-radius: 8px;
-  padding: 10px 12px;
-  background: #f2fff6;
-  color: #16803a;
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  padding: 12px 12px;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
   font-size: 13px;
   font-weight: 700;
 }
 
 .email-notice-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-top: 16px;
 }
 
 .email-notice-list article {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .email-notice-list article b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .email-notice-list article p {
-  margin: 6px 0;
-  color: #455468;
+  margin: 8px 0;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
 
 .email-notice-list article small {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 .admin-login-cell {
@@ -11442,36 +11476,36 @@ onUnmounted(() => {
 }
 
 .admin-login-cell b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .admin-login-cell small {
-  color: #d97706;
+  color: var(--color-warning);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .admin-cleanup-mail-link {
   width: fit-content;
-  border: 1px solid rgba(217, 119, 6, .28);
-  border-radius: 4px;
-  background: #fffbeb;
-  color: #d97706;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.35;
-  padding: 2px 6px;
+  padding: 4px 8px;
   text-align: left;
 }
 
 .admin-cleanup-mail-link:hover,
 .admin-cleanup-mail-link:focus-visible {
-  border-color: rgba(217, 119, 6, .46);
-  background: #fff7e6;
+  border-color: var(--color-warning);
+  background: var(--color-warning-subtle);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, .10);
+  box-shadow: var(--shadow-popover);
 }
 .user-account-cell {
   display: grid;
@@ -11479,12 +11513,12 @@ onUnmounted(() => {
 }
 
 .user-account-cell b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .user-account-cell small {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
@@ -11492,9 +11526,9 @@ onUnmounted(() => {
   display: flex;
   justify-content: flex-start;
   margin: 0;
-  border-bottom: 1px solid #dce8ff;
-  padding: 12px 24px 14px;
-  background: #f8fbff;
+  border-bottom: 1px solid var(--color-primary-border);
+  padding: 12px 24px 16px;
+  background: var(--color-bg-subtle);
 }
 
 .user-application-strip > div {
@@ -11503,30 +11537,30 @@ onUnmounted(() => {
 }
 
 .user-application-strip > div b {
-  color: #245dde;
+  color: var(--color-primary-hover);
   font-size: 13px;
 }
 
 .user-application-strip > div span {
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .user-application-strip.warning {
-  border-bottom-color: #f5d59a;
-  background: #fffaf0;
+  border-bottom-color: var(--color-warning);
+  background: var(--color-warning-subtle);
 }
 
 .user-application-strip.warning > div b {
-  color: #b65f00;
+  color: var(--color-warning);
 }
 
 .user-application-strip label {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   width: min(320px, 100%);
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -11534,37 +11568,37 @@ onUnmounted(() => {
 .user-application-strip input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 34px;
-  border: 1px solid #d6e0ef;
-  border-radius: 6px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
 
 .user-application-strip input:focus {
-  border-color: #316dff;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .user-application-strip input.invalid {
-  border-color: #e53935;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-popover);
 }
 
 .user-application-strip .field-error {
-  color: #e53935;
+  color: var(--color-danger);
 }
 
 .user-editor-modal .role-editor-head {
-  padding-right: 72px;
+  padding-right: calc(48px + 24px);
 }
 
 .user-modal-status {
-  margin-right: 10px;
+  margin-right: 12px;
 }
 
 .compact-segmented {
@@ -11585,7 +11619,7 @@ onUnmounted(() => {
 .role-card-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   white-space: nowrap;
 }
 
@@ -11598,16 +11632,16 @@ onUnmounted(() => {
   gap: 12px;
   align-items: end;
   margin-bottom: 12px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .role-filter-bar label {
   display: grid;
-  gap: 6px;
-  color: #667085;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -11618,7 +11652,7 @@ onUnmounted(() => {
 
 .role-management-filter-bar .ghost-btn {
   width: 100%;
-  min-height: 36px;
+  min-height: var(--control-height-md);
 }
 .role-filter-bar input,
 .role-filter-bar select,
@@ -11629,19 +11663,19 @@ onUnmounted(() => {
 .custom-rule-table input {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
 
 .role-basic-form textarea {
   min-height: 88px;
-  padding: 10px 8px;
+  padding: 12px 8px;
   resize: vertical;
 }
 
@@ -11652,9 +11686,9 @@ onUnmounted(() => {
 .role-basic-form textarea:focus,
 .selected-permission-table input:focus,
 .custom-rule-table input:focus {
-  border-color: #316dff;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .role-result-line {
@@ -11662,20 +11696,20 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
-  color: #6b778c;
+  margin-bottom: 12px;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
 .role-result-line b {
-  color: #316dff;
+  color: var(--color-primary);
   font-size: 12px;
 }
 
 .role-table-wrap {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .role-management-table {
@@ -11690,13 +11724,13 @@ onUnmounted(() => {
 }
 
 .role-name-cell b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .role-desc-cell {
   max-width: 360px;
-  color: #5b6678;
+  color: var(--color-text-secondary);
 }
 
 .row-actions {
@@ -11720,45 +11754,45 @@ onUnmounted(() => {
   flex: 0 0 auto;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid #e6edf5;
+  gap: 16px;
+  border-bottom: 1px solid var(--color-border-subtle);
   padding: 20px 24px 16px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .role-editor-head h3 {
   margin: 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 16px;
   line-height: 1.4;
 }
 
 .role-editor-head p {
-  margin: 6px 0 0;
-  color: #7a8798;
+  margin: 8px 0 0;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .role-impact-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  border-bottom: 1px solid #e6edf5;
+  gap: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
   padding: 12px 24px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .role-impact-strip span {
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  padding: 10px 8px;
-  background: #fff;
-  color: #667085;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
 .role-impact-strip b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 16px;
 }
 
@@ -11766,10 +11800,10 @@ onUnmounted(() => {
 .role-data-tabs {
   display: flex;
   flex: 0 0 auto;
-  gap: 18px;
-  border-bottom: 1px solid #e6edf5;
+  gap: 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
   padding: 0 24px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .role-editor-tabs button,
@@ -11778,7 +11812,7 @@ onUnmounted(() => {
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: #667085;
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
@@ -11786,57 +11820,57 @@ onUnmounted(() => {
 
 .role-editor-tabs button.active,
 .role-data-tabs button.active {
-  border-bottom-color: #316dff;
-  color: #316dff;
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .role-data-tabs button.locked:not(.active) {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
 }
 
 .role-data-tabs button.locked:not(.active)::after {
   content: "需先清空另一类";
   display: inline-flex;
   margin-left: 8px;
-  border-radius: 999px;
-  padding: 2px 6px;
-  background: #fff5e6;
-  color: #b56a00;
-  font-size: 11px;
+  border-radius: 9999px;
+  padding: 4px 8px;
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  font-size: 12px;
   font-weight: 700;
 }
 
 .data-mode-notice {
   display: block;
-  margin-bottom: 10px;
-  border: 1px solid #d6e6ff;
-  border-radius: 6px;
-  padding: 8px 10px;
-  background: #f6faff;
-  color: #415675;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  background: var(--color-primary-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .data-mode-notice.error {
-  border-color: #ffd1d1;
-  background: #fff7f7;
-  color: #d33b3b;
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
 }
 
 .role-editor-section {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 18px 24px 20px;
-  background: #f8fafc;
+  padding: 20px 24px 20px;
+  background: var(--color-bg-subtle);
 }
 
 .role-basic-form {
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 16px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .user-basic-section {
@@ -11853,8 +11887,8 @@ onUnmounted(() => {
 
 .user-basic-section-head.full {
   grid-column: 1 / -1;
-  margin: 4px -16px 0;
-  border-top: 1px solid #e8edf5;
+  margin: 4px 4px 0;
+  border-top: 1px solid var(--color-border-subtle);
   padding: 16px 16px 0;
 }
 
@@ -11864,13 +11898,13 @@ onUnmounted(() => {
 }
 
 .user-basic-section-head b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 14px;
 }
 
 .user-basic-section-head small {
-  margin-top: 3px;
-  color: #7a8798;
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
@@ -11881,21 +11915,21 @@ onUnmounted(() => {
 }
 
 .sensitivity-badge.low {
-  border-color: #9ad9b3;
-  background: #eafaf0;
-  color: #18a058;
+  border-color: var(--color-success);
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .sensitivity-badge.medium {
-  border-color: #f8d28a;
-  background: #fff4df;
-  color: #d97706;
+  border-color: var(--color-warning);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
 .sensitivity-badge.high {
-  border-color: #ffb4b4;
-  background: #fff1f1;
-  color: #e53935;
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
 }
 
 .sensitivity-badge {
@@ -11903,17 +11937,17 @@ onUnmounted(() => {
   align-items: center;
   min-height: 26px;
   border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0 10px;
+  border-radius: 9999px;
+  padding: 0 12px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .permission-editor-grid {
   display: grid;
   grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.3fr);
-  gap: 14px;
+  gap: 16px;
   min-height: 480px;
 }
 
@@ -11921,10 +11955,10 @@ onUnmounted(() => {
 .permission-selected-panel,
 .custom-rule-panel {
   min-width: 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .permission-subhead {
@@ -11936,14 +11970,14 @@ onUnmounted(() => {
 }
 
 .permission-subhead b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .permission-subhead small {
   display: block;
   margin-top: 4px;
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -11955,17 +11989,17 @@ onUnmounted(() => {
 
 .role-permission-tree {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   max-height: 520px;
   overflow: auto;
-  padding-right: 2px;
+  padding-right: 4px;
 }
 
 .permission-tree-root,
 .permission-tree-branch {
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .permission-tree-root summary,
@@ -11977,7 +12011,7 @@ onUnmounted(() => {
   min-height: 40px;
   padding: 0 12px;
   cursor: pointer;
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   font-weight: 700;
   list-style: none;
@@ -11992,7 +12026,7 @@ onUnmounted(() => {
 .permission-tree-branch summary::before {
   content: '›';
   flex: 0 0 auto;
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 16px;
   transform: rotate(0deg);
   transition: transform 0.16s ease;
@@ -12012,7 +12046,7 @@ onUnmounted(() => {
 .permission-tree-root summary span,
 .permission-tree-branch summary span {
   flex: 0 0 auto;
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -12020,13 +12054,13 @@ onUnmounted(() => {
 .permission-tree-branch-list {
   display: grid;
   gap: 8px;
-  padding: 0 10px 10px 24px;
+  padding: 0 12px 12px 24px;
 }
 
 .permission-matrix {
-  margin: 0 10px 10px;
-  border: 1px solid #edf2f8;
-  border-radius: 8px;
+  margin: 0 12px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -12038,19 +12072,19 @@ onUnmounted(() => {
 }
 
 .permission-matrix-head {
-  background: #f8fafc;
-  color: #667085;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .permission-matrix-head span,
 .permission-matrix-row > span,
 .permission-data-check {
   min-width: 0;
-  padding: 9px 10px;
-  border-right: 1px solid #edf2f8;
-  color: #455468;
+  padding: 8px 12px;
+  border-right: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -12062,7 +12096,7 @@ onUnmounted(() => {
 }
 
 .permission-matrix-row + .permission-matrix-row {
-  border-top: 1px solid #edf2f8;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .permission-data-check {
@@ -12075,7 +12109,7 @@ onUnmounted(() => {
 .permission-data-check input {
   width: 15px;
   min-height: 15px;
-  accent-color: #316dff;
+  accent-color: var(--color-primary);
 }
 
 .compact-role-card .source-role-title {
@@ -12083,7 +12117,7 @@ onUnmounted(() => {
 }
 .editor-permission-tree {
   max-height: 560px;
-  padding: 2px 4px 4px 0;
+  padding: 4px 4px 4px 0;
 }
 
 .drawer-permission-tree {
@@ -12092,7 +12126,7 @@ onUnmounted(() => {
 
 .role-permission-overview {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin-top: 12px;
 }
 
@@ -12105,22 +12139,22 @@ onUnmounted(() => {
 .role-permission-tabs button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 30px;
-  border: 1px solid #dfe7f3;
-  border-radius: 6px;
-  padding: 0 10px;
-  background: #fff;
-  color: #455468;
+  border: 0; border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--color-text-secondary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .role-permission-tabs button.active {
-  border-color: #316dff;
-  background: #eef4ff;
-  color: #316dff;
+  border-bottom-color: var(--color-primary);
+  background: transparent;
+  color: var(--color-primary);
 }
 
 .role-permission-tabs b {
@@ -12128,7 +12162,7 @@ onUnmounted(() => {
 }
 
 .categorized-permission-tree {
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .permission-item-list {
@@ -12142,40 +12176,40 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 8px;
   min-width: 0;
-  border: 1px solid #edf2f8;
-  border-radius: 6px;
-  padding: 9px 10px;
-  background: #fff;
-  color: #455468;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 
 .permission-detail-check:hover {
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .permission-detail-check input {
   flex: 0 0 auto;
   width: 15px;
   min-height: 15px;
-  margin-top: 2px;
-  accent-color: #316dff;
+  margin-top: 4px;
+  accent-color: var(--color-primary);
 }
 
 .permission-detail-check span {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
 .permission-detail-check b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 12px;
   line-height: 1.35;
 }
 
 .permission-detail-check small {
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
   word-break: break-all;
@@ -12184,50 +12218,50 @@ onUnmounted(() => {
 
 .role-permission-tree.portal-permission-tree,
 .role-permission-tree {
-  gap: 6px;
+  gap: 8px;
 }
 
 .role-permission-tree .permission-tree-root {
   overflow: hidden;
-  border-color: #e6edf5;
+  border-color: var(--color-border-subtle);
 }
 
 .role-permission-tree .permission-tree-branch {
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
 }
 
 .role-permission-tree .permission-tree-root > summary {
-  min-height: 34px;
-  padding: 0 10px;
-  background: #f8fafc;
+  min-height: var(--control-height-md);
+  padding: 0 12px;
+  background: var(--color-bg-subtle);
 }
 
 .role-permission-tree .permission-tree-branch > summary {
   min-height: 32px;
-  padding: 0 10px;
+  padding: 0 12px;
   background: transparent;
 }
 
 .role-permission-tree .permission-tree-root > summary:hover,
 .role-permission-tree .permission-tree-branch > summary:hover {
-  background: #f4f7fb;
+  background: var(--color-bg-subtle);
 }
 
 .role-permission-tree .permission-tree-branch-list {
   gap: 4px;
-  padding: 6px 8px 8px 22px;
-  border-top: 1px solid #edf2f8;
+  padding: 8px 8px 8px 24px;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .role-permission-tree .permission-matrix {
   margin: 0 8px 8px 24px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .role-permission-tree .permission-data-check:hover {
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .editable-permission-matrix .permission-data-check,
@@ -12240,9 +12274,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 9px 10px;
-  border-right: 1px solid #edf2f8;
-  color: #455468;
+  padding: 8px 12px;
+  border-right: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -12253,7 +12287,7 @@ onUnmounted(() => {
 }
 
 .permission-data-check.readonly-check {
-  color: #667085;
+  color: var(--color-text-secondary);
   cursor: default;
 }
 
@@ -12274,7 +12308,7 @@ onUnmounted(() => {
 .selected-permission-table input[type='checkbox'] {
   width: 16px;
   min-height: 16px;
-  accent-color: #316dff;
+  accent-color: var(--color-primary);
 }
 
 .compact-empty {
@@ -12282,7 +12316,7 @@ onUnmounted(() => {
 }
 
 .role-data-tabs {
-  margin: -18px -24px 16px;
+  margin: 4px 4px 16px;
 }
 
 .custom-rule-head {
@@ -12295,53 +12329,53 @@ onUnmounted(() => {
 
 .delete-block-box,
 .delete-impact-list {
-  margin-top: 14px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
+  margin-top: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .delete-block-box {
-  border-color: #ffcbcb;
-  background: #fff7f7;
+  border-color: var(--color-danger);
+  background: var(--color-danger-subtle);
 }
 
 .delete-block-box b {
-  color: #e53935;
+  color: var(--color-danger);
   font-size: 13px;
 }
 
 .delete-block-box p {
-  margin: 6px 0 0;
-  color: #6b778c;
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
 .delete-impact-list {
   display: grid;
   gap: 8px;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
 .danger-btn {
-  min-height: 36px;
-  border: 1px solid #e53935;
-  border-radius: 8px;
-  padding: 0 14px;
-  background: #e53935;
-  color: #fff;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 0 16px;
+  background: var(--color-danger);
+  color: var(--color-on-primary);
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
 }
 
 .danger-btn:hover {
-  background: #c62828;
+  background: var(--color-danger);
 }
 .org-workspace-card {
-  gap: 14px;
+  gap: 16px;
 }
 
 .org-title-actions,
@@ -12351,7 +12385,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .org-title-actions {
@@ -12361,7 +12395,7 @@ onUnmounted(() => {
 .org-panel-head small,
 .org-member-head small {
   display: block;
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -12369,7 +12403,7 @@ onUnmounted(() => {
 .org-workspace-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
   min-height: 0;
   flex: 1 1 auto;
 }
@@ -12378,9 +12412,9 @@ onUnmounted(() => {
 .org-detail-panel {
   min-width: 0;
   min-height: 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .org-tree-panel {
@@ -12393,7 +12427,7 @@ onUnmounted(() => {
 
 .org-panel-head b,
 .org-member-head b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
@@ -12401,10 +12435,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  padding: 10px 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 8px;
+  background: var(--color-bg-subtle);
 }
 
 .org-search-box input {
@@ -12412,7 +12446,7 @@ onUnmounted(() => {
   flex: 1 1 auto;
   border: 0;
   background: transparent;
-  color: #172033;
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
   outline: none;
@@ -12422,35 +12456,35 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: var(--control-height-md);
   overflow-x: auto;
-  padding-bottom: 2px;
+  padding-bottom: 4px;
 }
 
 .org-chart-search-results span,
 .org-chart-search-results small {
   flex: 0 0 auto;
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .org-chart-search-results button {
   flex: 0 0 auto;
   min-height: 30px;
-  border: 1px solid #d8e1ee;
-  border-radius: 999px;
-  padding: 0 10px;
-  background: #fff;
-  color: #455468;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 0 12px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .org-chart-search-results button.active {
-  border-color: #8cb2ff;
-  background: #edf4ff;
-  color: #316dff;
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .org-chart-canvas {
@@ -12460,10 +12494,10 @@ onUnmounted(() => {
   gap: 0;
   min-height: 0;
   overflow: auto;
-  border: 1px solid #e6edf5;
-  border-radius: 8px;
-  padding: 20px 18px 24px;
-  background: linear-gradient(180deg, #fff 0%, #fbfcff 100%);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px 20px 24px;
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg-subtle) 100%);
 }
 
 .org-chart-tier {
@@ -12477,7 +12511,7 @@ onUnmounted(() => {
 .org-chart-tier.child-tier {
   align-items: stretch;
   justify-content: flex-start;
-  padding-top: 18px;
+  padding-top: 20px;
 }
 
 .org-chart-tier.child-tier::before {
@@ -12487,7 +12521,7 @@ onUnmounted(() => {
   left: 110px;
   right: 110px;
   height: 1px;
-  background: #d8e1ee;
+  background: var(--color-border);
 }
 
 .org-chart-card {
@@ -12495,16 +12529,16 @@ onUnmounted(() => {
   display: grid;
   align-content: start;
   justify-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 196px;
   min-height: 112px;
-  border: 1px solid #d8e1ee;
-  border-radius: 4px;
-  padding: 13px 14px 14px;
-  background: #fff;
-  color: #172033;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
   text-align: center;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-popover);
   transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
@@ -12512,16 +12546,16 @@ onUnmounted(() => {
   content: '';
   width: 18px;
   height: 18px;
-  margin-top: 2px;
+  margin-top: 4px;
   border-radius: 50%;
-  background: #edf4ff;
-  box-shadow: inset 0 0 0 5px #316dff;
+  background: var(--color-primary-subtle);
+  box-shadow: inset 0 0 0 5px var(--color-primary);
 }
 
 .org-chart-focus {
   display: grid;
   justify-items: center;
-  gap: 7px;
+  gap: 8px;
   width: 100%;
   border: 0;
   padding: 0;
@@ -12532,26 +12566,26 @@ onUnmounted(() => {
 }
 
 .org-chart-card:hover {
-  border-color: #8cb2ff;
-  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+  border-color: var(--color-primary-border);
+  box-shadow: var(--shadow-popover);
   transform: translateY(-1px);
 }
 
 .org-chart-card.active {
-  border-color: #316dff;
-  box-shadow: 0 10px 22px rgba(49, 109, 255, 0.18);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .org-chart-card span {
   order: -1;
-  color: #316dff;
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .org-chart-card b {
   max-width: 100%;
-  color: #172033;
+  color: var(--color-text);
   font-size: 14px;
   line-height: 1.35;
   overflow: hidden;
@@ -12561,7 +12595,7 @@ onUnmounted(() => {
 
 .org-chart-card small {
   max-width: 100%;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.4;
   overflow: hidden;
@@ -12580,9 +12614,9 @@ onUnmounted(() => {
 
 .org-chart-card.add-card {
   border-style: dashed;
-  border-color: #ff6b6b;
-  background: #fff;
-  color: #172033;
+  border-color: var(--color-danger);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .org-chart-card.add-card::before {
@@ -12596,19 +12630,19 @@ onUnmounted(() => {
 
 .org-chart-detail-btn {
   min-height: 28px;
-  border: 1px solid #d8e1ee;
-  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
   padding: 0 12px;
-  background: #fff;
-  color: #316dff;
+  background: var(--color-surface);
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .org-chart-detail-btn:hover {
-  border-color: #8cb2ff;
-  background: #edf4ff;
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-subtle);
 }
 
 .org-chart-link {
@@ -12627,7 +12661,7 @@ onUnmounted(() => {
   display: block;
   width: 1px;
   height: 32px;
-  background: #d8e1ee;
+  background: var(--color-border);
 }
 
 .org-chart-link.child-link::after {
@@ -12636,7 +12670,7 @@ onUnmounted(() => {
   bottom: 0;
   width: 1px;
   height: 16px;
-  background: #d8e1ee;
+  background: var(--color-border);
 }
 
 .org-chart-tier.child-tier .org-chart-card::after {
@@ -12646,7 +12680,7 @@ onUnmounted(() => {
   left: 50%;
   width: 1px;
   height: 18px;
-  background: #d8e1ee;
+  background: var(--color-border);
 }
 
 .org-empty {
@@ -12669,28 +12703,28 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid #e6edf5;
+  border-bottom: 1px solid var(--color-border-subtle);
   padding: 16px;
-  background: #fbfcff;
+  background: var(--color-bg-subtle);
 }
 
 .org-detail-head h3 {
   margin: 4px 0 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 18px;
   line-height: 1.35;
 }
 
 .org-detail-head span:first-child {
-  color: #316dff;
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .org-detail-head p {
   max-width: 720px;
   margin: 8px 0 0;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -12704,28 +12738,28 @@ onUnmounted(() => {
 .org-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  padding: 14px 16px;
+  padding: 16px 16px;
 }
 
 .org-detail-grid div {
   min-width: 0;
-  border: 1px solid #edf2f8;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  background: var(--color-surface);
 }
 
 .org-detail-grid dt {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 700;
 }
 
 .org-detail-grid dd {
-  margin: 5px 0 0;
-  color: #172033;
+  margin: 4px 0 0;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -12736,12 +12770,12 @@ onUnmounted(() => {
 }
 
 .org-tabs button:disabled {
-  color: #a8b2c1;
+  color: var(--color-text-disabled);
   cursor: not-allowed;
 }
 
 .org-member-head {
-  margin: 0 16px 10px;
+  margin: 0 16px 12px;
 }
 
 .org-member-table-wrap {
@@ -12762,11 +12796,11 @@ onUnmounted(() => {
   gap: 8px;
   width: fit-content;
   max-width: calc(100% - 32px);
-  margin: 0 16px 14px;
-  border: 1px solid #b7ebc6;
-  border-radius: 8px;
-  padding: 7px 10px;
-  background: #f0fff5;
+  margin: 0 16px 16px;
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  background: var(--color-success-subtle);
 }
 
 .org-feedback span {
@@ -12782,26 +12816,26 @@ onUnmounted(() => {
   width: 18px;
   height: 18px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: #18a058;
+  color: var(--color-success);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
 }
 
 .org-feedback button:hover {
-  background: rgba(24, 160, 88, 0.1);
+  background: var(--color-success-subtle);
 }
 
 .table-status.enabled {
-  background: #eafaf0;
-  color: #18a058;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .table-status.disabled {
-  background: #f1f4f8;
-  color: #667085;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
 }
 
 .org-editor-modal {
@@ -12817,8 +12851,8 @@ onUnmounted(() => {
 
 .org-form-grid label {
   display: grid;
-  gap: 6px;
-  color: #667085;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -12832,50 +12866,50 @@ onUnmounted(() => {
 .org-form-grid textarea {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
 
 .org-form-grid textarea {
   min-height: 92px;
-  padding: 10px 8px;
+  padding: 12px 8px;
   resize: vertical;
 }
 
 .org-form-grid input:focus,
 .org-form-grid select:focus,
 .org-form-grid textarea:focus {
-  border-color: #316dff;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .org-form-grid input.invalid,
 .org-form-grid select.invalid,
 .org-form-grid textarea.invalid {
-  border-color: #e53935;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-popover);
 }
 
 .org-form-grid select:disabled,
 .org-form-grid input:read-only {
-  background: #f8fafc;
-  color: #667085;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .org-form-grid .field-error {
-  color: #e53935;
+  color: var(--color-danger);
   font-size: 12px;
 }
 
 .org-form-grid .field-help {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   font-weight: 500;
 }
@@ -12897,27 +12931,27 @@ onUnmounted(() => {
 .function-section-actions .primary-btn {
   min-width: 104px;
   min-height: 40px;
-  padding: 0 18px;
-  border-radius: 8px;
+  padding: 0 20px;
+  border-radius: var(--radius-md);
   white-space: nowrap;
 }
 .function-filter-bar {
   display: grid;
   grid-template-columns: minmax(220px, 1.2fr) minmax(160px, 0.8fr) minmax(130px, 0.6fr) minmax(120px, 0.6fr) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
   padding: 12px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 }
 
 .function-filter-bar label,
 .function-editor-form label,
 .function-interface-add label {
   display: grid;
-  gap: 6px;
-  color: #455468;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
@@ -12930,19 +12964,19 @@ onUnmounted(() => {
 .function-interface-add select {
   width: 100%;
   box-sizing: border-box;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
 }
 
 .function-editor-form textarea {
   min-height: 86px;
-  padding: 10px 8px;
+  padding: 12px 8px;
   resize: vertical;
 }
 
@@ -12952,23 +12986,23 @@ onUnmounted(() => {
 .function-editor-form select:focus,
 .function-editor-form textarea:focus,
 .function-interface-add select:focus {
-  border-color: #316dff;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .function-editor-form input.invalid,
 .function-editor-form select.invalid,
 .function-editor-form textarea.invalid,
 .function-type-radio.invalid {
-  border-color: #e53935;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-popover);
 }
 
 .function-workspace-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.85fr);
-  gap: 14px;
+  gap: 16px;
   min-height: 0;
   flex: 1 1 auto;
 }
@@ -12990,8 +13024,8 @@ onUnmounted(() => {
 }
 
 .function-table tbody tr.active {
-  background: #f3f7ff;
-  box-shadow: inset 3px 0 0 #316dff;
+  background: var(--color-primary-subtle);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .function-name-cell,
@@ -13004,8 +13038,8 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
   align-items: start;
-  column-gap: 6px;
-  padding-left: calc(var(--tree-depth, 0) * 22px);
+  column-gap: 8px;
+  padding-left: calc(var(--tree-depth, 0) * 24px);
 }
 
 .function-tree-toggle,
@@ -13019,10 +13053,10 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d8e1ee;
-  border-radius: 6px;
-  background: #fff;
-  color: #667085;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -13031,8 +13065,8 @@ onUnmounted(() => {
 }
 
 .function-tree-toggle:hover {
-  border-color: #316dff;
-  color: #316dff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .function-tree-toggle.expanded {
@@ -13046,13 +13080,13 @@ onUnmounted(() => {
 .function-name-cell b,
 .function-api-cell b,
 .function-detail-block b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .function-name-cell small,
 .function-api-cell small {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -13063,10 +13097,10 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  border-radius: 999px;
-  padding: 0 9px;
-  background: #eef4ff;
-  color: #316dff;
+  border-radius: 9999px;
+  padding: 0 8px;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -13075,9 +13109,9 @@ onUnmounted(() => {
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fbfdff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 }
 
 .function-detail-actions {
@@ -13090,7 +13124,7 @@ onUnmounted(() => {
 
 .function-desc-cell {
   max-width: 420px;
-  color: #455468;
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -13100,21 +13134,21 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid #e6edf5;
-  background: #fff;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
 }
 
 
 .function-detail-head h3 {
-  margin: 5px 0 4px;
-  color: #172033;
+  margin: 4px 0 4px;
+  color: var(--color-text);
   font-size: 16px;
   line-height: 1.35;
 }
 
 .function-detail-head p {
   margin: 0;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -13122,7 +13156,7 @@ onUnmounted(() => {
 .function-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
   margin: 0;
   padding: 12px;
 }
@@ -13132,13 +13166,13 @@ onUnmounted(() => {
 .function-usage-grid article,
 .function-api-list article {
   min-width: 0;
-  border: 1px solid #edf2f8;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .function-detail-grid div {
-  padding: 10px;
+  padding: 12px;
 }
 
 .function-detail-grid div.full {
@@ -13146,8 +13180,8 @@ onUnmounted(() => {
 }
 
 .function-detail-grid dd {
-  margin: 5px 0 0;
-  color: #172033;
+  margin: 4px 0 0;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -13155,8 +13189,8 @@ onUnmounted(() => {
 
 .function-detail-block {
   display: grid;
-  gap: 10px;
-  margin: 0 14px 14px;
+  gap: 12px;
+  margin: 0 16px 16px;
   padding: 12px;
 }
 
@@ -13169,13 +13203,13 @@ onUnmounted(() => {
 .function-api-list article,
 .function-usage-grid article {
   display: grid;
-  gap: 5px;
-  padding: 10px;
+  gap: 4px;
+  padding: 12px;
 }
 
 .function-api-list code,
 .function-interface-table code {
-  color: #455468;
+  color: var(--color-text-secondary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
   overflow-wrap: anywhere;
@@ -13183,7 +13217,7 @@ onUnmounted(() => {
 
 .function-usage-grid p {
   margin: 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 12px;
   line-height: 1.55;
 }
@@ -13196,7 +13230,7 @@ onUnmounted(() => {
 .function-feedback button {
   border: 0;
   background: transparent;
-  color: #18a058;
+  color: var(--color-success);
   cursor: pointer;
 }
 
@@ -13214,14 +13248,14 @@ onUnmounted(() => {
 .function-create-section {
   display: grid;
   gap: 16px;
-  padding-top: 2px;
+  padding-top: 4px;
 }
 
 .modal-actions.flat {
   justify-content: flex-end;
-  margin-top: 2px;
-  padding-top: 14px;
-  border-top: 1px solid #e6edf5;
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
 .function-editor-form {
@@ -13236,8 +13270,8 @@ onUnmounted(() => {
 .function-menu-field {
   position: relative;
   display: grid;
-  gap: 6px;
-  color: #455468;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
@@ -13246,12 +13280,12 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 36px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 0 12px;
-  background: #fff;
-  color: #172033;
+  background: var(--color-surface);
+  color: var(--color-text);
   font: inherit;
   font-size: 13px;
   text-align: left;
@@ -13260,18 +13294,18 @@ onUnmounted(() => {
 
 .function-menu-trigger:hover,
 .function-menu-trigger.active {
-  border-color: #316dff;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.08);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .function-menu-trigger.invalid {
-  border-color: #e53935;
-  box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.08);
+  border-color: var(--color-danger);
+  box-shadow: var(--shadow-popover);
 }
 
 .function-menu-trigger i,
 .function-menu-column i {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-style: normal;
   line-height: 1;
 }
@@ -13285,10 +13319,10 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   min-height: 164px;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popover);
   overflow: hidden;
 }
 
@@ -13297,8 +13331,8 @@ onUnmounted(() => {
   align-content: start;
   max-height: 240px;
   overflow: auto;
-  border-right: 1px solid #edf2f8;
-  background: #fff;
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
 }
 
 .function-menu-column:last-child {
@@ -13310,11 +13344,11 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 34px;
+  min-height: var(--control-height-md);
   border: 0;
   padding: 0 12px;
   background: transparent;
-  color: #455468;
+  color: var(--color-text-secondary);
   font: inherit;
   font-size: 13px;
   text-align: left;
@@ -13323,38 +13357,38 @@ onUnmounted(() => {
 
 .function-menu-column button:hover,
 .function-menu-column button.active {
-  background: #f3f7ff;
-  color: #172033;
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
 }
 
 .function-menu-column.leaf button {
   justify-content: flex-start;
 }
 .function-type-radio {
-  min-height: 38px;
+  min-height: var(--control-height-md);
   width: fit-content;
 }
 
 .function-interface-editor {
   display: grid;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 12px;
+  margin-top: 16px;
   padding: 12px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 }
 
 .function-interface-add {
   display: grid;
   grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1fr) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
 }
 
 .function-interface-add input:read-only {
-  background: #f1f4f8;
-  color: #667085;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
 }
 
 .function-interface-table {
@@ -13363,7 +13397,7 @@ onUnmounted(() => {
 
 .function-interface-manual {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .manual-interface-table th:first-child,
@@ -13379,19 +13413,19 @@ onUnmounted(() => {
 
 .manual-interface-table input {
   width: 100%;
-  min-height: 34px;
-  border: 1px solid #d8e1ee;
-  border-radius: 6px;
-  padding: 0 10px;
-  color: #172033;
+  min-height: var(--control-height-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  color: var(--color-text);
   font-size: 13px;
   outline: none;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .manual-interface-table input:focus {
-  border-color: #316dff;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
 }
 
 .manual-interface-table .interface-order-input {
@@ -13404,7 +13438,7 @@ onUnmounted(() => {
 
 .function-interface-empty {
   min-height: 120px;
-  background: #fff;
+  background: var(--color-surface);
 }
 .datasource-workspace-card {
   gap: 0;
@@ -13414,7 +13448,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .datasource-metric-grid article,
@@ -13422,9 +13456,9 @@ onUnmounted(() => {
 .datasource-scope-panel,
 .datasource-usage-grid article,
 .datasource-log-list article {
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .datasource-metric-grid article {
@@ -13437,36 +13471,36 @@ onUnmounted(() => {
 .datasource-scope-panel dt,
 .datasource-log-list time,
 .datasource-log-list span {
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.45;
 }
 
 .datasource-metric-grid b {
   display: block;
-  margin: 6px 0 2px;
-  color: #172033;
-  font-size: 22px;
+  margin: 8px 0 4px;
+  color: var(--color-text);
+  font-size: 20px;
   line-height: 1.2;
 }
 
 .datasource-filter-bar {
   display: grid;
   grid-template-columns: minmax(180px, 1.25fr) repeat(4, minmax(118px, 0.8fr)) auto;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 12px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 }
 
 .datasource-filter-bar label,
 .datasource-editor-form label {
   display: grid;
-  gap: 6px;
-  color: #455468;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
@@ -13475,7 +13509,7 @@ onUnmounted(() => {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.8fr);
-  gap: 14px;
+  gap: 16px;
   overflow: hidden;
 }
 
@@ -13499,8 +13533,8 @@ onUnmounted(() => {
 }
 
 .datasource-table tbody tr.active {
-  background: #f3f7ff;
-  box-shadow: inset 3px 0 0 #316dff;
+  background: var(--color-primary-subtle);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .datasource-name-cell {
@@ -13509,12 +13543,12 @@ onUnmounted(() => {
 }
 
 .datasource-name-cell b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .datasource-name-cell small {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
@@ -13522,26 +13556,26 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
-  border-radius: 999px;
-  padding: 0 9px;
+  border-radius: 9999px;
+  padding: 0 8px;
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
 }
 
 .datasource-badge.risk-low {
-  background: #edf8f1;
-  color: #247a3d;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .datasource-badge.risk-medium {
-  background: #fff7e8;
-  color: #a15c00;
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
 .datasource-badge.risk-high {
-  background: #fff0f0;
-  color: #c23a3a;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
 }
 
 .datasource-detail-panel {
@@ -13549,7 +13583,7 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   padding: 12px;
-  background: #fbfdff;
+  background: var(--color-bg-subtle);
 }
 
 .datasource-drawer-panel {
@@ -13563,25 +13597,25 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #dfe7f3;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .datasource-detail-head span {
-  color: #316dff;
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .datasource-detail-head h3 {
-  margin: 6px 0 4px;
-  color: #172033;
+  margin: 8px 0 4px;
+  color: var(--color-text);
   font-size: 16px;
   line-height: 1.35;
 }
 
 .datasource-detail-head p {
   margin: 0;
-  color: #6b778c;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -13589,28 +13623,28 @@ onUnmounted(() => {
 .datasource-detail-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
   margin: 12px 0;
   padding: 4px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .datasource-detail-tabs button {
   min-height: 32px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: #667085;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .datasource-detail-tabs button.active {
-  background: #316dff;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .datasource-detail-scroll {
@@ -13618,8 +13652,8 @@ onUnmounted(() => {
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
-  padding: 12px 6px 2px 0;
+  scrollbar-color: var(--color-border-strong) transparent;
+  padding: 12px 8px 4px 0;
 }
 
 .datasource-detail-scroll::-webkit-scrollbar {
@@ -13631,33 +13665,33 @@ onUnmounted(() => {
 }
 
 .datasource-detail-scroll::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.45);
+  border-radius: 9999px;
+  background: var(--color-border-strong);
 }
 
 .datasource-detail-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.58);
+  background: var(--color-border-strong);
 }
 
 .datasource-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
   margin: 0 0 12px;
 }
 
 .datasource-detail-grid div {
   min-width: 0;
-  padding: 10px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .datasource-detail-grid dd,
 .datasource-scope-panel dd {
   margin: 4px 0 0;
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -13671,7 +13705,7 @@ onUnmounted(() => {
 .datasource-scope-panel b,
 .datasource-usage-grid b,
 .datasource-log-list b {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
@@ -13689,17 +13723,17 @@ onUnmounted(() => {
 .datasource-usage-grid,
 .datasource-log-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .datasource-log-list article {
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
 .datasource-log-list p {
   margin: 0;
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.55;
 }
@@ -13718,18 +13752,18 @@ onUnmounted(() => {
 }
 
 .datasource-checkbox-field .toggle-row {
-  min-height: 38px;
+  min-height: var(--control-height-md);
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
 }
 
 .datasource-checkbox-field .toggle-row b {
-  color: #455468;
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -13742,26 +13776,26 @@ onUnmounted(() => {
 .datasource-filter-bar.compact {
   display: grid;
   grid-template-columns: minmax(180px, 260px) minmax(260px, 1fr) minmax(180px, 220px) 128px;
-  gap: 10px;
+  gap: 12px;
   align-items: end;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 12px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
-  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
 }
 
 .datasource-filter-bar.compact .ghost-btn {
   width: 128px;
-  min-height: 38px;
+  min-height: var(--control-height-md);
   justify-content: center;
 }
 
 .datasource-filter-bar label,
 .datasource-editor-form label {
   display: grid;
-  gap: 6px;
-  color: #455468;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
@@ -13777,13 +13811,13 @@ onUnmounted(() => {
 }
 
 .datasource-table-name {
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
 }
 
 .datasource-tree-table tbody tr.directory,
 .datasource-tree-table tbody tr.menu {
-  background: #fbfdff;
+  background: var(--color-bg-subtle);
 }
 
 .datasource-tree-table tbody tr.source .datasource-tree-name b {
@@ -13791,28 +13825,28 @@ onUnmounted(() => {
 }
 
 .datasource-tree-name small {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
 }
 
 .datasource-tree-type.directory,
 .datasource-tree-type.menu {
-  background: #edf4ff;
-  color: #316dff;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
 .datasource-tree-type.source {
-  background: #eef8f2;
-  color: #247a3d;
+  background: var(--color-success-subtle);
+  color: var(--color-success);
 }
 
 .datasource-structure-note {
-  color: #8a96a8;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .datasource-url-cell {
   max-width: 280px;
-  color: #455468;
+  color: var(--color-text-secondary);
   overflow-wrap: anywhere;
 }
 
@@ -13884,7 +13918,7 @@ onUnmounted(() => {
 
 .function-tree-row.directory .function-tree-title b,
 .datasource-tree-row.directory .function-tree-title b {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .function-tree-row .function-tree-name small,
@@ -13990,27 +14024,27 @@ onUnmounted(() => {
 .direct-status-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 18px 0;
+  gap: 12px;
+  margin: 20px 0;
 }
 
 .direct-status-summary > div {
   display: grid;
-  gap: 5px;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  gap: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .direct-status-summary span {
-  color: #7a8798;
+  color: var(--color-text-tertiary);
   font-size: 12px;
 }
 
 .direct-status-summary b {
   overflow: hidden;
-  color: #172033;
+  color: var(--color-text);
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -14018,26 +14052,26 @@ onUnmounted(() => {
 
 .direct-status-reason {
   display: grid;
-  gap: 7px;
-  color: #667085;
+  gap: 8px;
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
 .direct-status-reason textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #d8e1ee;
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: #172033;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 12px;
+  color: var(--color-text);
   font: inherit;
   resize: vertical;
 }
 
 .direct-status-reason textarea:focus {
-  border-color: #316dff;
+  border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(49, 109, 255, 0.1);
+  box-shadow: var(--focus-ring);
 }
 
 .status-apply-type-card {
@@ -14045,10 +14079,10 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   margin: 16px 0;
-  border: 1px solid #dfe7f3;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
 }
 
 .status-apply-type-card > span {
@@ -14056,24 +14090,24 @@ onUnmounted(() => {
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 8px;
-  background: #eaf1ff;
-  color: #316dff;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .status-apply-type-card b {
   display: block;
-  color: #172033;
+  color: var(--color-text);
   font-size: 14px;
   line-height: 1.45;
 }
 
 .status-apply-type-card small {
   display: block;
-  margin-top: 3px;
-  color: #7a8798;
+  margin-top: 4px;
+  color: var(--color-text-tertiary);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -14087,4 +14121,7 @@ onUnmounted(() => {
   opacity: 1;
 }
 
+
 </style>
+
+<style scoped src="../../components/permissions/permissionDialogFooter.css"></style>

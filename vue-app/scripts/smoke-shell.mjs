@@ -10,7 +10,9 @@ const routes = ['/', '/portal/home', '/dashboard/overview']
 
 const preview = spawn(
   process.execPath,
-  ['./node_modules/vite/bin/vite.js', 'preview', '--host', host, '--port', String(port), '--strictPort'],
+  ['./node_modules/vite/bin/vite.js', 'preview', '--host', host, '--port', String(port), '--strictPort',
+    ...(process.env.PORTAL_SMOKE_OUT_DIR ? ['--outDir', process.env.PORTAL_SMOKE_OUT_DIR] : [])
+  ],
   { stdio: ['ignore', 'pipe', 'pipe'] }
 )
 

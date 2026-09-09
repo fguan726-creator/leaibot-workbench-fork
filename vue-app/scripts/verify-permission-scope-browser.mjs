@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { verifySourceSearch } from './permission-source-search-assertions.mjs'
 import { createRequire } from 'node:module'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -72,6 +73,24 @@ async function verifyDataDirectorySearch(container, { toggleSelection = true } =
   }
 
   const firstDirectory = directories.first()
+  const sources = firstDirectory.locator('.data-source')
+  assert.ok(await sources.count() > 0, '一级目录下必须展示第二层数据源')
+  assert.equal(await firstDirectory.locator('.data-source-toggle input, .data-directory-head input').count(), 0, '前两层不得展示复选框')
+  const firstSource = sources.first()
+  const sourceName = await firstSource.locator('.data-source-toggle b').textContent()
+  const sourceLeafCount = await firstSource.locator('.data-dataset-item').count()
+  const checkedBeforeCollapse = await list.locator('input:checked').count()
+  const sourceToggle = firstSource.locator('.data-source-toggle')
+  await sourceToggle.focus()
+  await sourceToggle.press('Enter')
+  assert.equal(await firstSource.locator('.data-dataset-item').count(), 0, '第二层支持键盘收起')
+  await sourceToggle.press('Space')
+  assert.equal(await firstSource.locator('.data-dataset-item').count(), sourceLeafCount, '第二层支持键盘展开')
+  assert.equal(await list.locator('input:checked').count(), checkedBeforeCollapse, '二级折叠不得改变勾选')
+  await firstDirectory.locator('.data-directory-toggle').click()
+  assert.equal(await firstDirectory.locator('.data-source').count(), 0, '一级收起必须隐藏全部子级')
+  await firstDirectory.locator('.data-directory-toggle').click()
+  assert.equal(await list.locator('input:checked').count(), checkedBeforeCollapse, '一级折叠不得改变勾选')
   const searchTrigger = firstDirectory.locator('.directory-search-trigger')
   await searchTrigger.click()
   const searchInput = firstDirectory.locator('.directory-search-box input')
@@ -94,11 +113,18 @@ async function verifyDataDirectorySearch(container, { toggleSelection = true } =
   }
 
   const firstDatasetName = datasetNames[0]
+  await sourceToggle.click()
+  await searchInput.fill(sourceName)
+  assert.equal(await sources.count(), 1, '数据源名称搜索保留匹配来源')
+  assert.equal(await firstSource.locator('.data-dataset-item').count(), sourceLeafCount, '源名称匹配时展示该源全部授权项')
+  await searchInput.fill('')
+  assert.equal(await sourceToggle.getAttribute('aria-expanded'), 'false', '清除搜索恢复源原先折叠状态')
+  await sourceToggle.click()
   await searchInput.fill(firstDatasetName)
   assert.equal(await firstDirectory.locator('.data-dataset-item').count(), 1, '目录搜索必须按当前目录数据集名称实时过滤')
   await firstDirectory.getByText(firstDatasetName, { exact: true }).waitFor()
   await searchInput.fill('不存在的数据集关键词')
-  await firstDirectory.getByText('暂无匹配的数据集', { exact: true }).waitFor()
+  await firstDirectory.getByText('暂无匹配的数据源或授权项', { exact: true }).waitFor()
   if (secondDirectoryCount !== null) {
     assert.equal(await directories.nth(1).locator('.data-dataset-item').count(), secondDirectoryCount, '当前目录搜索不得影响其他一级目录')
   }
@@ -106,6 +132,7 @@ async function verifyDataDirectorySearch(container, { toggleSelection = true } =
   await searchTrigger.click()
   assert.equal(await firstDirectory.locator('.directory-search-box').count(), 0, '关闭目录搜索后必须收起搜索框')
   assert.equal(await firstDirectory.locator('.data-dataset-item').count(), initialCount, '关闭目录搜索后必须恢复当前目录全部数据集')
+  await verifySourceSearch(container)
   if (selectedDatasetName) {
     assert.equal(await firstDirectory.locator('.data-dataset-item').filter({ hasText: selectedDatasetName }).locator('input:checked').count(), 1, '搜索和关闭搜索不得丢失已选数据集')
   }
@@ -118,6 +145,7 @@ async function openFirstAccess(browser, viewport, suffix) {
   attachDiagnostics(page, `first-access-${suffix}`)
   await page.goto(`${baseUrl}/access-denied?itcode=qa-first-${suffix}`, { waitUntil: 'domcontentloaded' })
   await page.getByRole('heading', { name: '当前账号暂无乐享 AI 工作台访问权限' }).waitFor()
+  await page.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangyi44')
   await page.getByRole('button', { name: '下一步' }).click()
   const editor = page.locator('.permission-scope-editor')
   await editor.waitFor()
@@ -239,6 +267,10 @@ async function verifyApplicationInfoForms(browser) {
   }
 
   async function assertInfoForm(form, variant, expectedFields, expectedRequiredFields) {
+    if (variant === 'create' || variant.startsWith('change-')) {
+      expectedFields.splice(-1, 0, 'businessApprover')
+      expectedRequiredFields.splice(-1, 0, 'businessApprover')
+    }
     assert.equal(await form.getAttribute('data-form-variant'), variant, `${variant} Schema 选择错误`)
     const actualFields = await form.locator('[data-info-field]').evaluateAll((elements) => elements.map((element) => element.dataset.infoField))
     assert.deepEqual(actualFields, expectedFields, `${variant} 字段或顺序不符合规范`)
@@ -331,7 +363,7 @@ async function verifyPermissionWorkspace0825(browser) {
   assert.equal(await form.locator('[data-info-field="relatedAccount"] input:not([readonly])').count(), 1, '创建账号关联人 ITCode 必须可编辑')
   await form.locator('[data-info-field="reason"] textarea').fill('')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
-  for (const field of ['targetUser', 'accountPassword', 'confirmAccountPassword', 'relatedAccount', 'reason']) {
+  for (const field of ['targetUser', 'accountPassword', 'confirmAccountPassword', 'relatedAccount', 'businessApprover', 'reason']) {
     assert.equal(await form.locator(`[data-info-field="${field}"] .field-error`).count(), 1, `创建账号缺少 ${field} 时必须就近报错`)
   }
   assert.equal(await form.locator('[data-info-field="mobile"] .field-error, [data-info-field="email"] .field-error').count(), 0, '手机号和邮箱为空不得报错')
@@ -362,6 +394,7 @@ async function verifyPermissionChange(browser) {
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   const target = page.locator('input[placeholder="请输入被申请人 ITCode"]')
   await target.fill('zhangrui32')
+  await page.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangyi44')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   const editor = page.locator('.permission-scope-editor')
   await editor.waitFor()
@@ -384,7 +417,7 @@ async function verifyPermissionChange(browser) {
   const dataDialog = page.getByRole('dialog', { name: '选择数据权限' })
   await dataDialog.locator('.directory-search-trigger').first().click()
   await dataDialog.locator('.directory-search-box input').fill('不存在的数据权限')
-  await dataDialog.getByText('暂无匹配的数据集', { exact: true }).waitFor()
+  await dataDialog.getByText('暂无匹配的数据源或授权项', { exact: true }).waitFor()
   await dataDialog.getByRole('button', { name: '关闭', exact: true }).click()
   assert.equal(await editor.locator('.tenant-multi-options input:checked').count() > 0, true, '权限变更应带出当前租户基线')
   const tenantBox = await editor.locator('.tenant-field').boundingBox()
@@ -406,6 +439,7 @@ async function verifyCreateAccount(browser) {
   await page.locator('input[placeholder="请设置初始登录密码"]').fill('Qa-password-123')
   await page.locator('input[placeholder="请再次输入初始密码"]').fill('Qa-password-123')
   await page.locator('input[placeholder="请输入负责对接的内部员工 ITCode"]').fill('qa-owner')
+  await page.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangyi44')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   const editor = page.locator('.permission-scope-editor')
   await editor.waitFor()
@@ -515,6 +549,7 @@ async function verifyEffectiveChange(browser, kind) {
   await page.locator('.permission-type-grid button').filter({ hasText: '权限变更' }).first().click()
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await page.getByPlaceholder('请输入被申请人 ITCode').fill('zhangrui32')
+  await page.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangyi44')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   const editor = page.locator('.permission-scope-editor')
   await editor.waitFor()

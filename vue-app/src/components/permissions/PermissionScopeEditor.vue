@@ -133,56 +133,56 @@ watch(() => props.tenantError, async (error) => {
 
 
 <style scoped>
-.permission-scope-editor { min-width: 0; color: var(--color-text, #1f2329); }
+.permission-scope-editor { min-width: 0; color: var(--color-text); }
 .scope-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
-.scope-heading h3 { margin: 0; color: var(--color-text, #1f2329); font-size: 20px; }
-.scope-heading p { margin: 7px 0 0; color: var(--color-text-secondary, #646a73); font-size: 14px; line-height: 1.6; }
-.scope-heading > span { flex: 0 0 auto; border-radius: 999px; padding: 5px 9px; background: var(--color-primary-subtle, rgba(51, 112, 255, .08)); color: var(--color-primary, #3370ff); font-size: 12px; font-weight: 700; }
-.tenant-field { display: block; margin-bottom: 18px; }
-.field-label { display: block; margin-bottom: 7px; color: var(--color-text, #1f2329); font-size: 13px; font-weight: 700; }
-.field-label em { margin-left: 6px; color: var(--color-danger, #dc2626); font-size: 11px; font-style: normal; }
-.tenant-multi-options { display: flex; flex-wrap: wrap; gap: 8px; border: 1px solid var(--color-border, #dde1e6); border-radius: 8px; padding: 10px; background: var(--color-surface, #fff); }
-.tenant-multi-options.invalid { border-color: var(--color-danger, #dc2626); box-shadow: 0 0 0 3px rgba(220, 38, 38, .08); }
-.tenant-multi-options label { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; border: 1px solid var(--color-border, #dde1e6); border-radius: 8px; padding: 0 11px; background: var(--color-surface, #fff); color: var(--color-text-secondary, #646a73); cursor: pointer; }
-.tenant-multi-options label:hover { border-color: var(--color-border-strong, #cbd1d8); background: var(--color-bg-subtle, #f5f6f8); }
-.tenant-multi-options label:focus-within { border-color: var(--color-primary, #3370ff); box-shadow: 0 0 0 3px var(--color-primary-subtle, rgba(51, 112, 255, .08)); }
-.tenant-multi-options label.selected { border-color: var(--color-primary, #3370ff); background: var(--color-primary-subtle, rgba(51, 112, 255, .08)); color: var(--color-primary, #3370ff); }
-.tenant-multi-options input { width: 16px; height: 16px; accent-color: var(--color-primary, #3370ff); }
-.field-help, .field-error { display: block; margin-top: 6px; font-size: 12px; line-height: 1.5; }
-.field-help { color: var(--color-text-secondary, #646a73); }
-.field-error { color: var(--color-danger, #dc2626); }
-.scope-action-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 18px; }
-.scope-btn { min-height: 36px; border-radius: 8px; padding: 0 14px; font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }
-.scope-btn.primary { border: 1px solid var(--color-primary, #3370ff); background: var(--color-primary, #3370ff); color: #fff; }
-.scope-btn.primary:hover { background: var(--color-primary-hover, #245bdb); }
-.scope-btn.secondary { border: 1px solid var(--color-border, #dde1e6); background: var(--color-surface, #fff); color: var(--color-text, #1f2329); }
-.scope-btn.secondary:hover:not(:disabled) { border-color: var(--color-primary, #3370ff); color: var(--color-primary, #3370ff); }
-.scope-btn:focus-visible, .link-btn:focus-visible, .chip-remove:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-primary-subtle, rgba(51, 112, 255, .08)); }
+.scope-heading h3 { margin: 0; color: var(--color-text); font-size: 20px; }
+.scope-heading p { margin: 8px 0 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.6; }
+.scope-heading > span { flex: 0 0 auto; border-radius: 9999px; padding: 4px 8px; background: var(--color-primary-subtle); color: var(--color-primary); font-size: 12px; font-weight: 700; }
+.tenant-field { display: block; margin-bottom: 20px; }
+.field-label { display: block; margin-bottom: 8px; color: var(--color-text); font-size: 13px; font-weight: 700; }
+.field-label em { margin-left: 8px; color: var(--color-danger); font-size: 12px; font-style: normal; }
+.tenant-multi-options { display: flex; flex-wrap: wrap; gap: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 12px; background: var(--color-surface); }
+.tenant-multi-options.invalid { border-color: var(--color-danger); box-shadow: var(--shadow-popover); }
+.tenant-multi-options label { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-height-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 12px; background: var(--color-surface); color: var(--color-text-secondary); cursor: pointer; }
+.tenant-multi-options label:hover { border-color: var(--color-border-strong); background: var(--color-bg-subtle); }
+.tenant-multi-options label:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-subtle); }
+.tenant-multi-options label.selected { border-color: var(--color-primary); background: var(--color-primary-subtle); color: var(--color-primary); }
+.tenant-multi-options input { width: 16px; height: 16px; accent-color: var(--color-primary); }
+.field-help, .field-error { display: block; margin-top: 8px; font-size: 12px; line-height: 1.5; }
+.field-help { color: var(--color-text-secondary); }
+.field-error { color: var(--color-danger); }
+.scope-action-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 20px; }
+.scope-btn { min-height: var(--control-height-md); border-radius: var(--radius-md); padding: 0 16px; font: inherit; font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.scope-btn.primary { border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
+.scope-btn.primary:hover { background: var(--color-primary-hover); }
+.scope-btn.secondary { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+.scope-btn.secondary:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.scope-btn:focus-visible, .link-btn:focus-visible, .chip-remove:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-primary-subtle); }
 .scope-btn:disabled { cursor: not-allowed; opacity: .5; }
-.copy-complete { color: var(--color-success, #16a34a); font-size: 12px; font-weight: 700; }
+.copy-complete { color: var(--color-success); font-size: 12px; font-weight: 700; }
 .scope-source-stack { display: grid; gap: 12px; }
-.scope-empty { border: 1px dashed var(--color-border, #dde1e6); border-radius: 8px; padding: 22px; background: var(--color-bg-subtle, #f5f6f8); text-align: center; }
-.scope-empty p { margin: 6px 0 0; color: var(--color-text-secondary, #646a73); font-size: 12px; }
-.scope-source-panel { border: 1px solid var(--color-border-subtle, #e7eaee); border-radius: 8px; padding: 14px; background: var(--color-surface, #fff); }
-.scope-source-panel.copied { background: var(--color-bg-subtle, #f5f6f8); }
+.scope-empty { border: 1px dashed var(--color-border); border-radius: var(--radius-md); padding: 24px; background: var(--color-bg-subtle); text-align: center; }
+.scope-empty p { margin: 8px 0 0; color: var(--color-text-secondary); font-size: 12px; }
+.scope-source-panel { border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); padding: 16px; background: var(--color-surface); }
+.scope-source-panel.copied { background: var(--color-bg-subtle); }
 .scope-panel-head, .source-role-card { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.scope-panel-head small, .source-role-card small { display: block; margin-top: 4px; color: var(--color-text-secondary, #646a73); font-size: 12px; line-height: 1.45; }
-.source-role-list { display: grid; gap: 9px; margin-top: 12px; }
-.source-role-card { border-top: 1px solid var(--color-border-subtle, #e7eaee); padding-top: 10px; }
+.scope-panel-head small, .source-role-card small { display: block; margin-top: 4px; color: var(--color-text-secondary); font-size: 12px; line-height: 1.45; }
+.source-role-list { display: grid; gap: 8px; margin-top: 12px; }
+.source-role-card { border-top: 1px solid var(--color-border-subtle); padding-top: 12px; }
 .role-card-actions { display: flex; align-items: center; gap: 8px; }
-.link-btn { border: 0; padding: 2px; background: transparent; color: var(--color-primary, #3370ff); font: inherit; font-size: 12px; cursor: pointer; }
-.link-btn.danger { color: var(--color-danger, #dc2626); }
-.readonly-badge, .copy-complete { border-radius: 999px; padding: 4px 8px; }
-.readonly-badge { background: var(--color-surface-muted, #eef1f4); color: var(--color-text-secondary, #646a73); font-size: 11px; font-weight: 700; }
-.copied-permission-groups { display: grid; gap: 12px; margin-top: 14px; border-top: 1px solid var(--color-border-subtle, #e7eaee); padding-top: 12px; }
-.group-label { display: block; margin-bottom: 7px; color: var(--color-text-secondary, #646a73); font-size: 12px; font-weight: 700; }
-.permission-chip-list { display: flex; flex-wrap: wrap; gap: 7px; }
-.permission-chip-list > span { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; border-radius: 6px; padding: 0 9px; background: var(--color-primary-subtle, rgba(51, 112, 255, .08)); color: var(--color-primary, #3370ff); font-size: 12px; }
-.permission-chip-list em { border-left: 1px solid var(--color-primary-border, rgba(51, 112, 255, .28)); padding-left: 6px; color: var(--color-text-secondary, #646a73); font-size: 11px; font-style: normal; }
-.chip-remove { border: 0; padding: 0 0 0 2px; background: transparent; color: currentColor; cursor: pointer; }
+.link-btn { border: 0; padding: 4px; background: transparent; color: var(--color-primary); font: inherit; font-size: 12px; cursor: pointer; }
+.link-btn.danger { color: var(--color-danger); }
+.readonly-badge, .copy-complete { border-radius: 9999px; padding: 4px 8px; }
+.readonly-badge { background: var(--color-surface-muted); color: var(--color-text-secondary); font-size: 12px; font-weight: 700; }
+.copied-permission-groups { display: grid; gap: 12px; margin-top: 16px; border-top: 1px solid var(--color-border-subtle); padding-top: 12px; }
+.group-label { display: block; margin-bottom: 8px; color: var(--color-text-secondary); font-size: 12px; font-weight: 700; }
+.permission-chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.permission-chip-list > span { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; border-radius: var(--radius-md); padding: 0 8px; background: var(--color-primary-subtle); color: var(--color-primary); font-size: 12px; }
+.permission-chip-list em { border-left: 1px solid var(--color-primary-border); padding-left: 8px; color: var(--color-text-secondary); font-size: 12px; font-style: normal; }
+.chip-remove { border: 0; padding: 0 0 0 4px; background: transparent; color: currentColor; cursor: pointer; }
 @media (max-width: 620px) {
   .scope-heading { display: block; }
-  .scope-heading > span { display: inline-flex; margin-top: 10px; }
+  .scope-heading > span { display: inline-flex; margin-top: 12px; }
   .scope-action-bar { align-items: stretch; }
   .scope-btn { flex: 1 1 100%; }
   .scope-panel-head, .source-role-card { align-items: flex-start; }

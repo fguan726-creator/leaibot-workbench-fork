@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { verifySourceSearch } from './permission-source-search-assertions.mjs'
 import { createRequire } from 'node:module'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -132,6 +133,7 @@ if (await dataCheckbox.isChecked()) await dataCheckbox.uncheck()
 await dataCheckbox.check()
 assert.equal(await activeRoleCheckbox.isChecked(), true, '用户管理勾选数据权限必须自动选择对应角色')
 await screenshot(page, 'user-management-add-role-1440')
+await verifySourceSearch(roleDialog)
 await roleDialog.getByRole('button', { name: '确认', exact: true }).click()
 assert.equal(await addRoleButton.evaluate((element) => element === document.activeElement), true, '确认添加角色后必须恢复触发按钮焦点')
 assert.equal(await editor.getByRole('button', { name: '提交权限变更申请', exact: true }).count(), 1, '角色、功能或数据权限变化必须进入权限变更申请')
@@ -149,6 +151,7 @@ for (let index = 0; index < await tenantOptions.count(); index += 1) {
   }
 }
 assert.equal(changedTenant, true, '必须存在可新增的租户')
+await editor.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangyi44')
 await editor.getByRole('button', { name: '提交权限变更申请', exact: true }).click()
 const successNotice = editor.locator('.approval-feedback')
 await successNotice.waitFor()

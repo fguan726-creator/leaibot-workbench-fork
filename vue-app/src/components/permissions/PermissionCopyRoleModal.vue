@@ -58,23 +58,31 @@ function updateItcode(event: Event) {
 </script>
 
 <style scoped>
-.permission-modal.permission-scope-picker-modal { position: fixed; inset: 0; z-index: 1450; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: rgba(31, 35, 41, .45); }
-.modal-panel { position: relative; box-sizing: border-box; width: min(560px, 100%); max-height: calc(100vh - 48px); overflow: auto; border: 1px solid var(--color-border, #dde1e6); border-radius: 12px; padding: 24px; background: var(--color-surface, #fff); color: var(--color-text, #1f2329); box-shadow: 0 12px 28px rgba(0, 0, 0, .14); }
+.permission-modal.permission-scope-picker-modal { position: fixed; inset: 0; z-index: 1450; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.modal-panel { position: relative; box-sizing: border-box; width: min(560px, 100%); max-height: calc(100vh - 48px); overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 24px; background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-popover); }
 h3 { margin: 0; font-size: 20px; }
-.modal-note { margin: 7px 42px 0 0; color: var(--color-text-secondary, #646a73); font-size: 13px; line-height: 1.6; }
-.modal-close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border: 1px solid var(--color-border, #dde1e6); border-radius: 8px; background: var(--color-surface, #fff); color: var(--color-text-secondary, #646a73); font-size: 20px; cursor: pointer; }
-.modal-close:focus-visible, input:focus-visible, button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-primary-subtle, rgba(51, 112, 255, .08)); }
-.modal-form-field { display: block; margin-top: 18px; }
-.modal-form-field > span { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 700; }
-.modal-form-field em { margin-left: 6px; color: var(--color-danger, #dc2626); font-size: 11px; font-style: normal; }
-input { box-sizing: border-box; width: 100%; min-height: 36px; border: 1px solid var(--color-border, #dde1e6); border-radius: 8px; padding: 0 12px; background: var(--color-surface, #fff); color: var(--color-text, #1f2329); font: inherit; font-size: 13px; }
-input:focus { border-color: var(--color-primary, #3370ff); }
-input.invalid { border-color: var(--color-danger, #dc2626); }
-.field-help, .field-error { display: block; margin-top: 6px; font-size: 12px; }
-.field-help { color: var(--color-text-secondary, #646a73); }
-.field-error { color: var(--color-danger, #dc2626); }
-.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--color-border-subtle, #e7eaee); padding-top: 14px; }
-.primary-btn, .secondary-btn { min-height: 36px; border-radius: 8px; padding: 0 16px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
-.primary-btn { border: 1px solid var(--color-primary, #3370ff); background: var(--color-primary, #3370ff); color: #fff; }
-.secondary-btn { border: 1px solid var(--color-border, #dde1e6); background: var(--color-surface, #fff); color: var(--color-text, #1f2329); }
+.modal-note { margin: 8px calc(40px + 4px) 0 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; }
+.modal-close { position: absolute; top: 16px; right: 16px; width: var(--control-height-md); height: var(--control-height-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-secondary); font-size: 20px; cursor: pointer; }
+.modal-close:focus-visible, input:focus-visible, button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-primary-subtle); }
+.modal-form-field { display: block; margin-top: 20px; }
+.modal-form-field > span { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+.modal-form-field em { margin-left: 8px; color: var(--color-danger); font-size: 12px; font-style: normal; }
+input { box-sizing: border-box; width: 100%; min-height: var(--control-height-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 12px; background: var(--color-surface); color: var(--color-text); font: inherit; font-size: 13px; }
+input:focus { border-color: var(--color-primary); }
+input.invalid { border-color: var(--color-danger); }
+.field-help, .field-error { display: block; margin-top: 8px; font-size: 12px; }
+.field-help { color: var(--color-text-secondary); }
+.field-error { color: var(--color-danger); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; border-top: 1px solid var(--color-border-subtle); padding-top: 16px; }
+.primary-btn, .secondary-btn { min-height: var(--control-height-md); border-radius: var(--radius-md); padding: 0 16px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.primary-btn { border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
+.secondary-btn { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); }
+
+
+.primary-btn, .secondary-btn { font-family: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.primary-btn:hover:not(:disabled) { border-color: var(--color-primary-hover); background: var(--color-primary-hover); }
+.secondary-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.primary-btn:focus-visible, .secondary-btn:focus-visible, .modal-close:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 </style>
+
+<style scoped src="./permissionDialogFooter.css"></style>

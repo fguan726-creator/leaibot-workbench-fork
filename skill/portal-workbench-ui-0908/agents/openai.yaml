@@ -1,0 +1,7 @@
+interface:
+  display_name: "联想门户工作台统一 Skill 0908 归档"
+  short_description: "PM 与研发共用的门户设计和 Vue 组件基线"
+  default_prompt: "使用 $portal-workbench-ui-0908 维护或核验 0908 门户工作台归档；本版包含 AI商品管理和权限管理交付，PM 原型和研发实现都先复用 Skill 组件库，研发任务优先复用项目已有映射，缺失时再适配参考组件。"
+
+policy:
+  allow_implicit_invocation: true

@@ -3,6 +3,7 @@ export interface PermissionCatalogItem {
   name: string
   group: string
   page: string
+  sourceId?: string
   description: string
 }
 
@@ -46,18 +47,39 @@ const functionPermissions: PermissionCatalogItem[] = [
   { id: 'func.skill.manage', name: 'Skill 管理', group: 'AI 助手', page: 'Skill Hub', description: '管理工作台 Skill。' }
 ]
 
+const dataSources = [
+  { id: 'ds-ops-region', group: '乐享运营', menu: '乐享运营', name: '运营指标查询', apiUrl: '/api/ops/metrics', permissionParam: 'regionCode', key: 'scope', value: 'east', remark: '用于运营日报和活动复盘，按区域控制可见范围。', sensitivity: 'sensitive-data' },
+  { id: 'ds-member-tag', group: '在职员工管理', menu: '在职员工管理', name: '会员标签查询', apiUrl: '/api/member/tags', permissionParam: 'tagGroup', key: 'tag_group', value: 'rights', remark: '涉及会员权益使用情况，默认需要业务负责人确认。', sensitivity: 'it-config-data' },
+  { id: 'ds-geo-source', group: 'GEO 看板', menu: 'GEO 看板', name: '信源引用查询', apiUrl: '/api/geo/sources', permissionParam: 'sourceType', key: 'source_type', value: 'official', remark: '用于 GEO 信源监测和引用趋势分析。', sensitivity: 'sensitive-data' },
+  { id: 'ds-lead-pool', group: '企业客户管理', menu: '企业客户管理', name: '线索池查询', apiUrl: '/api/biz/leads', permissionParam: 'ownerOrg', key: 'owner_org', value: 'enterprise', remark: '包含客户线索和跟进状态，仅企业客户相关组织可申请。', sensitivity: 'it-config-data' },
+  { id: 'ds-mall-order', group: '乐享运营', menu: '乐享运营', name: '订单状态查询', apiUrl: '/api/mall/orders', permissionParam: 'orderScope', key: 'order_scope', value: 'summary', remark: '用于订单状态和售后进展查看，暂不开放明细字段。', sensitivity: 'it-config-data' }
+]
+
+export function createPermissionDataSources() {
+  return dataSources.map((source) => ({ ...source }))
+}
+
+function dataPermission(sourceId: string, id: string, name: string, description: string): PermissionCatalogItem {
+  const source = dataSources.find((item) => item.id === sourceId)
+  if (!source) throw new Error(`未知数据源：${sourceId}`)
+  return { id, name, description, sourceId, group: source.menu, page: source.name }
+}
+
 const dataPermissions: PermissionCatalogItem[] = [
-  { id: 'data.ops.region.east', name: '华东区', group: '乐享运营', page: '运营总览', description: '华东区域的运营指标数据。' },
-  { id: 'data.ops.region.north', name: '华北区', group: '乐享运营', page: '运营总览', description: '华北区域的运营指标数据。' },
-  { id: 'data.ops.region.south', name: '华南区', group: '乐享运营', page: '运营总览', description: '华南区域的运营指标数据。' },
-  { id: 'data.member.profile.level', name: '会员等级', group: '乐享运营', page: '运营总览', description: '会员等级画像数据。' },
-  { id: 'data.member.profile.rights', name: '权益使用', group: '乐享运营', page: '运营总览', description: '会员权益使用数据。' },
-  { id: 'data.ops.metric.flow', name: '流量转化', group: '乐享运营', page: '流量分析', description: '流量及转化指标。' },
-  { id: 'data.ops.metric.gmv', name: 'GMV 指标', group: '乐享运营', page: 'GMV 分析', description: 'GMV 及相关经营指标。' },
-  { id: 'data.geo.source.official', name: '官方信源', group: 'GEO 看板', page: '各平台信源分布', description: '官方渠道信源数据。' },
-  { id: 'data.geo.source.community', name: '社区信源', group: 'GEO 看板', page: '各平台信源分布', description: '社区渠道信源数据。' },
-  { id: 'data.lead.pool.all', name: '全部线索', group: '企业客户管理', page: '线索池', description: '全部企业客户线索。' },
-  { id: 'data.lead.pool.assigned', name: '已分配线索', group: '企业客户管理', page: '线索池', description: '当前账号已分配的企业线索。' }
+  dataPermission('ds-ops-region', 'data.ops.region.east', '华东区', '华东区域的运营指标数据。'),
+  dataPermission('ds-ops-region', 'data.ops.region.north', '华北区', '华北区域的运营指标数据。'),
+  dataPermission('ds-ops-region', 'data.ops.region.south', '华南区', '华南区域的运营指标数据。'),
+  dataPermission('ds-ops-region', 'data.ops.metric.flow', '流量转化', '流量及转化指标。'),
+  dataPermission('ds-ops-region', 'data.ops.metric.gmv', 'GMV 指标', 'GMV 及相关经营指标。'),
+  dataPermission('ds-mall-order', 'data.mall.order.pending', '待处理订单', '待处理订单状态汇总（mock）。'),
+  dataPermission('ds-mall-order', 'data.mall.order.completed', '已完成订单', '已完成订单状态汇总（mock）。'),
+  dataPermission('ds-mall-order', 'data.mall.order.aftersales', '售后订单', '售后订单进展汇总（mock）。'),
+  dataPermission('ds-geo-source', 'data.geo.source.official', '官方信源', '官方渠道信源数据。'),
+  dataPermission('ds-geo-source', 'data.geo.source.community', '社区信源', '社区渠道信源数据。'),
+  dataPermission('ds-member-tag', 'data.member.profile.level', '会员等级', '会员等级画像数据。'),
+  dataPermission('ds-member-tag', 'data.member.profile.rights', '权益使用', '会员权益使用数据。'),
+  dataPermission('ds-lead-pool', 'data.lead.pool.all', '全部线索', '全部企业客户线索。'),
+  dataPermission('ds-lead-pool', 'data.lead.pool.assigned', '已分配线索', '当前账号已分配的企业线索。')
 ]
 
 function createRole(
@@ -149,16 +171,22 @@ export function createPermissionScopeCatalog() {
 }
 
 export function groupDataPermissionsByDirectory(source: PermissionCatalogItem[]) {
-  const directoryMap = new Map<string, PermissionCatalogItem[]>()
+  const directoryMap = new Map<string, Map<string, { id: string; name: string; datasets: PermissionCatalogItem[] }>>()
+  const seenIds = new Set<string>()
   source.forEach((permission) => {
-    const datasets = directoryMap.get(permission.group) || []
-    datasets.push(permission)
-    directoryMap.set(permission.group, datasets)
+    if (seenIds.has(permission.id)) return
+    seenIds.add(permission.id)
+    const sources = directoryMap.get(permission.group) || new Map()
+    const sourceId = permission.sourceId || `${permission.group}-${permission.page}`
+    const dataSource = sources.get(sourceId) || { id: sourceId, name: permission.page, datasets: [] }
+    dataSource.datasets.push(clonePermission(permission))
+    sources.set(sourceId, dataSource)
+    directoryMap.set(permission.group, sources)
   })
-  return [...directoryMap.entries()].map(([directory, datasets]) => ({
+  return [...directoryMap.entries()].map(([directory, sources]) => ({
     id: directory,
     name: directory,
-    datasets: datasets.map(clonePermission)
+    sources: [...sources.values()]
   }))
 }
 

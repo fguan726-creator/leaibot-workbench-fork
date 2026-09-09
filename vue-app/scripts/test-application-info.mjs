@@ -31,6 +31,11 @@ const expectedSchemas = {
   }
 }
 
+for (const key of ['changeInternal', 'changeExternal', 'create']) {
+  expectedSchemas[key].fields.splice(-1, 0, FIELD.businessApprover)
+  expectedSchemas[key].required.splice(-1, 0, FIELD.businessApprover)
+}
+
 Object.entries(expectedSchemas).forEach(([key, expected]) => {
   const schema = APPLICATION_INFO_SCHEMAS[key]
   assert.deepEqual(schema.fields, expected.fields, `${key} 字段及顺序必须与确认表格一致`)

@@ -1,11 +1,11 @@
 {
   "projectId": "lexiang-workbench",
   "requiredSkillId": "portal-workbench-ui",
-  "recommendedSkillVersion": "2026-08-18",
-  "recommendedSkillRelease": "0818",
+  "recommendedSkillVersion": "2026-09-08",
+  "recommendedSkillRelease": "0908",
   "compatibilityPolicy": "portable-rule-based",
   "warningOnly": true,
-  "baselineName": "0818-unified-design-and-shared-vue-component-baseline",
+  "baselineName": "0908-unified-design-and-shared-vue-component-baseline",
   "protectedSurfaces": [
     "topbar",
     "left-sidebar",

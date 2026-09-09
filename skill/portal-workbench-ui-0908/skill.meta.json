@@ -1,0 +1,25 @@
+{
+  "projectId": "lexiang-workbench",
+  "skillId": "portal-workbench-ui",
+  "skillVersion": "2026-09-08",
+  "skillRelease": "0908",
+  "baselineName": "0908-feedback-contract-on-0904-baseline",
+  "updatedAt": "2026-09-08",
+  "archiveRelease": "0908",
+  "archivedAt": "2026-09-08",
+  "candidateRequirement": "2026-09-08-ai-product-feedback-contract",
+  "referenceBaseline": {
+    "projectRelease": "0908",
+    "appRootHint": "vue-app"
+  },
+  "audiences": [
+    "pm",
+    "ui-ux",
+    "frontend-development",
+    "review-qa"
+  ],
+  "distributionPolicy": "single-authoritative-skill",
+  "compatibilityPolicy": "portable-target-repository",
+  "sharedRoleComponentLibrary": "assets/vue-content-slot-components",
+  "productSourceWritePolicy": "development-request-with-identified-target-authorizes-in-scope-edits"
+}
