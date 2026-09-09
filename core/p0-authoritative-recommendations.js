@@ -62,26 +62,37 @@ function authoritativeRecommendations(db, upstreamProducts, options = {}) {
     return true;
   };
 
-  upstream.forEach((product) => {
-    if (selected.length >= limit) return;
+  // Keep the recommendation payload ordered, so list ranks and compare-by-number agree.
+  const upstreamRows = upstream.map((product) => {
     const sku = String(product?.sku || '').trim();
-    if (sku) accept(exactBySku.get(sku));
-  });
-
-  if (selected.length < limit) {
-    const prices = upstream.map((item) => Number(item?.price)).filter((price) => price > 0);
-    const targetPrice = prices.length ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
-    const rows = db.prepare(`SELECT sku, name, price, original_price, image_url, description, category, specs
-      FROM products
-      WHERE status = 'active' AND price > 0 AND image_url != ''
-        AND json_extract(specs, '$.catalog_source') = 'leai product data'
-        AND json_extract(specs, '$.site') = ?
-      ORDER BY CASE WHEN ? > 0 THEN ABS(price - ?) ELSE sort_order END ASC, sort_order ASC
-      LIMIT 96`).all(site, targetPrice, targetPrice);
-    rows.some((row) => {
-      accept(row);
-      return selected.length >= limit;
-    });
+    return sku ? exactBySku.get(sku) : null;
+  }).filter(Boolean);
+  const prices = upstream.map((item) => Number(item?.price)).filter((price) => price > 0);
+  const targetPrice = prices.length ? prices.reduce((sum, price) => sum + price, 0) / prices.length : 0;
+  const rows = db.prepare(`SELECT sku, name, price, original_price, image_url, description, category, specs
+    FROM products
+    WHERE status = 'active' AND price > 0 AND image_url != ''
+      AND json_extract(specs, '$.catalog_source') = 'leai product data'
+      AND json_extract(specs, '$.site') = ?
+    ORDER BY CASE WHEN ? > 0 THEN ABS(price - ?) ELSE sort_order END ASC, sort_order ASC
+    LIMIT 96`).all(site, targetPrice, targetPrice);
+  const isNotebook = (row) => {
+    const specs = parseSpecs(row.specs);
+    const category = String(row.category || specs.source_category || '').trim();
+    if (/服务|台式|一体机|服务器|选件|配件|外设|手机|平板|办公/.test(category)) return false;
+    return /笔记本|轻薄本|游戏本|ThinkPad|ThinkBook|laptop|notebook/i.test(category)
+      || /笔记本|扬天\s*V\d/i.test(row.name || '');
+  };
+  const candidates = [...upstreamRows, ...rows];
+  const notebookCount = Math.min(10, limit);
+  for (const row of candidates) {
+    if (selected.length >= notebookCount) break;
+    if (isNotebook(row)) accept(row);
+  }
+  // A channel with fewer than ten notebook models keeps all of them ahead of other products.
+  for (const row of candidates) {
+    if (selected.length >= limit) break;
+    accept(row);
   }
 
   return selected;
