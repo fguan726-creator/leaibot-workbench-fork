@@ -58,3 +58,8 @@ html body[data-page="brand"]:not(.assistant-fullscreen):not(.lx-auto-fs) main.sh
 
 /* Fill the shell height: the shared content rule subtracts an obsolete top gap. */
 html body[data-page="brand"]:not(.assistant-fullscreen):not(.lx-auto-fs) main.shell>section.content{height:100%!important;max-height:none!important;margin-bottom:0!important}
+
+/* 卡片「乐享摘要」标记：带 data-lx-brand-query 的卡片，点击除打开原文外还会在左侧发出摘要提问。 */
+.lx-brand-home .lxbrand-ask{display:inline-flex;align-items:center;gap:4px;min-height:20px;margin-left:6px;padding:0 7px;border:1px solid #cbaed2;border-radius:5px;background:#fff;color:#5b1452;font-size:11px;line-height:18px;font-weight:500;white-space:nowrap}
+.lx-brand-home .lxbrand-ask::before{content:"";width:11px;height:11px;flex:none;background:currentColor;-webkit-mask:url(/assets/icons/global-sparkle.svg) center/contain no-repeat;mask:url(/assets/icons/global-sparkle.svg) center/contain no-repeat}
+.lx-brand-home .lxbrand-card:hover .lxbrand-ask{background:#f3edf6;border-color:#b79bbc}
