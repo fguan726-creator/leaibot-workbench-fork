@@ -151,6 +151,15 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-09-16',
+    releaseKey: 'workbench-activity-points-20260916',
+    title: '企业购活动积分配置',
+    changePoint: '积分管理新增活动积分配置，可维护参与商品与阶梯倍数，查看企业达档、订单补发和发放记录。',
+    detail: '活动积分已接入工作台原生页面，沿用左侧菜单、顶部页签和全局 AI 助手。支持新建和编辑活动、进行中延期、跨账号企业累计、订单实际已发积分扣减、模拟结算、失败重试及明细导出。使用标明的演示数据，不产生真实积分。发放日历、退款、叠加等未定口径在产品文档中单独列明。发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
     time: '2026-09-15',
     releaseKey: 'workbench-organization-management-20260915',
     title: '组织详情与成员管理入口恢复',

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "pages": [
+    {
+      "pageId": "points.activity",
+      "label": "企业购活动积分配置",
+      "route": "/points/activity",
+      "pageType": "T7",
+      "components": ["C1", "C2", "C3", "C8", "C9"],
+      "implementation": "O1",
+      "visualStatus": "VA-0",
+      "remainingStates": [
+        "本次响应式、C9 状态和键盘验收待完成",
+        "真实后端及真实积分写入未接入"
+      ]
+    }
+  ]
+}

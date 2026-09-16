@@ -2,6 +2,8 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { allowPreviewAuth } from '@/config/runtimeMode'
 import { aiInspectRoutes } from '@/views/aiinspect/routes'
+import { canUseActivityPoints } from '@/services/activityPointsAccess'
+import { showWorkbenchToast } from '@/services/toast'
 
 // 布局
 const AppLayout = () => import('@/components/AppLayout.vue')
@@ -29,6 +31,7 @@ const LeadScore = () => import('@/views/lead/LeadScoreView.vue')
 const OrderPurchaseOrders = () => import('@/views/order/OrderPurchaseOrdersView.vue')
 const AgreementOrder = () => import('@/views/order/AgreementOrderView.vue')
 const ProductVideoConfig = () => import('@/views/advertising/ProductVideoConfigView.vue')
+const ActivityPoints = () => import('@/views/points/ActivityPointsView.vue')
 const AgentSkills = () => import('@/views/agent/AgentSkillsView.vue')
 const AgentSkillCreate = () => import('@/views/agent/AgentSkillCreateView.vue')
 const AgentPermissions = () => import('@/views/agent/AgentPermissionsView.vue')
@@ -102,6 +105,9 @@ const routes: RouteRecordRaw[] = [
 
       ...aiInspectRoutes,
 
+      // 积分管理：保留现有登录会话和外壳，只增加活动积分内容页。
+      { path: 'points/activity', component: ActivityPoints, meta: { pageId: 'points.activity', group: 'points' } },
+
       // Agent 入口（从用户菜单进入，不在侧栏显示）
       { path: 'agent/skills',         component: AgentSkills, meta: { pageId: 'agent.skills' } },
       { path: 'agent/skill-create',   component: AgentSkillCreate, meta: { pageId: 'agent.skillCreate' } },
@@ -164,6 +170,10 @@ router.beforeEach(async (to) => {
     if (!appStore.user) {
       return { path: '/login', query: { redirect: to.fullPath } }
     }
+  }
+  if (to.meta.pageId === 'points.activity' && !canUseActivityPoints(appStore.user, appStore.role, appStore.permissions)) {
+    showWorkbenchToast('当前账号没有活动积分查看权限，请联系管理员开通。')
+    return { path: '/portal/home' }
   }
   return true
 })

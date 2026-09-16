@@ -20,8 +20,9 @@ import { syncThemeMode } from '@/composables/useThemeMode'
 import { showWorkbenchToast } from '@/services/toast'
 import { allowPreviewAuth } from '@/config/runtimeMode'
 import { AI_INSPECT_MENU, withAiInspectMenu } from '@/services/aiInspectAccess'
+import { ACTIVITY_POINTS_MENU, withActivityPointsMenu } from '@/services/activityPointsAccess'
 
-type MenuGroupKey = 'dashboard' | 'geo' | 'employee' | 'lead' | 'order' | 'advertising' | 'aiinspect'
+type MenuGroupKey = 'dashboard' | 'geo' | 'employee' | 'lead' | 'order' | 'advertising' | 'aiinspect' | 'points'
 export type PageId = string
 
 interface MenuItem {
@@ -169,7 +170,8 @@ export const MENU_TREE: Record<MenuGroupKey, MenuGroup> = {
       'advertising.productVideo': { label: '商品视频管理', path: '/advertising/product-videos' }
     }
   },
-  aiinspect: AI_INSPECT_MENU
+  aiinspect: AI_INSPECT_MENU,
+  points: ACTIVITY_POINTS_MENU
 }
 
 // pageId → path 快速查表
@@ -286,9 +288,9 @@ export const useAppStore = defineStore('app', () => {
 
   // ---- 过滤后的菜单树（对应原 STATE.visibleMenus 过滤 MENU_TREE）----
   const filteredMenuTree = computed(() =>
-    withAiInspectMenu(Object.fromEntries(
+    withActivityPointsMenu(withAiInspectMenu(Object.fromEntries(
       Object.entries(MENU_TREE).filter(([key]) => visibleMenus.value.includes(key as MenuGroupKey))
-    ), user.value, role.value, permissions.value)
+    ), user.value, role.value, permissions.value), user.value, role.value, permissions.value)
   )
 
   // ===== 对应原 loadUserContext() =====
