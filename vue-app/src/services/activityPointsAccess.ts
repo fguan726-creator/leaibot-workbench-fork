@@ -17,7 +17,7 @@ export const ACTIVITY_POINTS_MENU: PointsMenuGroup = {
   icon: '<svg class="menu-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="6.6"/><path d="m10 5 1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3L5.2 8.5 8.5 8z"/></svg>',
   label: '促销中心',
   children: {
-    'points.activity': { label: '积分规则', path: '/points/activity', section: '积分管理' }
+    'points.activity': { label: '活动积分配置', path: '/points/activity', section: '积分管理' }
   }
 }
 

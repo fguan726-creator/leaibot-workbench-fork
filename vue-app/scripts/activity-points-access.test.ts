@@ -51,7 +51,7 @@ test('积分入口合并和权限移除保留其他促销菜单且不修改原�
       label: '促销中心',
       children: {
         'promotion.coupons': otherPage,
-        'points.activity': { label: '积分规则', path: '/points/activity', section: '积分管理' }
+        'points.activity': { label: '活动积分配置', path: '/points/activity', section: '积分管理' }
       }
     }
   }
