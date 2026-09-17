@@ -32,6 +32,7 @@ const OrderPurchaseOrders = () => import('@/views/order/OrderPurchaseOrdersView.
 const AgreementOrder = () => import('@/views/order/AgreementOrderView.vue')
 const ProductVideoConfig = () => import('@/views/advertising/ProductVideoConfigView.vue')
 const ActivityPoints = () => import('@/views/points/ActivityPointsView.vue')
+const ActivityPointsStatistics = () => import('@/views/points/ActivityPointsStatisticsView.vue')
 const AgentSkills = () => import('@/views/agent/AgentSkillsView.vue')
 const AgentSkillCreate = () => import('@/views/agent/AgentSkillCreateView.vue')
 const AgentPermissions = () => import('@/views/agent/AgentPermissionsView.vue')
@@ -107,6 +108,7 @@ const routes: RouteRecordRaw[] = [
 
       // 促销中心 / 积分管理：保留现有积分页面直链与权限标识。
       { path: 'points/activity', component: ActivityPoints, meta: { pageId: 'points.activity', group: 'promotion' } },
+      { path: 'points/activity-details', component: ActivityPointsStatistics, meta: { pageId: 'points.activityDetails', group: 'promotion' } },
 
       // Agent 入口（从用户菜单进入，不在侧栏显示）
       { path: 'agent/skills',         component: AgentSkills, meta: { pageId: 'agent.skills' } },
@@ -171,7 +173,7 @@ router.beforeEach(async (to) => {
       return { path: '/login', query: { redirect: to.fullPath } }
     }
   }
-  if (to.meta.pageId === 'points.activity' && !canUseActivityPoints(appStore.user, appStore.role, appStore.permissions)) {
+  if (['points.activity', 'points.activityDetails'].includes(String(to.meta.pageId)) && !canUseActivityPoints(appStore.user, appStore.role, appStore.permissions)) {
     showWorkbenchToast('当前账号没有活动积分查看权限，请联系管理员开通。')
     return { path: '/portal/home' }
   }

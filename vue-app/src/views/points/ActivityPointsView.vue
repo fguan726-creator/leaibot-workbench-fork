@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import ContentPageHeader from '@/components/content/ContentPageHeader.vue'
 import ContentTabs from '@/components/content/ContentTabs.vue'
@@ -30,6 +31,7 @@ import {
 } from '@/services/activityPoints'
 
 const app = useAppStore()
+const router = useRouter()
 const { state, storageNotice, reset } = useActivityPointsDemo()
 const can = (action: ActivityPointsAction) =>
   canUseActivityPoints(app.user, app.role, app.permissions, action)
@@ -344,7 +346,7 @@ watch(
         <ContentPageHeader
           title="活动积分配置"
           description="配置企业采购活动，按企业累计，向下单账号补发积分。"
-        ><template #actions><button class="btn btn-secondary" @click="settings = true">配置说明</button><button v-if="can('configure')" class="btn btn-primary" @click="edit()">
+        ><template #actions><button class="btn btn-secondary" @click="router.push('/points/activity-details')">活动积分明细</button><button class="btn btn-secondary" @click="settings = true">配置说明</button><button v-if="can('configure')" class="btn btn-primary" @click="edit()">
           新增活动
         </button></template></ContentPageHeader>
         <div class="points-demo-strip" data-flow-role="notice">
@@ -424,7 +426,7 @@ watch(
                   "
                 >{{ activityStatus(row, state.date) }}</StatusTag><small class="points-secondary">{{ issuance(row) }}</small></template>
                 <template #cell-actions="{ row }"><div class="points-actions">
-                  <button class="points-link" @click="openActivity(row.id)">查看</button><button
+                  <button class="points-link" @click="openActivity(row.id)">查看</button><button class="points-link" @click="router.push({ path: '/points/activity-details', query: { activity: row.id } })">统计明细</button><button
                     v-if="can('extend') && activityStatus(row, state.date) === '进行中'"
                     class="points-link"
                     @click="startExtension(row)"
