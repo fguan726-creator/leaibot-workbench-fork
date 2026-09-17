@@ -105,8 +105,8 @@ const routes: RouteRecordRaw[] = [
 
       ...aiInspectRoutes,
 
-      // 积分管理：保留现有登录会话和外壳，只增加活动积分内容页。
-      { path: 'points/activity', component: ActivityPoints, meta: { pageId: 'points.activity', group: 'points' } },
+      // 促销中心 / 积分管理：保留现有积分页面直链与权限标识。
+      { path: 'points/activity', component: ActivityPoints, meta: { pageId: 'points.activity', group: 'promotion' } },
 
       // Agent 入口（从用户菜单进入，不在侧栏显示）
       { path: 'agent/skills',         component: AgentSkills, meta: { pageId: 'agent.skills' } },

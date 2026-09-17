@@ -10,14 +10,14 @@ export function isActivityPointsDemoPreview(): boolean {
 export interface PointsMenuGroup {
   icon: string
   label: string
-  children: Record<string, { label: string; path: string }>
+  children: Record<string, { label: string; path: string; section?: string }>
 }
 
 export const ACTIVITY_POINTS_MENU: PointsMenuGroup = {
   icon: '<svg class="menu-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="6.6"/><path d="m10 5 1.5 3 3.3.5-2.4 2.3.6 3.3-3-1.6-3 1.6.6-3.3L5.2 8.5 8.5 8z"/></svg>',
-  label: '积分管理',
+  label: '促销中心',
   children: {
-    'points.activity': { label: '活动积分配置', path: '/points/activity' }
+    'points.activity': { label: '积分规则', path: '/points/activity', section: '积分管理' }
   }
 }
 
@@ -43,8 +43,14 @@ export function withActivityPointsMenu(
   previewDemo = isActivityPointsDemoPreview()
 ): Record<string, PointsMenuGroup> {
   const result = { ...existing }
-  if (canUseActivityPoints(user, role, permissions, 'view', previewDemo))
-    result.points = ACTIVITY_POINTS_MENU
-  else delete result.points
+  const promotion = existing.promotion || ACTIVITY_POINTS_MENU
+  const children = { ...promotion.children }
+  if (canUseActivityPoints(user, role, permissions, 'view', previewDemo)) {
+    children['points.activity'] = ACTIVITY_POINTS_MENU.children['points.activity']
+  } else {
+    delete children['points.activity']
+  }
+  if (Object.keys(children).length) result.promotion = { ...promotion, children }
+  else delete result.promotion
   return result
 }

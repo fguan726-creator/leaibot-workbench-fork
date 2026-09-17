@@ -22,12 +22,13 @@ import { allowPreviewAuth } from '@/config/runtimeMode'
 import { AI_INSPECT_MENU, withAiInspectMenu } from '@/services/aiInspectAccess'
 import { ACTIVITY_POINTS_MENU, withActivityPointsMenu } from '@/services/activityPointsAccess'
 
-type MenuGroupKey = 'dashboard' | 'geo' | 'employee' | 'lead' | 'order' | 'advertising' | 'aiinspect' | 'points'
+type MenuGroupKey = 'dashboard' | 'geo' | 'employee' | 'lead' | 'order' | 'advertising' | 'aiinspect' | 'promotion'
 export type PageId = string
 
 interface MenuItem {
   label: string
   path: string
+  section?: string
 }
 
 interface MenuGroup {
@@ -171,7 +172,7 @@ export const MENU_TREE: Record<MenuGroupKey, MenuGroup> = {
     }
   },
   aiinspect: AI_INSPECT_MENU,
-  points: ACTIVITY_POINTS_MENU
+  promotion: ACTIVITY_POINTS_MENU
 }
 
 // pageId → path 快速查表
@@ -240,7 +241,7 @@ export function getPageLabel(pageId: PageId) {
 export function getGroupLabel(pageId: PageId) {
   const groupLabelMap: Record<string, string> = { agent: 'AI 助手', portal: '首页' }
   for (const g of Object.values(MENU_TREE)) {
-    if (g.children?.[pageId]) return g.label
+    if (g.children?.[pageId]) return [g.label, g.children[pageId].section].filter(Boolean).join(' / ')
   }
   return groupLabelMap[pageId.split('.')[0]] || pageId.split('.')[0]
 }
