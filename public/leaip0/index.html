@@ -489,6 +489,12 @@ html body[data-page]:not(.assistant-fullscreen):not(.lx-auto-fs) main.shell > se
 html body[data-page] main.shell > section.content[data-view="detail"] .product-detail > .detail-main {
   border-radius:8px!important;
 }
+
+/* Keep the white child surfaces inside the shell's lower corners without clipping popovers. */
+html body[data-page] main.shell > section.content[data-view="detail"] .product-detail > .detail-main > :is(.detail-gallery, .detail-info) {
+  border-bottom-left-radius:inherit!important;
+  border-bottom-right-radius:inherit!important;
+}
 </style>
 <style id="lx-member-advice-off">
 /* Remove the complete suggestions row, including its layout space. */
