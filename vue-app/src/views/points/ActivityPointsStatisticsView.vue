@@ -14,7 +14,7 @@ import StatusTag from '@/components/content/StatusTag.vue'
 import PointsDialog from './PointsDialog.vue'
 import { useActivityPointsDemo, exportPointsCsv } from './useActivityPointsDemo'
 import { canUseActivityPoints } from '@/services/activityPointsAccess'
-import { activityStatus, ordersFor, number as n } from '@/services/activityPoints'
+import { activityStatus, payoutDate, ordersFor, number as n } from '@/services/activityPoints'
 import {
   buildActivityStatistics,
   filterStatistics,
@@ -40,6 +40,10 @@ const initialActivity = () =>
   ''
 const activityId = ref(initialActivity())
 const activity = computed(() => state.activities.find((a) => a.id === activityId.value))
+const accumulating = computed(() => !!activity.value && state.date <= activity.value.end)
+const activityPointsLabel = computed(() => accumulating.value ? '预计活动积分' : '应发活动积分')
+const pendingPointsLabel = computed(() => accumulating.value ? '预计待发积分' : '待自动发放积分')
+const plannedDate = computed(() => activity.value ? payoutDate(activity.value) : '—')
 const emptyFilters = (): StatisticsFilters => ({
   enterprise: '',
   account: '',
@@ -142,10 +146,10 @@ const columns = computed<Column[]>(() =>
         numeric('multiplier', '积分倍数'),
         numeric('target', '应发总积分'),
         numeric('paid', '实际已发（其他）'),
-        numeric('required', '活动应补'),
-        numeric('posted', '本活动已补'),
-        numeric('pending', '待补积分'),
-        { key: 'status', label: '处理状态' },
+        numeric('required', activityPointsLabel.value),
+        numeric('posted', '已发活动积分'),
+        numeric('pending', pendingPointsLabel.value),
+        { key: 'status', label: '发放状态' },
         { key: 'actions', label: '操作' }
       ]
     : [
@@ -156,9 +160,9 @@ const columns = computed<Column[]>(() =>
         numeric('multiplier', '企业活动档位'),
         numeric('target', '可计算应发'),
         numeric('paid', '实际已发（其他）'),
-        numeric('required', '活动应补'),
-        numeric('posted', '本活动已补'),
-        numeric('pending', '待补积分'),
+        numeric('required', activityPointsLabel.value),
+        numeric('posted', '已发活动积分'),
+        numeric('pending', pendingPointsLabel.value),
         numeric('failed', '失败积分'),
         numeric('exceptions', '计算异常'),
         { key: 'actions', label: '操作' }
@@ -218,11 +222,11 @@ function exportDetails() {
       '应发放总积分（不舍小数点）',
       '应发放总积分',
       '实际已发积分（其他）',
-      '本活动应补积分',
-      '本活动已补积分',
-      '待补积分',
+      activityPointsLabel.value,
+      '已发活动积分',
+      pendingPointsLabel.value,
       '发放失败积分',
-      '处理状态',
+      '发放状态',
       '异常或排除原因',
       '付款日期',
       '备注',
@@ -230,7 +234,9 @@ function exportDetails() {
       '发票类型',
       '处理时间',
       '发放批次',
-      '积分流水号'
+      '积分流水号',
+      '计划自动发放日期',
+      '统计截止日期'
     ],
     rows.value.map((row) => [
       row.activityId,
@@ -263,7 +269,9 @@ function exportDetails() {
       '未记录',
       row.record?.time || '',
       row.record?.batch || '',
-      row.record?.transaction || ''
+      row.record?.transaction || '',
+      plannedDate.value,
+      state.date
     ])
   )
   notice.value = `已导出当前筛选的全部 ${rows.value.length} 条订单计算明细，可用 Excel 打开。`
@@ -307,7 +315,7 @@ watch(
     <div class="points-flow" data-composition="summary-list">
       <ContentPageHeader
         title="活动积分明细"
-        description="按活动核对企业累计、订单计算和积分补发结果。"
+        description="活动期间累计积分，结束后由系统按计划自动发放。"
       >
         <template #actions>
           <button class="btn btn-secondary" @click="router.push('/points/activity')">
@@ -333,6 +341,7 @@ watch(
         <div class="points-demo-strip">
           <div>
             <strong>演示数据 · 不产生真实积分</strong><span class="points-secondary">统计截至 {{ state.date }}，与活动配置共享本浏览器内的演示记录。</span>
+            <span v-if="activity" class="points-secondary">计划自动发放：{{ plannedDate }}。{{ accumulating ? '当前为预计积分，最终以活动结束后的结算结果为准。' : '系统按计划统一发放至原下单账号。' }}</span>
           </div>
           <span class="points-muted">单活动统计 · 筛选不改变企业档位</span>
         </div>
@@ -374,7 +383,7 @@ watch(
                 /></label>
                 <label class="points-field">付款开始日期<input v-model="filters.start" class="form-input" type="date"/></label>
                 <label class="points-field">付款结束日期<input v-model="filters.end" class="form-input" type="date"/></label>
-                <label class="points-field">处理状态<select v-model="filters.status" class="form-input">
+                <label class="points-field">发放状态<select v-model="filters.status" class="form-input">
                   <option value="">全部状态</option>
                   <option v-for="status in statisticsStatuses" :key="status">{{ status }}</option>
                 </select></label>
@@ -391,23 +400,23 @@ watch(
           </div>
           <MetricGrid data-flow-role="summary">
             <MetricCard
-              label="本活动应补"
+              :label="activityPointsLabel"
               :value="n(summary.required)"
               unit="分"
               primary
-              meta="可计算订单的应补总额"
+              :meta="accumulating ? '按当前累计档位预估' : '按结算结果自动发放'"
             />
             <MetricCard
-              label="本活动已补"
+              label="已发活动积分"
               :value="n(summary.posted)"
               unit="分"
               meta="按成功积分流水统计"
             />
             <MetricCard
-              label="待补积分"
+              :label="pendingPointsLabel"
               :value="n(summary.pending)"
               unit="分"
-              meta="未处理，失败与异常单列"
+              :meta="accumulating ? '活动结束后统一核算' : '系统按计划发放，失败与异常单列'"
             />
             <MetricCard
               label="发放失败"
@@ -442,7 +451,7 @@ watch(
               </p>
               <p v-if="summary.missingPaidCount" class="points-code-error">
                 {{ summary.missingPaidCount }}
-                条实际已发记录缺失，已发合计仅含已知部分；异常订单不计入可计算应补和待补。
+                条实际已发记录缺失，已发合计仅含已知部分；异常订单暂停自动发放。
               </p>
             </template>
             <div role="tabpanel" :aria-label="tab">
@@ -459,7 +468,7 @@ watch(
                 <template #cell-multiplier="{ row }"><span class="points-numeric">{{ row.multiplier }}</span><small v-if="row.tierContext" class="points-secondary">活动累计 {{ row.tierContext }}</small></template>
                 <template #cell-status="{ row }"><StatusTag
                   :tone="
-                    row.status === '已补发'
+                    row.status === '已发放'
                       ? 'success'
                       : row.status === '发放失败'
                         ? 'danger'
@@ -535,11 +544,11 @@ watch(
           <dd>
             {{ p(detail.actualPaid) }}<small class="points-secondary">不包含本活动已补积分</small>
           </dd>
-          <dt>本活动应补</dt>
+          <dt>{{ activityPointsLabel }}</dt>
           <dd>{{ detail.eligible ? p(detail.requiredPoints) : '不适用' }}</dd>
-          <dt>本活动已补</dt>
+          <dt>已发活动积分</dt>
           <dd>{{ n(detail.postedPoints) }}</dd>
-          <dt>待补 / 失败积分</dt>
+          <dt>{{ pendingPointsLabel }} / 失败积分</dt>
           <dd>{{ n(detail.pendingPoints) }} / {{ n(detail.failedPoints) }}</dd>
           <dt>备注</dt>
           <dd>{{ activity?.description || '未填写' }}</dd>
@@ -547,8 +556,10 @@ watch(
           <dd>未记录</dd>
           <dt>发票类型</dt>
           <dd>未记录</dd>
-          <dt>处理时间 / 批次</dt>
-          <dd>{{ detail.record?.time || '尚未处理' }} / {{ detail.record?.batch || '—' }}</dd>
+          <dt>计划自动发放</dt>
+          <dd>{{ plannedDate }}</dd>
+          <dt>发放时间 / 批次</dt>
+          <dd>{{ detail.record?.time || '暂无发放记录' }} / {{ detail.record?.batch || '—' }}</dd>
           <dt>积分流水号</dt>
           <dd>{{ detail.record?.transaction || '—' }}</dd>
         </dl>
@@ -557,12 +568,11 @@ watch(
             此订单不参与本活动，保留原始金额与已发记录供核对，不计入活动累计和应补。
           </p>
           <p v-else-if="!detail.multiplier">
-            企业未达活动档位，沿用原实际已发积分，本活动无需补发。
+            {{ accumulating ? '当前未达活动档位，活动期间继续累计，最终以活动结束后的结算结果为准。' : '企业未达活动档位，沿用原实际已发积分，本活动无需发放。' }}
           </p>
           <p v-else>基础积分＝实际收款金额 ÷ 100；应发总积分＝基础积分 × 积分倍数，再舍去小数。</p>
           <p v-if="detail.eligible && detail.multiplier">
-            本活动应补＝应发总积分 −
-            实际已发（其他）。待补仅统计可处理差额，失败和计算异常分别列示。
+            活动积分＝应发总积分 − 实际已发（其他）。{{ accumulating ? '当前为预计值，系统将在活动结束后统一核算并按计划自动发放。' : '未到账积分由系统按计划自动发放，失败和计算异常分别列示。' }}
           </p>
         </div>
       </div>

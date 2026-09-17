@@ -7,12 +7,13 @@ import {
 } from './activityPoints'
 
 export const statisticsStatuses = [
-  '待补发',
-  '已补发',
+  '累计中',
+  '待自动发放',
+  '已发放',
   '发放失败',
   '计算异常',
   '不参与',
-  '无需补发'
+  '无需发放'
 ] as const
 export type StatisticsStatus = (typeof statisticsStatuses)[number]
 export type StatisticsRow = Calculated & {
@@ -140,9 +141,11 @@ export function buildActivityStatistics(
         ? '不参与'
         : issue
           ? '计算异常'
-          : row.delta > 0
-            ? '待补发'
-            : '无需补发'
+          : cutoff <= activity.end
+            ? '累计中'
+            : row.delta > 0
+              ? '待自动发放'
+              : '无需发放'
       return {
         ...row,
         eligible: participating,
@@ -160,11 +163,20 @@ export function buildActivityStatistics(
         actualPaid,
         requiredPoints,
         postedPoints: 0,
-        pendingPoints: status === '待补发' ? requiredPoints || 0 : 0,
+        pendingPoints: participating && !issue ? Math.max(requiredPoints || 0, 0) : 0,
         failedPoints: 0,
         status,
         reason:
-          issue || (row.multiplier === 0 ? '企业未达活动档位' : row.delta === 0 ? '无需补发' : '')
+          issue ||
+          (cutoff <= activity.end
+            ? row.multiplier === 0
+              ? '当前尚未达档，活动期间继续累计'
+              : ''
+            : row.multiplier === 0
+              ? '企业未达活动档位'
+              : row.delta === 0
+                ? '无需发放'
+                : '')
       }
     })
   const selectedRecords = latestRecords(activity.id, records)
@@ -208,13 +220,13 @@ export function buildActivityStatistics(
         for (const row of items) {
           row.postedPoints = row.requiredPoints || 0
           row.pendingPoints = 0
-          if (row.postedPoints > 0) row.status = '已补发'
+          if (row.eligible) row.status = '已发放'
         }
       }
     } else {
       for (const row of items) {
         if (accountMismatch) markException(row, '发放账号与下单账号不一致，请核对发放记录')
-        else if (row.status === '待补发') {
+        else if (row.eligible && !row.issue && (row.requiredPoints || 0) > 0) {
           row.status = '发放失败'
           row.pendingPoints = 0
           row.failedPoints = row.requiredPoints || 0

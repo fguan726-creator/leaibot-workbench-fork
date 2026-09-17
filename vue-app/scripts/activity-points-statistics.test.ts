@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { registerHooks } from 'node:module'
 import {
   ordersFor,
+  payoutDate,
   seedActivities,
   type Activity,
   type Order,
@@ -136,7 +137,7 @@ await test('逐行取整后汇总，不以汇总金额一次取整代替订单�
   assert.equal(Math.floor((399.98 / 100) * 5), 19)
 })
 
-await test('缺失已发或缺少其中一项均不冒充零，异常不进入待补发', () => {
+await test('缺失已发或缺少其中一项均不冒充零，异常不进入待发积分', () => {
   const orders = [
     orderFixture[0],
     { ...orderFixture[1], paidBase: null },
@@ -157,17 +158,17 @@ await test('缺失已发或缺少其中一项均不冒充零，异常不进入�
   assert.equal(summary.quantity, 22)
 })
 
-await test('待补、已补、失败、异常、不参与、无需补发状态互斥', () => {
+await test('累计、已发放、失败、异常与不参与状态互斥', () => {
   const rows = build(orderFixture, [
     record(orderFixture[0], '成功', 600),
     record(orderFixture[1], '失败', 400)
   ])
-  assert.equal(rows[0].status, '已补发')
+  assert.equal(rows[0].status, '已发放')
   assert.deepEqual([rows[0].postedPoints, rows[0].pendingPoints, rows[0].failedPoints], [600, 0, 0])
   assert.equal(rows[1].status, '发放失败')
   assert.deepEqual([rows[1].postedPoints, rows[1].pendingPoints, rows[1].failedPoints], [0, 0, 400])
-  assert.equal(rows[2].status, '待补发')
-  assert.equal(rows[6].status, '无需补发')
+  assert.equal(rows[2].status, '累计中')
+  assert.equal(rows[6].status, '累计中')
   assert.equal(rows[7].status, '不参与')
   assert.equal(rows[9].status, '计算异常')
   assert.equal(rows[10].status, '计算异常')
@@ -189,7 +190,7 @@ await test('重复订单行、重复成功流水与处理历史不重复计数�
   const rows = build([...orderFixture.slice(0, 2), { ...orderFixture[0] }], records)
   assert.equal(rows.length, 2)
   assert.equal(rows[0].enterpriseQuantity, 10)
-  assert.equal(rows[0].status, '已补发')
+  assert.equal(rows[0].status, '已发放')
   assert.equal(rows[0].record?.time, '2026-11-04 10:00:00')
   assert.equal(summarizeStatistics(rows).posted, 600)
   assert.equal(summarizeStatistics(rows).orderCount, 2)
@@ -229,7 +230,7 @@ await test('查询支持包含匹配和精确钻取，账号分组不混淆不�
     enterprise: '远帆',
     account: 'a01',
     orderId: '001',
-    status: '待补发'
+    status: '累计中'
   })
   assert.equal(queried.length, 1)
   assert.equal(filterStatistics(rows, { exactEnterprise: 'ENT-DEMO-00' }).length, 0)
@@ -259,7 +260,7 @@ await test('同一订单多商品行关联同一成功记录只累计一次', ()
   assert.equal(summarizeStatistics(rows).orderCount, 1)
   assert.equal(summarizeStatistics(rows).posted, 120)
   assert.equal(
-    rows.every((row) => row.status === '已补发'),
+    rows.every((row) => row.status === '已发放'),
     true
   )
 })
@@ -299,4 +300,70 @@ await test('只筛选不参与行时企业全活动档位保留，跨活动不�
     () => summarizeStatistics([rows[0], { ...rows[0], key: 'OTHER', activityId: 'OTHER' }]),
     /单个活动/
   )
+})
+
+await test('结束当日仍累计，次日及计划发放前后无流水均待自动发放', () => {
+  const records: RecordItem[] = []
+  for (const [cutoff, expected] of [
+    [activity.end, '累计中'],
+    ['2026-10-16', '待自动发放'],
+    ['2026-11-03', '待自动发放'],
+    [payoutDate(activity), '待自动发放'],
+    ['2026-11-05', '待自动发放']
+  ]) {
+    const rows = buildActivityStatistics(activity, orderFixture, records, cutoff)
+    assert.equal(rows[0].status, expected, cutoff)
+    assert.equal(rows[0].requiredPoints, 600)
+    assert.equal(rows[0].pendingPoints, 600)
+    assert.equal(rows[0].postedPoints, 0)
+    assert.equal(rows[0].record, undefined)
+    assert.equal(
+      rows.some((row) => row.status === '已发放'),
+      false
+    )
+  }
+  assert.deepEqual(records, [])
+})
+
+await test('活动期间未达档或已发恰好覆盖均累计中，结束后才展示无需发放', () => {
+  const covered = { ...orderFixture[0], paidBase: 1500, paidMember: 0 }
+  const orders = [covered, orderFixture[1], orderFixture[6]]
+  const ongoing = buildActivityStatistics(activity, orders, [], activity.end)
+  for (const row of [ongoing[0], ongoing[2]]) {
+    assert.equal(row.status, '累计中')
+    assert.equal(row.requiredPoints, 0)
+    assert.equal(row.pendingPoints, 0)
+    assert.doesNotMatch(row.reason, /无需/)
+  }
+  const ended = buildActivityStatistics(activity, orders, [], '2026-10-16')
+  assert.equal(ended[0].status, '无需发放')
+  assert.equal(ended[2].status, '无需发放')
+  assert.equal(ended[1].status, '待自动发放')
+})
+
+await test('延长活动结束日期后回到累计中，保留当前预计金额', () => {
+  const before = buildActivityStatistics(activity, orderFixture, [], '2026-10-16')
+  const extended = { ...activity, end: '2026-10-22' }
+  const after = buildActivityStatistics(extended, orderFixture, [], '2026-10-16')
+  assert.equal(before[0].status, '待自动发放')
+  assert.equal(after[0].status, '累计中')
+  assert.equal(after[0].requiredPoints, before[0].requiredPoints)
+  assert.equal(after[0].pendingPoints, before[0].pendingPoints)
+  assert.equal(summarizeStatistics(after).pending, summarizeStatistics(before).pending)
+})
+
+await test('已有有效成功和失败记录优先于累计阶段，不从日期推造发放结果', () => {
+  const records = [
+    record(orderFixture[0], '成功', 600, { time: '2026-09-16 10:00:00' }),
+    record(orderFixture[1], '失败', 400, { time: '2026-09-16 10:00:00' })
+  ]
+  const rows = buildActivityStatistics(activity, orderFixture, records, '2026-09-16')
+  assert.equal(rows[0].status, '已发放')
+  assert.equal(rows[0].postedPoints, 600)
+  assert.equal(rows[0].pendingPoints, 0)
+  assert.equal(rows[1].status, '发放失败')
+  assert.equal(rows[1].failedPoints, 400)
+  assert.equal(rows[1].pendingPoints, 0)
+  assert.equal(rows[2].status, '累计中')
+  assert.equal(rows[2].record, undefined)
 })

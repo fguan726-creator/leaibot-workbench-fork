@@ -142,8 +142,9 @@ function issuance(activity: Activity) {
   const items = state.records.filter((record) => record.key.startsWith(`${activity.id}:`))
   if (items.some((record) => record.status === '失败'))
     return items.some((record) => record.status === '成功') ? '部分失败' : '发放失败'
-  if (items.length) return '已处理'
-  return state.date < payoutDate(activity) ? '未到发放时间' : '待处理'
+  if (items.length) return '已有发放记录'
+  if (state.date < activity.start) return '待开始累计'
+  return state.date <= activity.end ? '累计中' : '待自动发放'
 }
 function openActivity(id: string) {
   selectedId.value = id
@@ -345,7 +346,7 @@ watch(
       <div v-else class="points-flow">
         <ContentPageHeader
           title="活动积分配置"
-          description="配置企业采购活动，按企业累计，向下单账号补发积分。"
+          description="配置企业采购活动，按企业累计，活动结束后自动发放积分。"
         ><template #actions><button class="btn btn-secondary" @click="router.push('/points/activity-details')">活动积分明细</button><button class="btn btn-secondary" @click="settings = true">配置说明</button><button v-if="can('configure')" class="btn btn-primary" @click="edit()">
           新增活动
         </button></template></ContentPageHeader>
@@ -371,10 +372,10 @@ watch(
             ).length
           "
         /><MetricCard
-          label="待处理发放"
+          label="待自动发放活动"
           :value="
             state.activities.filter((activity) =>
-              ['待处理', '部分失败', '发放失败'].includes(issuance(activity))
+              issuance(activity) === '待自动发放'
             ).length
           "
         /></MetricGrid>
@@ -501,7 +502,7 @@ watch(
         <template #actions><button class="btn btn-secondary" @click="extensionId = ''">取消</button><button class="btn btn-primary" @click="confirmExtension">确认延期</button></template></PointsDialog>
       <PointsDialog
         v-if="simulation && selected"
-        title="演示统一结算"
+        title="演示自动发放"
         description="模拟时间推进至计划发放日，所有处理仅作用于演示数据。"
         @close="simulation = false"
       ><div class="points-section">
@@ -527,7 +528,7 @@ watch(
         <template #actions><button class="btn btn-secondary" @click="simulation = false">取消</button><button class="btn btn-primary" @click="simulate">开始演示</button></template></PointsDialog>
       <PointsDialog
         v-if="retryConfirm"
-        title="重试失败记录"
+        title="演示重试失败记录"
         :description="`仅重新处理 ${failureCount} 笔失败记录，已成功积分流水保持不变。`"
         @close="retryConfirm = false"
       ><p class="points-muted">
@@ -535,7 +536,7 @@ watch(
        </p>
         <p v-if="error" class="points-notice points-danger" role="alert">{{ error }}</p>
         <template #actions><button class="btn btn-secondary" @click="retryConfirm = false">取消</button><button class="btn btn-primary" @click="retry">
-          重试 {{ failureCount }} 笔记录
+          演示重试 {{ failureCount }} 笔记录
         </button></template></PointsDialog>
       <PointsDialog
         v-if="settings"

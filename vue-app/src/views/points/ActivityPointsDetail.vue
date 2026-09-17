@@ -383,7 +383,7 @@ watch(
         class="btn btn-primary"
         @click="emit('simulate')"
       >
-        演示结算
+        演示自动发放
       </button></template>
     </ContentPageHeader>
     <div class="points-demo-strip" data-flow-role="notice">
@@ -392,7 +392,7 @@ watch(
           status === '已结束' ? '结算统计' : '当前统计，预计积分不代表最终到账结果'
         }}。</span>
       </div>
-      <button class="points-link" @click="emit('settings')">查看待确认口径</button>
+      <button class="points-link" @click="emit('settings')">查看演示口径</button>
     </div>
     <MetricGrid data-flow-role="summary"><MetricCard
       label="参与企业 / 下单账号"
@@ -402,11 +402,11 @@ watch(
       :value="n(sum(rows, 'target'))"
       :meta="`订单实际已发 ${n(sum(rows, 'paid'))} 分`"
     /><MetricCard
-      :label="status === '已结束' ? '活动应补积分' : '预计活动应补'"
+      :label="status === '已结束' ? '应发活动积分' : '预计活动积分'"
       :value="n(sum(rows, 'delta'))"
       primary
     /><MetricCard
-      label="已成功补发"
+      label="已发活动积分"
       :value="
         n(
           records
@@ -417,7 +417,7 @@ watch(
       :meta="`${records.filter((row) => row.status === '失败').length} 笔发放失败 · ${rows.filter((row) => row.eligible && row.issue).length} 笔计算异常`"
     /></MetricGrid>
     <p class="points-muted" data-flow-role="notice">
-      企业统一达档，按订单计算并补至各下单账号；汇总仅含可计算订单，异常单独核对，不自动扣减负差额。
+      活动期间按企业累计，结束后按订单核算，系统于 {{ payoutDate(activity) }} 自动发放至下单账号；异常单独核对，不自动扣减负差额。
     </p>
     <ListSurface data-flow-role="main">
       <template #tabs><ContentTabs v-model="tab" :items="tabs" label="活动详情" /></template>
@@ -439,7 +439,7 @@ watch(
                                                                       class="btn btn-secondary"
                                                                       @click="emit('retry')"
                                                                     >
-                                                                      重试失败记录</button><button v-if="canExport" class="btn btn-secondary" @click="download">
+                                                                      演示重试失败记录</button><button v-if="canExport" class="btn btn-secondary" @click="download">
                                                                       {{ tab === '发放记录' ? '导出筛选记录' : '导出筛选订单' }}
                                                                     </button>
                                                                   </div>
@@ -645,7 +645,7 @@ watch(
               <p v-for="(history, index) in orderRecord.history" :key="index">{{ history }}</p>
             </dd>
           </dl>
-          <p v-else class="points-muted">尚无活动补发记录，不影响原签收积分。</p>
+          <p v-else class="points-muted">暂无活动发放记录。系统计划于 {{ payoutDate(activity) }} 自动发放；“演示自动发放”仅模拟时间推进，不产生真实积分。</p>
         </section>
       </div>
     </PointsDialog>
