@@ -74,6 +74,9 @@ export function checkProductCodes(input: string): ProductCodeCheck {
   }
   return { codes, duplicateCount: entries.length - codes.length, error: '' }
 }
+export function checkExcludedProductCodes(input: string): ProductCodeCheck {
+  return input === '' ? { codes: [], duplicateCount: 0, error: '' } : checkProductCodes(input)
+}
 const common = {
   productMode: 'codes' as const,
   codes: ['DEMO-TP14', 'DEMO-TC90', 'DEMO-TB16'],
@@ -178,6 +181,11 @@ export function validateActivity(a: Activity) {
     return '请填写有效日期，活动开始日期必须早于结束日期'
   if (a.productMode === 'codes') {
     const { error } = checkProductCodes(a.codes.join(','))
+    if (error) return error
+  } else {
+    if (a.excluded.some((code) => !code || code.includes(',')))
+      return '排除商品编码格式无效，请重新输入并检测'
+    const { error } = checkExcludedProductCodes(a.excluded.join(','))
     if (error) return error
   }
   if (!activeProducts(a).length) return '请至少选择一个参与商品'

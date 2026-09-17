@@ -5,6 +5,7 @@ import PointsDialog from './PointsDialog.vue'
 import {
   activeProducts,
   checkProductCodes,
+  checkExcludedProductCodes,
   products,
   payoutDate,
   validateActivity,
@@ -17,19 +18,34 @@ const activity = ref<Activity>(JSON.parse(JSON.stringify(props.initial)) as Acti
 const codeInput = ref(props.initial.codes.join(','))
 const codeCheck = ref<ProductCodeCheck | null>(null)
 const codeField = ref<HTMLTextAreaElement | null>(null)
+const excludedInput = ref(props.initial.excluded.join(','))
+const excludedCheck = ref<ProductCodeCheck | null>(null)
+const excludedField = ref<HTMLTextAreaElement | null>(null)
+const filteredProductCount = computed(() => {
+  const result = checkExcludedProductCodes(excludedInput.value)
+  return result.error ? null : activeProducts({ ...activity.value, excluded: result.codes }).length
+})
 const error = ref('')
 const discard = ref(false)
 const dirty = computed(
   () =>
     JSON.stringify(activity.value) !== JSON.stringify(props.initial) ||
-    codeInput.value !== props.initial.codes.join(',')
+    codeInput.value !== props.initial.codes.join(',') ||
+    excludedInput.value !== props.initial.excluded.join(',')
 )
 watch([codeInput, () => activity.value.productMode], () => {
   codeCheck.value = null
 })
+watch([excludedInput, () => activity.value.productMode], () => {
+  excludedCheck.value = null
+})
 function detectCodes() {
   codeCheck.value = checkProductCodes(codeInput.value)
   return codeCheck.value
+}
+function detectExcludedCodes() {
+  excludedCheck.value = checkExcludedProductCodes(excludedInput.value)
+  return excludedCheck.value
 }
 const previousMode = ref<Activity['mode']>(props.initial.mode)
 const draftTiers: Record<Activity['mode'], Activity['tiers']> = {
@@ -62,17 +78,27 @@ function changeMode() {
 }
 function save(draft: boolean) {
   error.value = ''
+  let codes = activity.value.codes
+  let excluded = activity.value.excluded
   if (activity.value.productMode === 'codes') {
     const result = detectCodes()
     if (result.error) {
       codeField.value?.focus()
       return
     }
-    activity.value.codes = result.codes
+    codes = result.codes
+  } else {
+    const result = detectExcludedCodes()
+    if (result.error) {
+      excludedField.value?.focus()
+      return
+    }
+    excluded = result.codes
   }
   const value: Activity = {
     ...activity.value,
-    excluded: activity.value.productMode === 'codes' ? [] : activity.value.excluded,
+    codes,
+    excluded: activity.value.productMode === 'codes' ? [] : excluded,
     name: activity.value.name.trim(),
     draft,
     updated: props.date,
@@ -171,14 +197,44 @@ function save(draft: boolean) {
             </option>
           </select></label>
         </div>
-        <fieldset v-if="activity.productMode === 'filter'" class="points-options">
-          <legend>排除商品</legend>
-          <label v-for="product in products" :key="product.code" class="points-check"><input v-model="activity.excluded" type="checkbox" :value="product.code" />{{
-            product.code
-          }}</label>
-        </fieldset>
+        <div v-if="activity.productMode === 'filter'" class="points-code-entry">
+          <label class="points-field">排除商品编码（选填）<textarea
+            ref="excludedField"
+            v-model="excludedInput"
+            class="form-input points-code-input"
+            rows="3"
+            placeholder="例如：DEMO-TP14,DEMO-CTO"
+            :aria-invalid="Boolean(excludedCheck?.error)"
+            aria-describedby="points-excluded-help points-excluded-result"
+          /></label>
+          <div class="points-actions">
+            <button class="btn btn-primary" type="button" @click="detectExcludedCodes">检测排除商品编码</button>
+            <p id="points-excluded-help" class="points-muted">
+              可留空；最多 1000 个，以英文逗号分隔，不能含空格或换行。
+            </p>
+          </div>
+          <p
+            id="points-excluded-result"
+            class="points-code-feedback"
+            :class="{ 'points-code-error': excludedCheck?.error }"
+            aria-live="polite"
+          >
+            {{
+              excludedCheck
+                ? excludedCheck.error || (excludedCheck.codes.length
+                  ? `检测通过：${excludedCheck.codes.length} 个排除商品，${excludedCheck.duplicateCount} 个重复编码已去重。`
+                  : '未配置排除商品。')
+                : '留空表示不排除商品；填写后请检测。'
+            }}
+          </p>
+          <p class="points-muted points-code-examples">
+            演示编码：{{ products.map((product) => product.code).join(',') }}
+          </p>
+        </div>
         <p v-if="activity.productMode === 'filter'" class="points-muted">
-          最终参与 {{ activeProducts(activity).length }} 个商品，重复命中只计一次。
+          {{ filteredProductCount === null
+            ? '排除商品编码待校验，暂不展示参与商品数量。'
+            : `最终参与 ${filteredProductCount} 个商品，重复命中只计一次。` }}
         </p>
         <div class="points-notice">
           沿用既有发放资格。演示含黑名单、CTO

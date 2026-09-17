@@ -9,9 +9,44 @@ import {
   extendActivity,
   validateActivity,
   activeProducts,
-  checkProductCodes
+  checkProductCodes,
+  checkExcludedProductCodes
 } from '../src/services/activityPoints.ts'
 const a = seedActivities[0]
+await test('排除商品允许留空，参与商品编码仍为必填', () => {
+  assert.deepEqual(checkExcludedProductCodes(''), { codes: [], duplicateCount: 0, error: '' })
+  assert.notEqual(checkProductCodes('').error, '')
+  assert.equal(validateActivity({ ...a, productMode: 'filter', excluded: [] }), '')
+  assert.notEqual(validateActivity({ ...a, codes: [] }), '')
+})
+await test('排除编码同样校验完整输入、去重和1000项上限', () => {
+  assert.deepEqual(checkExcludedProductCodes('DEMO-TP14,DEMO-CTO,DEMO-TP14'), {
+    codes: ['DEMO-TP14', 'DEMO-CTO'], duplicateCount: 1, error: ''
+  })
+  for (const input of [' ', 'DEMO-TP14，DEMO-CTO', 'DEMO-TP14,', 'DEMO-TP14,,DEMO-CTO', 'DEMO-TP14, DEMO-CTO', 'DEMO-TP14,\nDEMO-CTO', 'DEMO-TP14,UNKNOWN']) {
+    const result = checkExcludedProductCodes(input)
+    assert.notEqual(result.error, '', input)
+    assert.deepEqual(result.codes, [], input)
+  }
+  const atLimit = checkExcludedProductCodes(Array(1000).fill('DEMO-CTO').join(','))
+  assert.equal(atLimit.error, '')
+  assert.equal(atLimit.duplicateCount, 999)
+  assert.match(checkExcludedProductCodes(Array(1001).fill('DEMO-CTO').join(',')).error, /1000/)
+})
+await test('排除有效编码只缩减FA产品组交集，范围外编码不扩大范围', () => {
+  const filter = { ...a, productMode: 'filter' as const, fa: 'ThinkPad', group: '笔记本', excluded: ['DEMO-TC90'] }
+  assert.equal(validateActivity(filter), '')
+  assert.deepEqual(activeProducts(filter).map((product) => product.code), ['DEMO-TP14', 'DEMO-CTO'])
+  assert.deepEqual(activeProducts({ ...filter, excluded: ['DEMO-TP14'] }).map((product) => product.code), ['DEMO-CTO'])
+  assert.match(validateActivity({ ...filter, excluded: ['DEMO-TP14', 'DEMO-CTO'] }), /至少选择一个参与商品/)
+  assert.match(validateActivity({ ...filter, group: '台式机', excluded: [] }), /至少选择一个参与商品/)
+})
+await test('绕过编辑器的无效排除编码也不可保存，编码模式不使用遗留排除', () => {
+  for (const excluded of [['UNKNOWN'], ['DEMO-TP14', 'UNKNOWN'], [''], ['DEMO-TP14,DEMO-CTO'], [' DEMO-CTO'], Array(1001).fill('DEMO-CTO')]) {
+    assert.notEqual(validateActivity({ ...a, productMode: 'filter', excluded }), '')
+  }
+  assert.equal(validateActivity({ ...a, productMode: 'codes', excluded: ['UNKNOWN'] }), '')
+})
 await test('商品编码按英文逗号输入，检测有效商品并去重', () => {
   assert.deepEqual(checkProductCodes('DEMO-TP14,DEMO-TC90,DEMO-TP14'), {
     codes: ['DEMO-TP14', 'DEMO-TC90'],
