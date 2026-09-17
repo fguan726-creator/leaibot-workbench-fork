@@ -55,6 +55,25 @@ export const products = [
   { code: 'DEMO-TB16', name: 'ThinkBook 16 商用笔记本', fa: 'ThinkBook', group: '笔记本' },
   { code: 'DEMO-CTO', name: '定制配置设备（CTO）', fa: 'ThinkPad', group: '笔记本' }
 ]
+export type ProductCodeCheck = { codes: string[]; duplicateCount: number; error: string }
+export function checkProductCodes(input: string): ProductCodeCheck {
+  const invalid = (error: string): ProductCodeCheck => ({ codes: [], duplicateCount: 0, error })
+  if (!input) return invalid('请输入至少一个商品编码')
+  if (/\s/.test(input)) return invalid('商品编码不能含空格或换行，请用英文逗号分隔')
+  if (/[，、；;|]/.test(input)) return invalid('请使用英文逗号分隔商品编码')
+  const entries = input.split(',')
+  if (entries.some((entry) => !entry)) return invalid('商品编码不能为空，请删除多余的逗号')
+  if (entries.length > 1000) return invalid('最多输入 1000 个商品编码，请减少后重新检测')
+  const codes = [...new Set(entries)]
+  const unknown = codes.filter((code) => !products.some((product) => product.code === code))
+  if (unknown.length) {
+    const example = unknown.slice(0, 5).join('、')
+    return invalid(
+      `当前演示商品库未找到：${example}${unknown.length > 5 ? `等 ${unknown.length} 个编码` : ''}。请使用下方演示编码`
+    )
+  }
+  return { codes, duplicateCount: entries.length - codes.length, error: '' }
+}
 const common = {
   productMode: 'codes' as const,
   codes: ['DEMO-TP14', 'DEMO-TC90', 'DEMO-TB16'],
@@ -139,10 +158,11 @@ export function payoutDate(a: Pick<Activity, 'end' | 'delay' | 'calendar'>) {
 export function activeProducts(a: Activity) {
   return products.filter(
     (p) =>
-      (a.productMode === 'codes'
+      a.productMode === 'codes'
         ? a.codes.includes(p.code)
-        : (a.fa === '全部' || p.fa === a.fa) && (a.group === '全部' || p.group === a.group)) &&
-      !a.excluded.includes(p.code)
+        : (a.fa === '全部' || p.fa === a.fa) &&
+          (a.group === '全部' || p.group === a.group) &&
+          !a.excluded.includes(p.code)
   )
 }
 function validDate(s: string) {
@@ -156,6 +176,10 @@ export function validateActivity(a: Activity) {
   if (!a.name.trim()) return '请填写活动名称'
   if (!validDate(a.start) || !validDate(a.end) || a.start >= a.end)
     return '请填写有效日期，活动开始日期必须早于结束日期'
+  if (a.productMode === 'codes') {
+    const { error } = checkProductCodes(a.codes.join(','))
+    if (error) return error
+  }
   if (!activeProducts(a).length) return '请至少选择一个参与商品'
   if (!Number.isInteger(a.delay) || a.delay < 1 || a.delay > 90) return '发放延迟请输入 1–90 的整数'
   if (!a.tiers.length) return '请至少配置一个档位'

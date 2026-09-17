@@ -8,9 +8,68 @@ import {
   payoutDate,
   extendActivity,
   validateActivity,
-  activeProducts
+  activeProducts,
+  checkProductCodes
 } from '../src/services/activityPoints.ts'
 const a = seedActivities[0]
+await test('商品编码按英文逗号输入，检测有效商品并去重', () => {
+  assert.deepEqual(checkProductCodes('DEMO-TP14,DEMO-TC90,DEMO-TP14'), {
+    codes: ['DEMO-TP14', 'DEMO-TC90'],
+    duplicateCount: 1,
+    error: ''
+  })
+})
+await test('空输入、错误分隔符、空项和空白均阻止使用部分编码', () => {
+  for (const input of [
+    '',
+    'DEMO-TP14，DEMO-TC90',
+    'DEMO-TP14;DEMO-TC90',
+    ',DEMO-TP14',
+    'DEMO-TP14,',
+    'DEMO-TP14,,DEMO-TC90',
+    'DEMO-TP14, DEMO-TC90',
+    'DEMO-TP14,\nDEMO-TC90',
+    'DEMO-TP14\t'
+  ]) {
+    const result = checkProductCodes(input)
+    assert.notEqual(result.error, '', input)
+    assert.deepEqual(result.codes, [], input)
+  }
+})
+await test('商品编码最多接受1000个输入项，去重不能绕过上限', () => {
+  const atLimit = checkProductCodes(Array(1000).fill('DEMO-TP14').join(','))
+  assert.equal(atLimit.error, '')
+  assert.deepEqual(atLimit.codes, ['DEMO-TP14'])
+  assert.equal(atLimit.duplicateCount, 999)
+  const aboveLimit = checkProductCodes(Array(1001).fill('DEMO-TP14').join(','))
+  assert.match(aboveLimit.error, /1000/)
+  assert.deepEqual(aboveLimit.codes, [])
+})
+await test('未知演示编码阻止整组保存，修改输入后按新文本重新检测', () => {
+  assert.equal(checkProductCodes('DEMO-TP14').error, '')
+  const result = checkProductCodes('DEMO-TP14,REAL-UNKNOWN')
+  assert.match(result.error, /当前演示商品库未找到.*REAL-UNKNOWN/)
+  assert.deepEqual(result.codes, [])
+  assert.match(
+    validateActivity({ ...a, codes: ['DEMO-TP14', 'REAL-UNKNOWN'] }),
+    /当前演示商品库未找到/
+  )
+  assert.equal(checkProductCodes('DEMO-TB16').error, '')
+})
+await test('按编码参与的商品忽略旧排除残留，筛选方式仍按交集减排除', () => {
+  const old = { ...a, codes: ['DEMO-TP14'], excluded: ['DEMO-TP14'] }
+  assert.deepEqual(
+    activeProducts(old).map((product) => product.code),
+    ['DEMO-TP14']
+  )
+  assert.equal(validateActivity(old), '')
+  assert.equal(calculate(old, ordersFor(old))[0].eligible, true)
+  assert.deepEqual(
+    activeProducts({ ...old, productMode: 'filter', fa: 'ThinkPad', group: '笔记本' })
+      .map((product) => product.code),
+    ['DEMO-CTO']
+  )
+})
 await test('企业跨账号合并，早期订单也达档，各账号金额单独核算', () => {
   const rows = calculate(a, ordersFor(a))
   const one = rows[0],

@@ -521,8 +521,10 @@ watch(
                 class="points-tag"
               >{{ product.code }} · {{ product.name }}</span>
             </dd>
-            <dt>排除商品</dt>
-            <dd>{{ activity.excluded.join('、') || '无' }}</dd>
+            <template v-if="activity.productMode === 'filter'">
+              <dt>排除商品</dt>
+              <dd>{{ activity.excluded.join('、') || '无' }}</dd>
+            </template>
             <dt>企业档位</dt>
             <dd class="points-tag-list">
               <span v-for="tier in activity.tiers" :key="tier.threshold" class="points-tag">满 {{ n(tier.threshold) }} {{ activity.mode === 'quantity' ? '台' : '元' }}，享

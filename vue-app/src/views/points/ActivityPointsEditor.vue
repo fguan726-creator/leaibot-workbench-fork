@@ -1,20 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import SectionHeader from '@/components/content/SectionHeader.vue'
 import PointsDialog from './PointsDialog.vue'
 import {
   activeProducts,
+  checkProductCodes,
   products,
   payoutDate,
   validateActivity,
-  type Activity
+  type Activity,
+  type ProductCodeCheck
 } from '@/services/activityPoints'
 const props = defineProps<{ initial: Activity; date: string }>()
 const emit = defineEmits<{ close: []; save: [activity: Activity] }>()
 const activity = ref<Activity>(JSON.parse(JSON.stringify(props.initial)) as Activity)
+const codeInput = ref(props.initial.codes.join(','))
+const codeCheck = ref<ProductCodeCheck | null>(null)
+const codeField = ref<HTMLTextAreaElement | null>(null)
 const error = ref('')
 const discard = ref(false)
-const dirty = computed(() => JSON.stringify(activity.value) !== JSON.stringify(props.initial))
+const dirty = computed(
+  () =>
+    JSON.stringify(activity.value) !== JSON.stringify(props.initial) ||
+    codeInput.value !== props.initial.codes.join(',')
+)
+watch([codeInput, () => activity.value.productMode], () => {
+  codeCheck.value = null
+})
+function detectCodes() {
+  codeCheck.value = checkProductCodes(codeInput.value)
+  return codeCheck.value
+}
 const previousMode = ref<Activity['mode']>(props.initial.mode)
 const draftTiers: Record<Activity['mode'], Activity['tiers']> = {
   quantity:
@@ -45,8 +61,18 @@ function changeMode() {
   previousMode.value = activity.value.mode
 }
 function save(draft: boolean) {
+  error.value = ''
+  if (activity.value.productMode === 'codes') {
+    const result = detectCodes()
+    if (result.error) {
+      codeField.value?.focus()
+      return
+    }
+    activity.value.codes = result.codes
+  }
   const value: Activity = {
     ...activity.value,
+    excluded: activity.value.productMode === 'codes' ? [] : activity.value.excluded,
     name: activity.value.name.trim(),
     draft,
     updated: props.date,
@@ -101,8 +127,38 @@ function save(draft: boolean) {
           <option value="codes">按商品编码选择</option>
           <option value="filter">FA 与产品组取交集</option>
         </select></label>
-        <div v-if="activity.productMode === 'codes'" class="points-product-options">
-          <label v-for="product in products" :key="product.code" class="points-check"><input v-model="activity.codes" type="checkbox" :value="product.code" /><span>{{ product.name }}<small class="points-secondary">{{ product.code }}</small></span></label>
+        <div v-if="activity.productMode === 'codes'" class="points-code-entry">
+          <label class="points-field">商品编码（必填）<textarea
+            ref="codeField"
+            v-model="codeInput"
+            class="form-input points-code-input"
+            rows="3"
+            placeholder="例如：DEMO-TP14,DEMO-TC90"
+            :aria-invalid="Boolean(codeCheck?.error)"
+            aria-describedby="points-code-help points-code-result"
+            required
+          /></label>
+          <div class="points-actions">
+            <button class="btn btn-primary" type="button" @click="detectCodes">检测商品编码</button>
+            <p id="points-code-help" class="points-muted">
+              最多 1000 个，以英文逗号分隔，不能含空格或换行。
+            </p>
+          </div>
+          <p
+            id="points-code-result"
+            class="points-code-feedback"
+            :class="{ 'points-code-error': codeCheck?.error }"
+            aria-live="polite"
+          >
+            {{
+              codeCheck
+                ? codeCheck.error || `检测通过：${codeCheck.codes.length} 个有效商品，${codeCheck.duplicateCount} 个重复编码已去重。`
+                : '请输入或修改商品编码后进行检测。'
+            }}
+          </p>
+          <p class="points-muted points-code-examples">
+            演示编码：{{ products.map((product) => product.code).join(',') }}
+          </p>
         </div>
         <div v-else class="points-fields">
           <label class="points-field">FA<select v-model="activity.fa" class="form-input">
@@ -115,13 +171,13 @@ function save(draft: boolean) {
             </option>
           </select></label>
         </div>
-        <fieldset class="points-options">
+        <fieldset v-if="activity.productMode === 'filter'" class="points-options">
           <legend>排除商品</legend>
           <label v-for="product in products" :key="product.code" class="points-check"><input v-model="activity.excluded" type="checkbox" :value="product.code" />{{
             product.code
           }}</label>
         </fieldset>
-        <p class="points-muted">
+        <p v-if="activity.productMode === 'filter'" class="points-muted">
           最终参与 {{ activeProducts(activity).length }} 个商品，重复命中只计一次。
         </p>
         <div class="points-notice">
