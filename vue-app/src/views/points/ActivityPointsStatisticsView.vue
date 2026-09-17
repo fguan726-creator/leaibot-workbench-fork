@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import ContentPageHeader from '@/components/content/ContentPageHeader.vue'
 import ContentTabs from '@/components/content/ContentTabs.vue'
@@ -28,7 +28,6 @@ import {
 
 const app = useAppStore()
 const route = useRoute()
-const router = useRouter()
 const { state, storageNotice } = useActivityPointsDemo()
 const canView = computed(() => canUseActivityPoints(app.user, app.role, app.permissions))
 const canExport = computed(() =>
@@ -318,9 +317,6 @@ watch(
         description="活动期间累计积分，结束后由系统按计划自动发放。"
       >
         <template #actions>
-          <button class="btn btn-secondary" @click="router.push('/points/activity')">
-            活动积分配置
-          </button>
           <button
             v-if="canExport"
             class="btn btn-primary"
