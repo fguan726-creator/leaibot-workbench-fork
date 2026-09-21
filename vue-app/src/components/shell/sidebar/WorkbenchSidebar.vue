@@ -151,6 +151,24 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-09-21',
+    releaseKey: 'workbench-skill-clarify-demo-20260921',
+    title: 'Skill 需求澄清示例引导与执行动效',
+    changePoint: '需求澄清展示分步处理、逐步回复与下一项补充提示，可停止并重试本轮。',
+    detail: '普通创建澄清使用明确标注的本地示例回复，不调用模型或执行业务操作；过程按读取配置、梳理缺口、生成建议依次展示。发送防重复但允许继续输入，辅助提示不覆盖已输入内容，离开步骤或切换编辑对象会停止回填。遵循减少动态效果设置，能力更新扫描、草稿生成、评估及提审跳转保持原流程。发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
+    time: '2026-09-21',
+    releaseKey: 'workbench-skill-submit-hub-20260921',
+    title: 'Skill 提审后直达列表并置顶',
+    changePoint: '创建 Skill 提交审核成功后直接进入 Skill Hub，刚提交的记录展示在首行。',
+    detail: '列表显示本次提交的名称、中文名、描述、分类、创建人及待审批状态。已有草稿或驳回重提更新同一条记录并置顶；本次跳转清除旧筛选，避免隐藏新记录，并修复从刷新后的创建页首次进入列表时误清空提交的问题。原有评分、权限、能力更新及审核流程保持，失败提交留在原页。发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
     time: '2026-09-17',
     releaseKey: 'workbench-skillhub-failure-demo-20260917',
     title: 'Skill Hub 更新失败示例补齐',

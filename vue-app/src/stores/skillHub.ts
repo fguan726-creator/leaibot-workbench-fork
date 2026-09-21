@@ -305,18 +305,19 @@ export const useSkillHubStore = defineStore('skillHub', () => {
     const current = index >= 0 ? items.value[index] : undefined
     const decision = skillHubMutationDecision(current, payload.actor || payload.owner, 'submit_review', Number(payload.score || 0))
     if (!decision.allowed) throw new Error(decision.reason)
+    let submittedItem = nextItem
     if (index >= 0) {
       const existing = current as SkillHubItem
       nextItem.owner = existing.owner
       const isCapabilityUpdate = existing.capabilityUpdate?.status === 'processing' && existing.online !== '未发布'
-      items.value[index] = isCapabilityUpdate
+      submittedItem = isCapabilityUpdate
         ? mergeCapabilitySubmission(existing, nextItem, updated)
         : { ...existing, ...nextItem }
-    } else {
-      items.value.unshift(nextItem)
+      items.value.splice(index, 1)
     }
+    items.value.unshift(submittedItem)
     persist()
-    return nextItem
+    return items.value[0]
   }
 
   function upsertDraftSkill(payload: SkillDraftPayload) {

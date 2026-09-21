@@ -593,7 +593,7 @@ test('Skill Hub mock state resets to the seeded records after a full page refres
   assert.match(store, /resetToInitialMock,?/)
   assert.match(view, /navigation\.type === 'reload'/)
   assert.match(view, /sessionStorage\.removeItem\('leai\.skillCreateDraft'\)/)
-  assert.match(view, /skillHubStore\.resetToInitialMock\(\)/)
+  assert.doesNotMatch(view, /skillHubStore\.resetToInitialMock\(\)/, 'entering the cached page must not erase newly submitted records; a full refresh initializes the store')
   assert.doesNotMatch(store, /localStorage\.getItem\(STORAGE_KEY\)/)
   assert.doesNotMatch(store, /localStorage\.setItem\(STORAGE_KEY/)
 })
