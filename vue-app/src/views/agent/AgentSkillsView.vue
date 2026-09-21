@@ -1414,6 +1414,22 @@ function toast(message: string) {
   appStore.notify(message)
 }
 
+watch(() => [route.path, route.query.submittedSkill] as const, ([path, name]) => {
+  if (path !== '/agent/skills' || typeof name !== 'string' || !skillHubStore.findSkill(name)) return
+  keyword.value = ''
+  creatorKeyword.value = ''
+  statusFilter.value = 'all'
+  categoryFilter.value = 'all'
+  summaryFilter.value = 'all'
+  detailItem.value = null
+  evalItem.value = null
+  capabilityChangeItem.value = null
+  confirmState.value = null
+  const query = { ...route.query }
+  delete query.submittedSkill
+  void router.replace({ path, query })
+}, { immediate: true })
+
 watch(() => [route.path, route.query.tab] as const, ([path, tab]) => {
   if (path !== '/agent/skills' || tab !== 'review') return
   resetPackageFilters()
@@ -1429,7 +1445,6 @@ onMounted(() => {
   const [navigation] = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[]
   if (navigation && navigation.type === 'reload') {
     sessionStorage.removeItem('leai.skillCreateDraft')
-    skillHubStore.resetToInitialMock()
   }
   appStore.ensureStaticTab('agent.skills')
   appStore.setActiveStaticTab('agent.skills')

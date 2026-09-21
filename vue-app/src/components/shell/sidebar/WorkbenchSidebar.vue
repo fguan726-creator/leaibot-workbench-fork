@@ -151,6 +151,15 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-09-21',
+    releaseKey: 'workbench-skill-submit-hub-20260921',
+    title: 'Skill 提审后直达列表并置顶',
+    changePoint: '创建 Skill 提交审核成功后直接进入 Skill Hub，刚提交的记录展示在首行。',
+    detail: '列表显示本次提交的名称、中文名、描述、分类、创建人及待审批状态。已有草稿或驳回重提更新同一条记录并置顶；本次跳转清除旧筛选，避免隐藏新记录，并修复从刷新后的创建页首次进入列表时误清空提交的问题。原有评分、权限、能力更新及审核流程保持，失败提交留在原页。发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
     time: '2026-09-17',
     releaseKey: 'workbench-skillhub-failure-demo-20260917',
     title: 'Skill Hub 更新失败示例补齐',

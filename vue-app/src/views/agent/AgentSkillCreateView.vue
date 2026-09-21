@@ -710,7 +710,7 @@ const tunedCaseKeys = ref(new Set<string>())
 const reevaluatingCaseKeys = ref(new Set<string>())
 const caseReevaluationTimers = new Map<string, number>()
 const reviewSubmitted = ref(false)
-const reviewStatus = ref('提交审核后停留当前页面，Skill Hub 状态变为待审批')
+const reviewStatus = ref('提交成功后进入 Skill Hub，最新提交将显示在首行')
 const activeCapabilityUpdate = ref<SkillCapabilityUpdate | null>(null)
 const capabilityContextEl = ref<HTMLElement | null>(null)
 const runningCapabilityTaskIds = new Set<string>()
@@ -1996,8 +1996,9 @@ function submitReview() {
     return
   }
   const score = aiTuned.value ? '0.859' : '0.782'
+  let submitted: SkillHubItem
   try {
-    skillHubStore.upsertSubmittedSkill({
+    submitted = skillHubStore.upsertSubmittedSkill({
       name: form.value.name,
       cnName: form.value.cnName,
       desc: form.value.scene,
@@ -2014,7 +2015,8 @@ function submitReview() {
   }
   reviewSubmitted.value = true
   reviewStatus.value = '已提交审核，当前 Skill Hub 状态为待审批'
-  toast(`${form.value.name}：已提交审核，已同步到 Skill Hub 待审批列表`)
+  toast(`${submitted.cnName || submitted.name}：已提交审核`)
+  void router.push({ path: '/agent/skills', query: { submittedSkill: submitted.name } })
 }
 
 function stateStatus(status: StateStatus) {
