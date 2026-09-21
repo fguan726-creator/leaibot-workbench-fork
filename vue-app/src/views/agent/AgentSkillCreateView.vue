@@ -196,7 +196,19 @@
 
           <div class="skill-create-panel" :class="{ active: activeTab === 'clarify' }" data-skill-create-panel="clarify">
             <div class="skill-create-panel-body">
-              <div class="skill-step-banner">当前阶段：基于基础配置、左侧能力上下文和附件材料，通过与 AI 对话补齐应用场景、约束条件和执行边界。</div>
+              <div v-if="!activeCapabilityUpdate" class="skill-step-banner skill-clarify-demo-guide" data-skill-clarify-demo>
+                <div class="skill-clarify-demo-heading"><b>示例演示</b><span>根据当前输入模拟澄清，不调用模型或执行业务操作。</span></div>
+                <ol class="skill-clarify-guide-steps" aria-label="需求澄清步骤引导">
+                  <li v-for="(step, index) in clarifyDemoGuide.steps" :key="step.label" :class="{ current: index === clarifyDemoGuide.current, done: step.done }" :aria-current="index === clarifyDemoGuide.current ? 'step' : undefined">{{ index + 1 }}. {{ step.label }}<span v-if="step.done"> · 已补充</span></li>
+                </ol>
+                <div class="skill-clarify-guide-next">
+                  <p>{{ clarifyDemoGuide.next ? `下一项：${clarifyDemoGuide.next}` : '信息已基本收敛，请核对澄清结论后进入草稿生成。' }}</p>
+                  <button v-if="clarifyDemoRunning" class="btn btn-secondary" type="button" @click="stopClarifyDemo()">停止</button>
+                  <button v-else-if="clarifyDemoGuide.next" class="btn btn-secondary" type="button" @click="prepareClarifyGuide">补充这一项</button>
+                </div>
+                <span class="skill-clarify-announcement" role="status" aria-live="polite">{{ clarifyDemoAnnouncement }}</span>
+              </div>
+              <div v-else class="skill-step-banner">当前阶段：基于基础配置、左侧能力上下文和附件材料，通过与 AI 对话补齐应用场景、约束条件和执行边界。</div>
               <div class="skill-clarify-layout">
                 <div id="skill-clarify-chat" ref="chatEl" class="skill-chat-sim">
                   <div ref="capabilityContextEl" class="skill-chat-context skill-capability-context-panel" tabindex="-1">
@@ -276,11 +288,11 @@
                     <div>请在下方输入框补充本轮 Skill 创建需求。需求澄清智能体会基于你的描述、基础配置和已选能力上下文，按九要素收敛能力定义、输入输出、执行边界和验收用例。</div>
                   </div>
                   <template v-for="message in clarifyMessages" :key="message.id">
-                    <div v-if="message.kind === 'state'" class="skill-chat-ai skill-conversation-states" aria-label="AI 会话状态">
-                      <AgentConversationStates :items="message.states" />
+                    <div v-if="message.kind === 'state'" class="skill-chat-ai skill-conversation-states" :data-clarify-state="message.id" aria-label="AI 会话状态">
+                      <AgentConversationStates :items="message.states" :auto-expand-running="Boolean(message.demo)" />
                     </div>
                     <div v-else-if="message.kind === 'user'" class="skill-chat-user">{{ message.text }}</div>
-                    <div v-else class="skill-chat-ai">
+                    <div v-else-if="message.kind === 'assistant' && (message.text || message.clarifyDoc || message.authRequest || message.authResult)" class="skill-chat-ai">
                       <div v-if="message.clarifyDoc" class="skill-clarify-doc">
                         <div class="skill-clarify-doc-rule"></div>
                         <h3>{{ message.clarifyDoc.title }}</h3>
@@ -294,7 +306,8 @@
                         <div class="skill-clarify-doc-rule bottom"></div>
                         <p class="skill-clarify-doc-closing">{{ message.clarifyDoc.closing }}</p>
                       </div>
-                      <div v-else>{{ message.text }}</div>
+                      <div v-else :class="{ 'skill-clarify-stream': message.demo }">{{ message.text }}</div>
+                      <button v-if="clarifyDemoRetry?.replyId === message.id" class="btn btn-secondary skill-clarify-retry" type="button" :disabled="clarifyDemoRunning" @click="retryClarifyDemo">重试本轮</button>
                       <div v-if="message.authRequest" class="skill-auth-card">
                         <div class="skill-auth-head">
                           <span class="skill-auth-icon" aria-hidden="true" v-html="stateIcon('confirm')"></span>
@@ -382,7 +395,7 @@
                   rows="1"
                   @input="resizeClarifyInput"
                 ></textarea>
-                <button type="button" aria-label="发送澄清内容" @click="submitClarifyMessage">
+                <button type="button" aria-label="发送澄清内容" :disabled="clarifyDemoRunning || !clarifyInput.trim()" @click="submitClarifyMessage">
                   <svg viewBox="0 0 20 20" aria-hidden="true">
                     <path d="M17 3 8.5 11.5"></path>
                     <path d="m17 3-5.4 14-3.1-5.5L3 8.4 17 3Z"></path>
@@ -392,7 +405,7 @@
             </div>
             <div class="skill-create-step-actions">
               <button class="btn btn-secondary" type="button" @click="switchTab('config')">上一步</button>
-              <button class="btn btn-primary" type="button" @click="goNext('clarify')">下一步：生成 Skill 草稿</button>
+              <button class="btn btn-primary" type="button" :disabled="clarifyDemoRunning" @click="goNext('clarify')">下一步：生成 Skill 草稿</button>
             </div>
           </div>
 
@@ -561,7 +574,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onDeactivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ContentPageHeader from '@/components/content/ContentPageHeader.vue'
 import { MENU_TREE, useAppStore } from '@/stores/app'
@@ -570,6 +583,7 @@ import { useSkillHubStore, type SkillCapabilityUpdate, type SkillDraftSnapshot, 
 import { getCapabilityUpdateDemoReply, skillHubMutationDecision } from '@/services/skillCapabilityChanges.js'
 import { mergeSkillContextItems, mergeSkillMenuLabels } from '@/domain/skillContextCatalog.js'
 import AgentConversationStates from '@/components/agent/AgentConversationStates.vue'
+import { createClarificationPlayback } from '@/domain/skillClarificationPlayback.js'
 
 type TabKey = 'config' | 'clarify' | 'draft' | 'verify' | 'review'
 type ContextItem = {
@@ -617,8 +631,8 @@ type SkillClarifyDoc = {
 }
 type ChatMessage =
   | { id: string; kind: 'user'; text: string; autoExecute?: boolean }
-  | { id: string; kind: 'assistant'; text: string; clarifyDoc?: SkillClarifyDoc; todoList?: SkillTodoList; authRequest?: SkillAuthRequest; authResult?: SkillAuthResult }
-  | { id: string; kind: 'state'; states: SkillStateItem[] }
+  | { id: string; kind: 'assistant'; text: string; demo?: boolean; clarifyDoc?: SkillClarifyDoc; todoList?: SkillTodoList; authRequest?: SkillAuthRequest; authResult?: SkillAuthResult }
+  | { id: string; kind: 'state'; states: SkillStateItem[]; demo?: boolean }
 
 const router = useRouter()
 const route = useRoute()
@@ -906,6 +920,26 @@ function removeSelectedContext(code: string) {
 }
 
 const clarifyMessages = ref<ChatMessage[]>([])
+type ClarifyDemoTurn = { input: string; stateId: string; replyId: string; contextKey: string }
+const clarifyPlayback = createClarificationPlayback()
+const clarifyDemoRunning = ref(false)
+const clarifyDemoAnnouncement = ref('')
+const clarifyDemoRetry = ref<ClarifyDemoTurn | null>(null)
+const clarifyGuidePrefix = ref('')
+let clarifyDemoTurn: ClarifyDemoTurn | null = null
+let clarifyDemoRevision = 0
+const clarifyDemoContextKey = computed(() => JSON.stringify([
+  route.path, route.query.skill || '', route.query.edit || '', route.query.capabilityUpdate || '',
+  form.value, selectedContextItems.value.map(item => item.code)
+]))
+const clarifyDemoGuide = computed(() => {
+  const doc = normalizeClarifyDoc('', getClarifyHistory().slice(-1)[0] || '')
+  const labels = ['能力定义', '输入输出与边界', '验收用例']
+  const steps = doc.sections.map((section, index) => ({
+    label: labels[index], done: section.items.every(item => /暂无待确认|已沉淀/.test(item))
+  }))
+  return { steps, current: steps.findIndex(step => !step.done), next: extractPendingClarifyItems(doc)[0] || '' }
+})
 const skillTodoExpanded = ref(true)
 const latestSkillTodo = computed(() => [...clarifyMessages.value]
   .reverse()
@@ -1103,6 +1137,7 @@ function switchTab(tab: TabKey) {
     toast(submitMutationDecision.value.reason || '综合评分需达到 0.80 才能进入提交审核')
     return
   }
+  if (tab !== 'clarify') stopClarifyDemo('已离开需求澄清，本轮模拟已停止。')
   activeTab.value = tab
 }
 
@@ -1187,13 +1222,31 @@ function fillTemplate(type: 'query' | 'generate' | 'action') {
 }
 
 async function submitClarifyMessage() {
-  const value = clarifyInput.value.trim()
+  if (clarifyDemoRunning.value) return
+  const raw = clarifyInput.value.trim()
+  const value = clarifyGuidePrefix.value && raw.startsWith(clarifyGuidePrefix.value)
+    ? raw.slice(clarifyGuidePrefix.value.length).trim()
+    : raw
+  if (raw && !value) {
+    toast('请填写具体补充内容后再发送')
+    return
+  }
   if (!value) return
+  if (value.endsWith('补充内容：')) {
+    toast('请填写具体补充内容后再发送')
+    return
+  }
+  clarifyDemoRetry.value = null
+  clarifyGuidePrefix.value = ''
   clarifyMessages.value.push({ id: `u-${Date.now()}`, kind: 'user', text: value })
   clarifyInput.value = ''
   void nextTick(resizeClarifyInput)
   if (tryClarifyStructuredDemo(value)) {
     scrollChat()
+    return
+  }
+  if (!activeCapabilityUpdate.value) {
+    await runClarifyDemo(value)
     return
   }
   const stateId = `s-${Date.now()}`
@@ -1225,6 +1278,113 @@ async function submitClarifyMessage() {
     ] })
     clarifyMessages.value.push({ id: `a-${Date.now()}`, kind: 'assistant', text: '大模型暂时没有返回结果。我已经保留当前输入和能力上下文，你可以稍后重试，或先继续补充应用场景、数据范围、输出形式和验收用例。' })
     scrollChat()
+  }
+}
+
+function prepareClarifyGuide() {
+  const prefix = `${clarifyDemoGuide.value.next}\n补充内容：`
+  if (prepareClarifyPrompt(prefix)) clarifyGuidePrefix.value = prefix
+}
+
+function stopClarifyDemo(reason = '本轮模拟已停止，输入和已确认信息已保留。') {
+  clarifyDemoRevision += 1
+  clarifyPlayback.cancel()
+  const turn = clarifyDemoTurn
+  clarifyDemoTurn = null
+  clarifyDemoRunning.value = false
+  if (!turn) return
+  const state = clarifyMessages.value.find(message => message.id === turn.stateId)
+  if (state?.kind === 'state') {
+    state.states = state.states.filter(item => item.status !== 'pending').map(item => item.status === 'running'
+      ? { ...item, status: 'blocked', title: '本轮已停止', detail: reason }
+      : item)
+  }
+  const reply = clarifyMessages.value.find(message => message.id === turn.replyId)
+  if (reply?.kind === 'assistant') {
+    reply.text = reason
+    delete reply.clarifyDoc
+  }
+  clarifyDemoRetry.value = turn
+  clarifyDemoAnnouncement.value = reason
+}
+
+async function retryClarifyDemo() {
+  const turn = clarifyDemoRetry.value
+  if (!turn || clarifyDemoRunning.value) return
+  if (turn.contextKey !== clarifyDemoContextKey.value) {
+    clarifyDemoRetry.value = null
+    toast('当前 Skill 信息已变化，请发送新的补充内容')
+    return
+  }
+  await runClarifyDemo(turn.input, turn)
+}
+
+async function runClarifyDemo(input: string, retry?: ClarifyDemoTurn) {
+  if (clarifyDemoRunning.value) return
+  const revision = ++clarifyDemoRevision
+  const turn = retry || {
+    input, stateId: `clarify-demo-state-${Date.now()}-${revision}`,
+    replyId: `clarify-demo-reply-${Date.now()}-${revision}`, contextKey: clarifyDemoContextKey.value
+  }
+  const current = () => revision === clarifyDemoRevision && turn.contextKey === clarifyDemoContextKey.value
+  clarifyDemoTurn = turn
+  clarifyDemoRetry.value = null
+  clarifyDemoRunning.value = true
+  if (!retry) {
+    clarifyMessages.value.push({ id: turn.stateId, kind: 'state', states: [], demo: true })
+    clarifyMessages.value.push({ id: turn.replyId, kind: 'assistant', text: '', demo: true })
+  }
+  const state = clarifyMessages.value.find(message => message.id === turn.stateId)
+  const reply = clarifyMessages.value.find(message => message.id === turn.replyId)
+  if (state?.kind !== 'state' || reply?.kind !== 'assistant') {
+    stopClarifyDemo()
+    return
+  }
+  reply.text = ''
+  delete reply.clarifyDoc
+  const steps = [
+    { id: `${turn.stateId}-read`, kind: 'thinking', title: '读取当前配置', detail: '结合本轮输入、基础配置和已选能力上下文。' },
+    { id: `${turn.stateId}-check`, kind: 'tool_call', title: '梳理信息缺口', detail: '模拟检查能力定义、输入输出、执行边界和验收用例。' },
+    { id: `${turn.stateId}-reply`, kind: 'streaming', title: '生成澄清建议', detail: '逐步呈现仍需补充的问题，保留已确认信息。' }
+  ]
+  try {
+    const doc = normalizeClarifyDoc('', input)
+    doc.title = `${doc.title} · 示例`
+    const text = [doc.title, ...doc.sections.flatMap((section, index) => [
+      `${index + 1}. ${section.title}`, ...section.items.map(item => `• ${item}`)
+    ]), doc.closing].join('\n')
+    const completed = await clarifyPlayback.run({
+      steps, text, reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      onStates: (items: Array<SkillStateItem & { id: string }>) => {
+        if (!current()) return
+        state.states = items
+        const running = items.find(item => item.status === 'running')
+        if (running) clarifyDemoAnnouncement.value = `${running.title}，进行中`
+        if (running && running.kind !== 'streaming') scrollClarifyProcess(turn.stateId)
+      },
+      onText: (text: string) => {
+        if (!current()) return
+        reply.text = text
+        scrollChat()
+      }
+    })
+    if (!completed || !current()) return
+    reply.clarifyDoc = doc
+    reply.text = ''
+    updateClarifySummary(input, doc)
+    clarifyDemoAnnouncement.value = '本轮澄清已完成，请查看回复和下一项补充提示。'
+    scrollChat()
+  } catch {
+    if (!current()) return
+    state.states = [{ kind: 'error', status: 'failed', title: '本轮模拟未完成', detail: '输入和已确认信息已保留，可重试本轮。' }]
+    reply.text = '本轮模拟未完成，没有调用模型或执行业务操作。请重试本轮继续澄清。'
+    clarifyDemoRetry.value = turn
+    clarifyDemoAnnouncement.value = '本轮模拟未完成，可重试。'
+  } finally {
+    if (revision === clarifyDemoRevision) {
+      clarifyDemoRunning.value = false
+      clarifyDemoTurn = null
+    }
   }
 }
 
@@ -1766,11 +1926,18 @@ function appendAssistant(message: string) {
 }
 
 function prepareClarifyPrompt(prompt: string) {
+  if (clarifyInput.value.trim()) {
+    toast('已保留输入框中的内容，请先完成当前补充')
+    clarifyInputEl.value?.focus()
+    return false
+  }
+  clarifyGuidePrefix.value = ''
   clarifyInput.value = prompt
   void nextTick(() => {
     resizeClarifyInput()
     clarifyInputEl.value?.focus()
   })
+  return true
 }
 
 function resizeClarifyInput() {
@@ -1806,6 +1973,14 @@ function handleClarifyAuth(action: 'approve' | 'reject', command: string) {
 function scrollChat() {
   void nextTick(() => {
     if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight
+  })
+}
+
+function scrollClarifyProcess(stateId: string) {
+  void nextTick(() => {
+    const chat = chatEl.value
+    const process = chat?.querySelector<HTMLElement>(`[data-clarify-state="${stateId}"]`)
+    if (chat && process) chat.scrollTop += process.getBoundingClientRect().top - chat.getBoundingClientRect().top - 8
   })
 }
 
@@ -2058,6 +2233,9 @@ function stateIcon(kind: string) {
 }
 
 function loadEditDraft() {
+  stopClarifyDemo('编辑对象已切换，本轮模拟已停止。')
+  clarifyDemoRetry.value = null
+  clarifyGuidePrefix.value = ''
   const requestedSkill = String(route.query.skill || '')
   if (!requestedSkill) {
     sessionStorage.removeItem('leai.skillCreateDraft')
@@ -2229,14 +2407,33 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  stopClarifyDemo()
   caseReevaluationTimers.forEach(timer => window.clearTimeout(timer))
   caseReevaluationTimers.clear()
   hideContextSubtitleTooltip()
   document.removeEventListener('click', closeContextDropdowns)
 })
+
+onDeactivated(() => { stopClarifyDemo('已离开创建页面，本轮模拟已停止。') })
+watch(clarifyDemoContextKey, () => {
+  stopClarifyDemo('当前 Skill 信息已变化，本轮模拟已停止。')
+  clarifyDemoRetry.value = null
+}, { flush: 'sync' })
 </script>
 
 <style lang="scss" scoped>
+.skill-step-banner.skill-clarify-demo-guide { display: grid; gap: 8px; color: var(--color-text-secondary); border-color: var(--color-border-subtle); background: var(--color-bg); }
+.skill-clarify-demo-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.skill-clarify-demo-heading b { color: var(--color-primary); }
+.skill-clarify-guide-steps { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; color: var(--color-text-secondary); }
+.skill-clarify-guide-steps .current { color: var(--color-primary); font-weight: 600; }
+.skill-clarify-guide-steps .done { color: var(--color-success); }
+.skill-clarify-guide-next { display: flex; align-items: center; gap: 12px; }
+.skill-clarify-guide-next p { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.skill-clarify-guide-next button { flex-shrink: 0; }
+.skill-clarify-stream { white-space: pre-line; overflow-wrap: anywhere; }
+.skill-clarify-retry { margin-top: 8px; }
+.skill-clarify-announcement { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skill-case-list > div {
   display: flex;
   align-items: center;
