@@ -14,7 +14,7 @@ function fixture(t) {
   const app = join(root, 'vue-app')
   const skill = join(root, 'skill/portal-workbench-ui-0914')
   mkdirSync(join(app, 'scripts'), { recursive: true })
-  for (const file of ['design-baseline.lock.json', 'design-skill.guard.json', 'package.json', 'scripts/verify-design-skill.mjs', 'scripts/product-contract-regression.test.mjs']) {
+  for (const file of ['design-baseline.lock.json', 'design-skill.guard.json', 'design-page-extensions.json', 'package.json', 'scripts/verify-design-skill.mjs', 'scripts/design-page-extensions.mjs', 'scripts/product-contract-regression.test.mjs']) {
     cpSync(join(appRoot, file), join(app, file))
   }
   cpSync(join(appRoot, 'src'), join(app, 'src'), { recursive: true })

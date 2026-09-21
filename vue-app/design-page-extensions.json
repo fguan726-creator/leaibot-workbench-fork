@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "pages": [
+    {
+      "pageId": "points.activity",
+      "label": "企业购活动积分配置",
+      "route": "/points/activity",
+      "pageType": "T7",
+      "components": ["C1", "C2", "C3", "C8", "C9"],
+      "implementation": "O1",
+      "visualStatus": "VA-0",
+      "remainingStates": [
+        "本次响应式、C9 状态和键盘验收待完成",
+        "真实后端及真实积分写入未接入"
+      ]
+    },
+    {
+      "pageId": "points.activityDetails",
+      "label": "活动积分明细",
+      "route": "/points/activity-details",
+      "pageType": "T2",
+      "components": ["C1", "C2", "C3", "C8", "C9"],
+      "implementation": "O1",
+      "visualStatus": "VA-0",
+      "remainingStates": [
+        "本次统计查询和响应式交互验收待完成",
+        "真实订单及积分数据未接入"
+      ]
+    }
+  ]
+}

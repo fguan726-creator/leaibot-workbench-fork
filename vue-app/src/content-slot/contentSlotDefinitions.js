@@ -61,6 +61,23 @@ const commonContentStyles = {
 
 export const CONTENT_SLOT_GROUPS = [
   {
+    key: 'points',
+    label: '积分管理',
+    ownership: 'Vue native page; isolated demonstration data',
+    defaultLayout: CONTENT_SLOT_LAYOUTS.tableWorkbench,
+    pages: [{
+      pageId: 'points.activity',
+      label: '活动积分配置',
+      path: '/points/activity',
+      layout: CONTENT_SLOT_LAYOUTS.tableWorkbench,
+      sourceRenderer: 'src/views/points/ActivityPointsView.vue',
+      fixedStyles: ['shared ContentPageHeader', 'single PageFlow', 'filter and list surface'],
+      sharedCandidates: ['SectionHeader', 'data table', 'content tabs', 'status tag', 'pagination'],
+      customAreas: ['activity tiers and product scope', 'enterprise aggregation and actual-issued top-up', 'simulated settlement'],
+      interactions: ['filter and create activity', 'edit draft or future activity', 'extend ongoing activity', 'inspect enterprise and order results', 'simulate settlement and failed retry', 'export current detail']
+    }]
+  },
+  {
     key: 'portal',
     label: '首页',
     ownership: 'Vue native page',

@@ -20,13 +20,15 @@ import { syncThemeMode } from '@/composables/useThemeMode'
 import { showWorkbenchToast } from '@/services/toast'
 import { allowPreviewAuth } from '@/config/runtimeMode'
 import { AI_INSPECT_MENU, withAiInspectMenu } from '@/services/aiInspectAccess'
+import { ACTIVITY_POINTS_MENU, withActivityPointsMenu } from '@/services/activityPointsAccess'
 
-type MenuGroupKey = 'dashboard' | 'geo' | 'employee' | 'lead' | 'order' | 'advertising' | 'aiinspect'
+type MenuGroupKey = 'dashboard' | 'geo' | 'employee' | 'lead' | 'order' | 'advertising' | 'aiinspect' | 'promotion'
 export type PageId = string
 
 interface MenuItem {
   label: string
   path: string
+  section?: string
 }
 
 interface MenuGroup {
@@ -169,7 +171,8 @@ export const MENU_TREE: Record<MenuGroupKey, MenuGroup> = {
       'advertising.productVideo': { label: '商品视频管理', path: '/advertising/product-videos' }
     }
   },
-  aiinspect: AI_INSPECT_MENU
+  aiinspect: AI_INSPECT_MENU,
+  promotion: ACTIVITY_POINTS_MENU
 }
 
 // pageId → path 快速查表
@@ -238,7 +241,7 @@ export function getPageLabel(pageId: PageId) {
 export function getGroupLabel(pageId: PageId) {
   const groupLabelMap: Record<string, string> = { agent: 'AI 助手', portal: '首页' }
   for (const g of Object.values(MENU_TREE)) {
-    if (g.children?.[pageId]) return g.label
+    if (g.children?.[pageId]) return [g.label, g.children[pageId].section].filter(Boolean).join(' / ')
   }
   return groupLabelMap[pageId.split('.')[0]] || pageId.split('.')[0]
 }
@@ -286,9 +289,9 @@ export const useAppStore = defineStore('app', () => {
 
   // ---- 过滤后的菜单树（对应原 STATE.visibleMenus 过滤 MENU_TREE）----
   const filteredMenuTree = computed(() =>
-    withAiInspectMenu(Object.fromEntries(
+    withActivityPointsMenu(withAiInspectMenu(Object.fromEntries(
       Object.entries(MENU_TREE).filter(([key]) => visibleMenus.value.includes(key as MenuGroupKey))
-    ), user.value, role.value, permissions.value)
+    ), user.value, role.value, permissions.value), user.value, role.value, permissions.value)
   )
 
   // ===== 对应原 loadUserContext() =====
