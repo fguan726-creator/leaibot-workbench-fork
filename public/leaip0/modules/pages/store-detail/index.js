@@ -282,7 +282,7 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
             stores.map(function (store) { return '<button class="lx-store-pin' + (store.id === "1" ? ' is-active' : '') + '" type="button" data-id="' + store.id + '" aria-label="' + store.name + '"><span>' + store.id + '</span></button>'; }).join("") +
             '</div><button class="lx-store-route-back" type="button" data-route-back hidden><span aria-hidden="true">←</span>返回列表</button><div class="lx-map-controls"><button type="button" aria-label="放大" data-map-zoom="in">+</button><button type="button" aria-label="缩小" data-map-zoom="out">−</button></div>' +
             '<article class="lx-map-card" data-open-store-detail="' + stores[0].id + '" role="button" tabindex="0" aria-label="查看' + stores[0].name + '详情" aria-live="polite">' + cardMarkup(stores[0]) + '</article></section>' +
-            '<aside class="lx-store-list-panel"><div class="lx-store-list-head"><b>门店列表</b><div class="lx-store-list-head-actions"><span>共 <b data-store-list-count>8</b> 家</span><button class="lx-store-refresh-button" type="button" data-store-refresh-query="换一些门店">换一些门店 🔄</button></div></div><div class="lx-store-list" data-store-list>' + stores.map(function (store, index) { return storeListItem(store, "1", index + 1); }).join("") + '</div></aside></div></div>';
+            '<aside class="lx-store-list-panel"><div class="lx-store-list-head"><div class="lx-store-list-head-title"><b>门店列表</b><span>共 <b data-store-list-count>8</b> 家</span></div><button class="lx-store-refresh-button" type="button" data-store-refresh-query="换一些门店">换一些门店<img src="/assets/img/stores/a43a2b3f9a581c2d5fc1.svg" alt="" aria-hidden="true"></button></div><div class="lx-store-list" data-store-list>' + stores.map(function (store, index) { return storeListItem(store, "1", index + 1); }).join("") + '</div></aside></div></div>';
           content.appendChild(page);
           var activeChannel = "personal";
           var channelPage = document.createElement("section");
@@ -768,6 +768,17 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
             var isShanghai = userLocation.city === "上海市" || page.classList.contains("is-shanghai");
             var results = isShanghai ? showShanghaiNearbyScenario() : showBeijingNearbyScenario();
             var locationName = isShanghai ? "上海东方明珠附近" : "北京市西城区复兴门内大街49号附近";
+            var globalDocument = window.document;
+            var quickAskTrigger = globalDocument && globalDocument.createElement("button");
+            if (quickAskTrigger && globalDocument.body) {
+              quickAskTrigger.type = "button";
+              quickAskTrigger.hidden = true;
+              quickAskTrigger.dataset.quickAsk = "换一些门店";
+              globalDocument.body.appendChild(quickAskTrigger);
+              quickAskTrigger.click();
+              quickAskTrigger.remove();
+              return;
+            }
             appendAssistantTurn("换一些门店", '<p>已根据当前位置重新整理 <b>' + locationName + '</b> 的联想门店，共找到 ' + results.length + ' 家。右侧地图、门店位置和门店列表已重新展示。</p>', "附近门店已更新 · " + results.length + " 家", null, "nearby-store-map", "附近门店查询服务");
           }
 
@@ -1765,7 +1776,7 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
             stores.map(function (store) { return '<button class="lx-store-pin' + (store.id === "1" ? ' is-active' : '') + '" type="button" data-id="' + store.id + '" aria-label="' + store.name + '"><span>' + store.id + '</span></button>'; }).join("") +
             '</div><button class="lx-store-route-back" type="button" data-route-back hidden><span aria-hidden="true">←</span>返回列表</button><div class="lx-map-controls"><button type="button" aria-label="放大" data-map-zoom="in">+</button><button type="button" aria-label="缩小" data-map-zoom="out">−</button></div>' +
             '<article class="lx-map-card" data-open-store-detail="' + stores[0].id + '" role="button" tabindex="0" aria-label="查看' + stores[0].name + '详情" aria-live="polite">' + cardMarkup(stores[0]) + '</article></section>' +
-            '<aside class="lx-store-list-panel"><div class="lx-store-list-head"><b>门店列表</b><div class="lx-store-list-head-actions"><span>共 <b data-store-list-count>8</b> 家</span><button class="lx-store-refresh-button" type="button" data-store-refresh-query="换一些门店">换一些门店 🔄</button></div></div><div class="lx-store-list" data-store-list>' + stores.map(function (store, index) { return storeListItem(store, "1", index + 1); }).join("") + '</div></aside></div></div>';
+            '<aside class="lx-store-list-panel"><div class="lx-store-list-head"><div class="lx-store-list-head-title"><b>门店列表</b><span>共 <b data-store-list-count>8</b> 家</span></div><button class="lx-store-refresh-button" type="button" data-store-refresh-query="换一些门店">换一些门店<img src="/assets/img/stores/a43a2b3f9a581c2d5fc1.svg" alt="" aria-hidden="true"></button></div><div class="lx-store-list" data-store-list>' + stores.map(function (store, index) { return storeListItem(store, "1", index + 1); }).join("") + '</div></aside></div></div>';
           content.appendChild(page);
           var activeChannel = "personal";
           var channelPage = document.createElement("section");
@@ -2449,6 +2460,17 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
               var refreshIsShanghai = userLocation.city === "上海市" || page.classList.contains("is-shanghai");
               var refreshedStores = refreshIsShanghai ? showShanghaiNearbyScenario() : showBeijingNearbyScenario();
               var refreshLocationName = refreshIsShanghai ? "上海东方明珠附近" : "北京市西城区复兴门内大街49号附近";
+              var globalDocument = window.document;
+              var quickAskTrigger = globalDocument && globalDocument.createElement("button");
+              if (quickAskTrigger && globalDocument.body) {
+                quickAskTrigger.type = "button";
+                quickAskTrigger.hidden = true;
+                quickAskTrigger.dataset.quickAsk = "换一些门店";
+                globalDocument.body.appendChild(quickAskTrigger);
+                quickAskTrigger.click();
+                quickAskTrigger.remove();
+                return;
+              }
               appendAssistantTurn("换一些门店", '<p>已根据当前位置重新整理 <b>' + refreshLocationName + '</b> 的联想门店，共找到 ' + refreshedStores.length + ' 家。右侧地图、门店位置和门店列表已重新展示。</p>', "附近门店已更新 · " + refreshedStores.length + " 家", null, "nearby-store-map", "附近门店查询服务");
               return;
             }

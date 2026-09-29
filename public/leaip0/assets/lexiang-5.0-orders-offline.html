@@ -10542,7 +10542,7 @@ async function openEduZone() {
                 <div class="cap"><b>${esc(captionName)}</b> · 点击门店卡「导航」开地图</div>
               </div>
               <div class="col">
-                <div class="listhd" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span>附近联想授权门店 · ${esc(countText)}</span><button type="button" data-store-refresh-query="换一些门店" data-quick-ask="换一些门店" style="flex:none;padding:5px 8px;border:0;border-radius:7px;background:transparent;color:#5b1452;font:700 12px/1.2 inherit;cursor:pointer">换一些门店 🔄</button></div>
+                <style>.lx-store-refresh-link:hover,.lx-store-refresh-link:focus-visible{background:transparent!important;text-decoration:underline!important;text-underline-offset:3px;outline:none}</style><div class="listhd" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span>附近联想授权门店 · ${esc(countText)}</span><button class="lx-store-refresh-link" type="button" data-store-refresh-query="换一些门店" data-quick-ask="换一些门店" style="flex:none;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:0;border-radius:7px;background:transparent;color:#5b1452;font:700 12px/1.2 inherit;cursor:pointer">换一些门店<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6.1 9a7 7 0 0 1 11.5-2.6L20 9M4 15l2.4 2.6A7 7 0 0 0 17.9 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
                 <div class="store-list">${listHtml}</div>
               </div>
             </div>

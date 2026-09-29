@@ -593,10 +593,11 @@
       .lx-store-list-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
       .lx-store-list-head b { color: #252525; font-size: 14px; }
       .lx-store-list-head span { color: #979797; font-size: 12px; }
-      .lx-store-list-head-actions { display: flex; align-items: center; gap: 10px; }
-      .lx-store-refresh-button { min-height: 28px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: #5b1452; font-size: 12px; line-height: 1; font-weight: 700; white-space: nowrap; }
-      .lx-store-refresh-button:hover,
-      .lx-store-refresh-button:focus-visible { background: #f3edf6; color: #4d144a; outline: none; }
+      .lx-store-list-head-title { display: flex; align-items: center; gap: 8px; }
+      .lx-store-refresh-button { min-height: 28px; display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; border: 0; border-radius: 7px; background: transparent; color: #5b1452; font-size: 12px; line-height: 1; font-weight: 700; white-space: nowrap; cursor: pointer; }
+      .lx-store-refresh-button img { width: 13px; height: 13px; display: block; }
+      .lx-store-list-head .lx-store-refresh-button:hover,
+      .lx-store-list-head .lx-store-refresh-button:focus-visible { background: transparent !important; color: #4d144a; text-decoration: underline !important; text-underline-offset: 3px; outline: none; }
       .lx-store-refresh-button:active { transform: translateY(1px); }
       .lx-store-list { min-height: 0; display: grid; grid-auto-rows: max-content; gap: 10px; overflow: auto; padding-right: 4px; }
       .lx-store-empty { display: grid; min-height: 180px; place-items: center; padding: 24px; border: 1px dashed #d8cfe0; border-radius: 12px; background: #fcfaff; color: #79717e; font-size: 12px; text-align: center; line-height: 1.7; }
