@@ -9,13 +9,13 @@
     {
       key: 'closed-loop',
       path: `${BASE_PATH}/ops/closed-loop-dashboard`,
-      label: '\u95ed\u73af\u4ea4\u6613\u770b\u677f',
+      label: '\u95ed\u73af\u4ea4\u6613',
       src: '/lexiang-dashboard/lenovo-joy-closed-loop-dashboard.html?embedded=1',
     },
     {
       key: 'internal-closed-loop',
       path: `${BASE_PATH}/ops/internal-closed-loop-dashboard`,
-      label: '\uff08\u5185\u90e8\uff09\u95ed\u73af\u4ea4\u6613\u770b\u677f',
+      label: '\u3010\u5185\u90e8\u3011\u95ed\u73af\u4ea4\u6613',
       src: '/lexiang-dashboard/index.html?embedded=1',
     },
   ];
