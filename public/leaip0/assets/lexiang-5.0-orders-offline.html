@@ -10542,7 +10542,7 @@ async function openEduZone() {
                 <div class="cap"><b>${esc(captionName)}</b> · 点击门店卡「导航」开地图</div>
               </div>
               <div class="col">
-                <div class="listhd">附近联想授权门店 · ${esc(countText)}</div>
+                <div class="listhd" style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span>附近联想授权门店 · ${esc(countText)}</span><button type="button" data-store-refresh-query="换一些门店" data-quick-ask="换一些门店" style="flex:none;padding:5px 8px;border:0;border-radius:7px;background:transparent;color:#5b1452;font:700 12px/1.2 inherit;cursor:pointer">换一些门店 🔄</button></div>
                 <div class="store-list">${listHtml}</div>
               </div>
             </div>
