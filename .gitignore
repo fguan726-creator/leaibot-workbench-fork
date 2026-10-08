@@ -70,6 +70,7 @@ public/admin-vue/poc-release-ledger.json
 # dev worktree 里这两个是软链回生产的「文件」，上面 node_modules/ 和 uploads/
 # 带斜杠的规则只匹配目录，匹配不到软链，会一直挂在 untracked 里干扰视线
 /node_modules
+/vue-app/node_modules
 /uploads
 
 # P0 catalog history stays outside public releases

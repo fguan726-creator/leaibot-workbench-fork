@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { withProjectPageExtensions } from './design-page-extensions.mjs'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const projectPackageRoot = dirname(projectRoot)
@@ -121,11 +122,20 @@ function runBundledConsistencyCheck() {
     console.error('[Design Skill Error] 缺少随仓库 0914 scripts/check-consistency.mjs，无法完成合同检查。')
     process.exit(1)
   }
-  const result = spawnSync(process.execPath, [checker, '--project', projectRoot, ...consistencyArgs], {
-    cwd: projectRoot,
-    stdio: 'inherit',
-    shell: false,
-  })
+  let result
+  try {
+    result = withProjectPageExtensions(projectRoot, dirname(dirname(checker)), (executable, pages) => {
+      for (const page of pages) console.log(`[Design Skill Check] 项目新增页面登记：${page.pageId} ${page.pageType}/C9/VA-0；待本次验收。`)
+      return spawnSync(process.execPath, [executable, '--project', projectRoot, ...consistencyArgs], {
+        cwd: projectRoot,
+        stdio: 'inherit',
+        shell: false,
+      })
+    })
+  } catch (error) {
+    console.error(`[Design Skill Error] 项目页面登记检查失败：${error.message}`)
+    process.exit(1)
+  }
   if (result.error || result.signal || result.status === null) {
     console.error(`[Design Skill Error] 0914 合同检查未正常完成：${result.error?.message || result.signal || '无退出状态'}。`)
     process.exit(1)

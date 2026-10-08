@@ -1,0 +1,333 @@
+.points-page {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  container-type: inline-size;
+  color: var(--color-text);
+}
+.points-flow,
+.points-form-flow {
+  display: grid;
+  gap: var(--space-4, 16px);
+  min-width: 0;
+  padding: 0;
+}
+.points-flow > * {
+  margin-block: 0;
+}
+.points-form-flow {
+  gap: var(--space-6, 24px);
+}
+.points-list-workspace {
+  display: grid;
+  gap: var(--space-3, 12px);
+  min-width: 0;
+}
+.points-list-workspace > * {
+  margin-block: 0;
+}
+.points-panel,
+.points-filter {
+  padding: var(--space-4, 16px);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  min-width: 0;
+}
+.points-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3, 12px);
+  align-items: end;
+}
+.points-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4, 16px);
+}
+.points-field {
+  display: grid;
+  gap: var(--space-2, 8px);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm, 13px);
+}
+.points-field .form-input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  font-size: var(--text-sm, 13px);
+  border-radius: var(--radius-md);
+}
+.points-field-full {
+  grid-column: 1/-1;
+}
+.points-code-entry {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2, 8px);
+}
+.points-field .points-code-input {
+  height: auto;
+  resize: vertical;
+  line-height: 1.65;
+}
+.points-field .points-code-input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+.points-code-feedback,
+.points-code-examples {
+  overflow-wrap: anywhere;
+}
+.points-code-feedback {
+  font-size: var(--text-xs, 12px);
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+.points-code-error {
+  color: var(--color-danger);
+}
+.points-actions,
+.points-toolbar,
+.points-demo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  min-width: 0;
+}
+.points-toolbar,
+.points-demo-strip {
+  justify-content: space-between;
+}
+.points-actions .btn {
+  white-space: nowrap;
+}
+.points-filter-actions {
+  grid-column: 1/-1;
+  justify-content: flex-end;
+}
+.points-demo-strip,
+.points-notice {
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  border: 1px solid var(--color-primary-border);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-subtle);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm, 13px);
+  line-height: 1.65;
+}
+.points-notice p {
+  margin: var(--space-2, 8px) 0 0;
+}
+.points-demo-strip strong {
+  color: var(--color-primary);
+}
+.points-warning {
+  color: var(--color-warning);
+  background: var(--color-warning-subtle);
+  border-color: var(--color-warning);
+}
+.points-danger {
+  color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  border-color: var(--color-danger);
+}
+.points-success {
+  color: var(--color-success);
+  background: var(--color-success-subtle);
+  border-color: var(--color-success);
+}
+.points-muted {
+  margin: 0;
+  font-size: var(--text-xs, 12px);
+  color: var(--color-text-tertiary);
+  line-height: 1.65;
+}
+.points-secondary {
+  display: block;
+  margin-top: var(--space-1, 4px);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs, 12px);
+  line-height: 1.5;
+}
+.points-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.points-link:hover {
+  text-decoration: underline;
+}
+.points-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 4px;
+}
+.points-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.points-numeric {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.points-highlight {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.points-section {
+  display: grid;
+  gap: var(--space-4, 16px);
+  min-width: 0;
+}
+.points-section p {
+  margin-block: 0;
+}
+.points-section + .points-section {
+  padding-top: var(--space-4, 16px);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.points-product-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3, 12px);
+}
+.points-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2, 8px);
+  font-size: var(--text-sm, 13px);
+  line-height: 1.6;
+}
+.points-check input {
+  margin-top: 4px;
+  accent-color: var(--color-primary);
+}
+.points-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3, 12px);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3, 12px);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+.points-options legend {
+  padding: 0 var(--space-1, 4px);
+  font-size: var(--text-sm, 13px);
+}
+.points-tier-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-3, 12px);
+}
+.points-definition {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: var(--space-3, 12px) var(--space-4, 16px);
+  margin: 0;
+  font-size: var(--text-sm, 13px);
+  line-height: 1.65;
+}
+.points-definition dt {
+  color: var(--color-text-tertiary);
+}
+.points-definition dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.points-definition dd p {
+  margin: 0;
+}
+.points-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+.points-tag {
+  padding: var(--space-1, 4px) var(--space-2, 8px);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  font-size: var(--text-xs, 12px);
+}
+.points-inner {
+  padding: var(--space-5, 20px);
+  min-width: 0;
+}
+.points-log {
+  display: grid;
+  gap: var(--space-4, 16px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.points-log li {
+  padding-left: var(--space-4, 16px);
+  border-left: 2px solid var(--color-primary-border);
+  font-size: var(--text-sm, 13px);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.points-calculation {
+  display: grid;
+  gap: var(--space-3, 12px);
+  padding: var(--space-4, 16px);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+.points-calculation p {
+  margin: 0;
+  font-size: var(--text-sm, 13px);
+  line-height: 1.65;
+}
+.points-calculation strong {
+  display: block;
+  color: var(--color-primary);
+  font-size: var(--text-md, 16px);
+}
+@container (max-width:1039px) {
+  .points-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width:899px) {
+  .points-fields {
+    grid-template-columns: 1fr;
+  }
+}
+@container (max-width:719px) {
+  .points-filter-grid,
+  .points-fields,
+  .points-product-options {
+    grid-template-columns: 1fr;
+  }
+  .points-filter-actions {
+    justify-content: flex-start;
+  }
+  .points-definition {
+    grid-template-columns: 1fr;
+    gap: var(--space-1, 4px);
+  }
+  .points-definition dd {
+    margin-bottom: var(--space-3, 12px);
+  }
+}
+@media (max-width: 719px) {
+  .points-fields,
+  .points-product-options {
+    grid-template-columns: 1fr;
+  }
+  .points-definition {
+    grid-template-columns: 1fr;
+  }
+  .points-tier-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+}
