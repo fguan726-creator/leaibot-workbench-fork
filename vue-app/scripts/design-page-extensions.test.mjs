@@ -14,6 +14,12 @@ const page = {
   implementation: 'O1', visualStatus: 'VA-0',
   remainingStates: ['本次响应式、C9 状态和键盘验收待完成；真实后端未接入'],
 }
+const detailsPage = {
+  ...page,
+  pageId: 'points.activityDetails', label: '活动积分明细', route: '/points/activity-details',
+  pageType: 'T2',
+  remainingStates: ['本次统计查询和响应式交互验收待完成；真实订单及积分数据未接入'],
+}
 
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'design-page-extensions-'))
@@ -26,7 +32,7 @@ function fixture(t) {
   }
   cpSync(join(appRoot, 'src'), join(app, 'src'), { recursive: true })
   cpSync(join(appRoot, '../skill/portal-workbench-ui-0914'), skill, { recursive: true })
-  writeFileSync(join(app, 'design-page-extensions.json'), JSON.stringify({ schemaVersion: 1, pages: [page] }))
+  register({ app }, [page])
   const env = { ...process.env }
   delete env.PORTAL_WORKBENCH_UI_SKILL_DIR
   delete env.PORTAL_WORKBENCH_PROJECT_DIR
@@ -42,7 +48,7 @@ function run(f, args = []) {
 }
 
 function register(f, pages) {
-  writeFileSync(join(f.app, 'design-page-extensions.json'), JSON.stringify({ schemaVersion: 1, pages }))
+  writeFileSync(join(f.app, 'design-page-extensions.json'), JSON.stringify({ schemaVersion: 1, pages: [...pages, detailsPage] }))
 }
 
 function treeHashes(root) {
