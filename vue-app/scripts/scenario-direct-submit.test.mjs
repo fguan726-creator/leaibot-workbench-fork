@@ -203,7 +203,7 @@ for (const access of ['readonly review', 'nonowner rejected draft']) {
     await view.submitPackage()
     assert.equal(events.length, 0)
     assert.deepEqual(copy(store.findPackage(record.id)), before)
-    assert.match(view.displayedValidationErrors.value.join(' '), access === 'readonly review' ? /待审核内容暂不可编辑/ : /仅原创建人/)
+    assert.match(view.displayedValidationErrors.value.join(' '), access === 'readonly review' ? /待审核内容暂不可编辑/ : /当前状态或权限不允许编辑/)
   })
 }
 

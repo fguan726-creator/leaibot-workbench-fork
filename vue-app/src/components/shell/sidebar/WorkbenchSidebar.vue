@@ -151,6 +151,15 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-10-08',
+    releaseKey: 'workbench-scenario-package-edit-20261008',
+    title: '场景技能包编辑与审核撤回',
+    changePoint: '管理员可编辑已发布、已禁用技能包及其修订，创建者可维护本人内容，待审核可先撤回再编辑。',
+    detail: '列表、详情和编辑页统一按状态控制入口。管理员修订保留原创建者与已审核线上版本，保存草稿、试运行和重新提审记录实际操作人；本轮编辑者不能审核自己的修改。原创建者或本轮提交人可撤回待审核内容，撤回及重新提审不改变线上版本的启停状态。发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
     time: '2026-09-21',
     releaseKey: 'workbench-skill-clarify-demo-20260921',
     title: 'Skill 需求澄清示例引导与执行动效',

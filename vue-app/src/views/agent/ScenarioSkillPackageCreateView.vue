@@ -125,6 +125,7 @@
           :draft="currentDraft()"
           :skills="publishedSkills"
           :actor="actor"
+          :simulate="scenarioStore.simulateDraft"
           :disabled="!canEditDraft"
           @running="trialRunning = $event"
           @edit-chain="returnToComposition"
@@ -279,7 +280,7 @@ import {
 } from '@/stores/scenarioSkillPackages'
 import {
   evaluatePackageForPublish,
-  scenarioPackageActions,
+  canAuthorScenarioPackage,
   resolveScenarioChain
 } from '@/domain/scenarioSkillPackages.js'
 
@@ -363,13 +364,14 @@ const dependencyHealth = ref<ScenarioPackageHealth>(emptyHealthEvaluation())
 const evaluatedDraft = ref<ScenarioSkillPackageDraft | null>(null)
 const liveEligibilityReasons = ref<string[]>([])
 
-const ownerId = computed(() => appStore.user || '')
-const actor = computed(() => ({ id: ownerId.value, permissions: appStore.permissions }))
+const editingActorId = appStore.user || ''
+const ownerId = computed(() => props.draft?.ownerId || appStore.user || '')
+const actor = computed(() => ({ id: appStore.user || '', permissions: appStore.permissions }))
 const editAccessError = computed(() => {
-  if (!ownerId.value) return '请登录后创建或编辑场景技能包。'
-  if (!props.draft) return scenarioPackageActions({ ownerId: ownerId.value, status: 'draft' }, actor.value).includes('edit')
+  if (!actor.value.id) return '请登录后创建或编辑场景技能包。'
+  if (actor.value.id !== editingActorId) return '登录账号已变化，请返回列表后重新打开编辑。'
+  if (!props.draft) return canAuthorScenarioPackage(actor.value)
     ? '' : '缺少创建技能包或跨菜单编排权限。'
-  if (props.draft.ownerId !== ownerId.value) return '仅原创建人可以编辑场景技能包。'
   if (!scenarioStore.actionsFor(draftId, actor.value).includes('edit')) return '当前状态或权限不允许编辑，待审核内容暂不可编辑。'
   if (scenarioStore.findPackage(draftId)?.updatedAt !== draftBaseUpdatedAt) return '技能包状态已更新，请返回列表后重新打开编辑。'
   return ''
@@ -415,7 +417,7 @@ const evaluationCards = computed<EvaluationCard[]>(() => {
       title: '跨菜单编排权限',
       status: compositionOk ? '通过' : '阻断',
       tone: compositionOk ? 'pass' : 'block',
-      detail: compositionOk ? `主责任人 ${ownerId.value} 具备本次编排和提交权限。` : '当前账号不能提交本次跨菜单编排。',
+      detail: compositionOk ? `当前账号 ${actor.value.id} 具备本次编排和提交权限。` : '当前账号不能提交本次跨菜单编排。',
       lines: compositionReasons.value
     },
     {
@@ -682,7 +684,7 @@ watch([form, chain, canEditDraft, publishedSkills], () => {
   }
 }, { deep: true, immediate: true })
 
-watch([form, chain, ownerId, testReport, testRequest], () => {
+watch([form, chain, actor, testReport, testRequest], () => {
   submitError.value = ''
   evaluatedDraft.value = null
   liveEligibilityReasons.value = []

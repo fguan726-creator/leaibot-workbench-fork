@@ -126,6 +126,27 @@ function rowActions(html, id) {
   return [...row.matchAll(/<button\b[^>]*>(.*?)<\/button>/g)].map(match => match[1].trim())
 }
 
+test('a creator confirms withdrawal before a pending package becomes editable', async () => {
+  const { state, record, store, notices } = await fixture({ actor: 'pm-li', permissions: creationPermissions })
+  state.openPackageDetail(record, undefined, 'withdraw')
+  assert.equal(state.packageReviewMode.value, 'withdraw')
+  assert.equal(store.findPackage(record.id).status, 'review')
+  await state.managePackage('withdraw')
+  assert.equal(store.findPackage(record.id).status, 'draft')
+  assert.equal(store.findPackage(record.id).auditEvents.at(-1).type, 'withdrawn')
+  assert.equal(state.packageReviewMode.value, 'detail')
+  assert.match(notices.at(-1), /撤回/)
+  await state.managePackage('withdraw')
+  assert.equal(store.findPackage(record.id).auditEvents.filter(event => event.type === 'withdrawn').length, 1)
+})
+
+test('an administrator can open another creator published revision from its direct edit URL', async () => {
+  const { state, record } = await fixture({ actor: 'editing-admin', permissions: ['*'], status: 'published', query: { mode: 'create', edit: 'seed-scenario-pending-review' } })
+  assert.equal(state.isPackageCreate.value, true)
+  assert.equal(state.editingPackage.value.ownerId, record.ownerId)
+  assert.equal(state.editingPackage.value.version, 'v1.0.1')
+})
+
 test('an independent administrator sees separate detail, approve and reject actions for a pending package', async () => {
   const { html, record, store } = await fixture()
   assert.deepEqual(rowActions(html, record.id), ['详情', '审批', '驳回'])
@@ -133,9 +154,9 @@ test('an independent administrator sees separate detail, approve and reject acti
 })
 
 for (const audience of [
-  { label: 'the original creator', actor: 'pm-li', permissions: creationPermissions, actions: ['详情'] },
+  { label: 'the original creator', actor: 'pm-li', permissions: creationPermissions, actions: ['详情', '撤回'] },
   { label: 'an account without review permission', permissions: [], actions: ['详情'] },
-  { label: 'a published package', recordId: 'seed-workplace-certification-operations', actions: ['详情', '禁用'] },
+  { label: 'a published package', recordId: 'seed-workplace-certification-operations', actions: ['详情', '编辑', '禁用'] },
 ]) {
   test(`${audience.label} retains detail without approve or reject row actions`, async () => {
     const { state, html, record } = await fixture(audience)
@@ -282,14 +303,14 @@ for (const action of ['approve', 'reject']) {
 for (const status of ['draft', 'review', 'rejected', 'published', 'disabled']) {
   test(`an owner with creation permissions sees the appropriate ${status} row actions`, async () => {
     const { html, record } = await fixture({ actor: 'pm-li', permissions: creationPermissions, status })
-    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情'] : ['详情', '编辑'])
+    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '撤回'] : ['详情', '编辑'])
   })
 
   test(`an administrator can edit their own ${status} package only outside pending review`, async () => {
     const { html, record, state, store } = await fixture({ actor: 'pm-li', permissions: ['*'], status })
     const before = copy(store.findPackage(record.id))
     const actions = { published: ['禁用'], disabled: ['启用'] }[status] || []
-    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情'] : ['详情', '编辑', ...actions])
+    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '撤回'] : ['详情', '编辑', ...actions])
     await editWithNoDom(state, record)
     assert.equal(state.isPackageCreate.value, status !== 'review')
     if (status === 'review') {
@@ -309,7 +330,7 @@ for (const status of ['draft', 'review', 'rejected', 'published', 'disabled']) {
 
   test(`review permission grants only the applicable ${status} actions regardless of role label`, async () => {
     const { html, record } = await fixture({ permissions: reviewer.permissions, role: '运营', status })
-    const actions = { review: ['审批', '驳回'], published: ['禁用'], disabled: ['启用'] }[status] || []
+    const actions = { review: ['审批', '驳回'], published: ['编辑', '禁用'], disabled: ['编辑', '启用'] }[status] || []
     assert.deepEqual(rowActions(html, record.id), ['详情', ...actions])
   })
 }
@@ -355,10 +376,9 @@ for (const status of ['draft', 'rejected', 'published', 'disabled']) {
 
 for (const audience of [
   { label: 'a pending owner', actor: 'pm-li', status: 'review', permissions: creationPermissions },
-  { label: 'a different owner', status: 'published' },
+  { label: 'a different owner', status: 'published', permissions: creationPermissions },
   { label: 'an owner without creation permission', actor: 'pm-li', status: 'published', permissions: [] },
   { label: 'an administrator who owns a pending package', actor: 'pm-li', status: 'review', permissions: ['*'] },
-  { label: 'an administrator who does not own the package', actor: 'different-admin', status: 'published', permissions: ['*'] },
 ]) {
   test(`the edit route cannot bypass ownership, permissions or review state for ${audience.label}`, async () => {
     const { state } = await fixture({ ...audience, query: { mode: 'create', edit: 'seed-scenario-pending-review' } })
@@ -458,12 +478,12 @@ async function submitPublishedRevision(context) {
   return submitEditableRevision(context)
 }
 
-test('a pending owner has only detail even with administrator permissions and an older published snapshot', async () => {
+test('a pending owner must withdraw before editing even with administrator permissions and an older published snapshot', async () => {
   const { state, store, record, html } = await fixture({ actor: 'pm-li', permissions: ['*'], prepare: submitPublishedRevision })
   assert.equal(record.status, 'review')
   assert.equal(record.onlineStatus, 'published')
   assert.ok(record.publishedSnapshot)
-  assert.deepEqual(rowActions(html, record.id), ['详情'])
+  assert.deepEqual(rowActions(html, record.id), ['详情', '撤回'])
   const before = copy(store.findPackage(record.id))
   await state.editPackage(record)
   assert.equal(state.isPackageCreate.value, false)
@@ -484,7 +504,7 @@ for (const status of ['review', 'draft']) {
       if (status === 'draft') seedDraft(context.store, context.recordId)
     } })
     assert.equal(record.status, status)
-    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '审批', '驳回', '禁用'] : ['详情', '禁用'])
+    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '审批', '驳回', '禁用'] : ['详情', '编辑', '禁用'])
     state.openPackageDetail(record, undefined, 'disable')
     assert.equal(state.packageReviewMode.value, 'disable')
     await state.managePackage('disable')
@@ -636,7 +656,7 @@ test('initial examples render all eight state filters while administrators revie
   assert.ok(review)
   assert.ok(published)
   assert.deepEqual(rowActions(html, review.id), ['详情', '审批', '驳回'])
-  assert.deepEqual(rowActions(html, published.id), ['详情', '禁用'])
+  assert.deepEqual(rowActions(html, published.id), ['详情', '编辑', '禁用'])
 })
 
 test('initial PM examples permit author editing without review or management actions', async () => {
@@ -645,6 +665,6 @@ test('initial PM examples permit author editing without review or management act
   const ownPublished = store.packages.find(item => item.ownerId === account.user && item.status === 'published')
   assert.ok(ownReview)
   assert.ok(ownPublished)
-  assert.deepEqual(rowActions(html, ownReview.id), ['详情'])
+  assert.deepEqual(rowActions(html, ownReview.id), ['详情', '撤回'])
   assert.deepEqual(rowActions(html, ownPublished.id), ['详情', '编辑'])
 })

@@ -9,7 +9,7 @@ import { getScenarioMockDataFailure } from './scenarioTrialMockData.js'
  * @typedef {{ id?: string, permissions?: string[]|Partial<Record<PermissionBucket|'policy', string[]>> }} ScenarioActor
  * @typedef {{ id: string, name?: string, menu: string, version: string, status: string, onlineStatus: string, online: string, description?: string, inputDescription?: string, outputDescription?: string, permissions?: Partial<Record<PermissionBucket, string[]>> }} PublishedSkill
  * @typedef {{ id: string, skillId: string, name: string, menu: string, pinnedVersion: string, currentPublishedVersion: string, hasNewerPublishedVersion?: boolean, kind: ScenarioStepKind, condition?: string, task?: string, fixedRequirements?: string, expectedOutput?: string, inputDescription?: string, required: boolean, requiresConfirmation?: boolean, requiresApproval?: boolean, predecessorId?: string|null, position?: { x: number, y: number }, dependencyState: DependencyState, permissions: Partial<Record<PermissionBucket, string[]>> }} PinnedScenarioStep
- * @typedef {{ id: string, name: string, description: string, targetAudience: string, ownerId: string, steps: PinnedScenarioStep[], status?: string, version?: string, onlineStatus?: 'unpublished'|'published'|'disabled', publishedSnapshot?: ScenarioPackageDraft, updatedAt?: string, baseUpdatedAt?: string, approvedAt?: string, publishedAt?: string, health?: ScenarioPackageHealth, submittedAt?: string, submittedBy?: string, submitterId?: string, reviewedAt?: string, reviewedBy?: string, reviewNote?: string, auditEvents?: ScenarioAuditEvent[], testReport?: import('./scenarioPackageTesting.js').ScenarioSimulationReport, testRequest?: import('./scenarioPackageTesting.js').ScenarioSimulationRequest }} ScenarioPackageDraft
+ * @typedef {{ id: string, name: string, description: string, targetAudience: string, ownerId: string, steps: PinnedScenarioStep[], status?: string, version?: string, onlineStatus?: 'unpublished'|'published'|'disabled', publishedSnapshot?: ScenarioPackageDraft, updatedAt?: string, baseUpdatedAt?: string, approvedAt?: string, publishedAt?: string, health?: ScenarioPackageHealth, submittedAt?: string, submittedBy?: string, submitterId?: string, revisionEditors?: string[], reviewedAt?: string, reviewedBy?: string, reviewNote?: string, auditEvents?: ScenarioAuditEvent[], testReport?: import('./scenarioPackageTesting.js').ScenarioSimulationReport, testRequest?: import('./scenarioPackageTesting.js').ScenarioSimulationRequest }} ScenarioPackageDraft
  * @typedef {{ status: 'healthy'|'upgrade_required'|'degraded'|'paused', explanations: string[], blockedStepIds: string[], degradedStepIds: string[] }} ScenarioPackageHealth
  * @typedef {{ ok: boolean, canSelfApprove: boolean, reasons: string[] }} ScenarioPolicyResult
  * @typedef {{ status: 'ready'|'degraded'|'blocked', effectiveSteps: PinnedScenarioStep[], skippedSteps: PinnedScenarioStep[], missingPermissions: { stepId: string, bucket: PermissionBucket, permission: string }[], missingEvidence: { stepId: string, type: 'confirmation'|'approval' }[], missingPackagePermission?: string, explanations: string[] }} ScenarioRuntimeResult
@@ -439,12 +439,15 @@ function packageDefinitionReasons(draft) {
  * Evaluate creation and submission gates; submission never grants self-approval.
  * @param {ScenarioPackageDraft} draft
  * @param {ScenarioActor} actor
+ * @param {ScenarioPackageDraft} [previous] Trusted stored record, never a client-supplied draft snapshot.
  * @returns {ScenarioPolicyResult}
  */
-export function evaluatePackageForPublish(draft, actor) {
+export function evaluatePackageForPublish(draft, actor, previous) {
   const reasons = packageDefinitionReasons(draft)
   const skillIds = (draft?.steps || []).map(step => step.skillId).filter(Boolean)
-  if (!canAuthorScenarioPackage(actor)) {
+  const maintainingExisting = previous && previous.id === draft?.id && previous.ownerId === draft?.ownerId
+    && scenarioPackageActions(previous, actor).includes('edit')
+  if (!maintainingExisting && !canAuthorScenarioPackage(actor)) {
     if (!hasPolicyPermission(actor, 'scenario-package:create')) {
       reasons.push('缺少场景技能包创建技能包权限')
     }
@@ -467,7 +470,12 @@ export function evaluatePackageForPublish(draft, actor) {
   if (!ownerId.trim()) reasons.push('技能包主责任人不能为空')
   if (!actorId.trim()) reasons.push('当前提交账号不能为空')
   const isOwner = Boolean(ownerId.trim() && actorId.trim() && ownerId === actorId)
-  if (!isOwner) reasons.push('仅包所有者可以提交审核')
+  if (previous) {
+    if (!maintainingExisting) reasons.push('当前账号或状态不允许维护该场景技能包，且不能更换原所有者')
+    if (!draft.baseUpdatedAt || draft.baseUpdatedAt !== previous.updatedAt) reasons.push('场景技能包已更新或缺少编辑版本，请重新打开编辑')
+  } else {
+    if (!isOwner) reasons.push('仅包所有者可以提交审核')
+  }
 
   return {
     ok: reasons.length === 0,
@@ -582,7 +590,7 @@ export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds
     || typeof approval.at !== 'string' || !approval.at.trim()) {
     return blockedRuntimeResult(candidateSteps, ['技能包缺少有效的最新审批审计证据，不能运行。'])
   }
-  if ([packageItem.ownerId, packageItem.submittedBy, packageItem.submitterId]
+  if ([packageItem.ownerId, packageItem.submittedBy, packageItem.submitterId, ...revisionEditorIds(packageItem)]
     .some(id => typeof id === 'string' && id.trim() === approval.actorId.trim())) {
     return blockedRuntimeResult(candidateSteps, ['技能包的审批审计来自本人，须由其他管理员审核后才能运行。'])
   }
@@ -709,8 +717,8 @@ export function evaluateScenarioPackageReview(packageItem, actor) {
   const submittedBy = typeof packageItem?.submittedBy === 'string' ? packageItem.submittedBy.trim() : ''
   if (!actorId) reasons.push('当前审核账号不能为空')
   if (scenarioPackageRole(actor) !== 'admin') reasons.push('缺少场景技能包审核权限')
-  if (actorId && [ownerId, submittedBy, packageItem?.submitterId?.trim()].includes(actorId)) {
-    reasons.push('不能审核本人创建或提交的场景技能包，请由其他管理员审核')
+  if (actorId && [ownerId, submittedBy, packageItem?.submitterId?.trim(), ...revisionEditorIds(packageItem)].includes(actorId)) {
+    reasons.push('不能审核本人创建、编辑或提交的场景技能包，请由其他管理员审核')
   }
   const latestEvent = packageItem?.auditEvents?.filter(event => !['disabled', 'enabled'].includes(event.type)).at(-1)
   if (!ownerId || !submittedBy || !packageItem?.submittedAt?.trim()
@@ -746,7 +754,7 @@ function hasIndependentPublishedEvidence(packageItem) {
   const snapshot = scenarioPublishedSnapshot(packageItem)
   const approval = snapshot?.auditEvents?.filter(event => event.type === 'approved').at(-1)
   return Boolean(snapshot?.version && approval?.actorId?.trim() && approval?.at?.trim()
-    && ![snapshot.ownerId, snapshot.submittedBy, snapshot.submitterId].includes(approval.actorId)
+    && ![snapshot.ownerId, snapshot.submittedBy, snapshot.submitterId, ...revisionEditorIds(snapshot)].includes(approval.actorId)
     && snapshot.auditEvents.some(event => event.type === 'published' && event.actorId?.trim() && event.at?.trim()))
 }
 
@@ -755,9 +763,15 @@ export function scenarioPackageActions(packageItem, actor) {
   if (!packageItem) return []
   const actions = ['view']
   const isOwner = hasActorId(actor) && actor.id === packageItem.ownerId
-  if (isOwner && packageItem.status === 'review') return actions
-  if (isOwner && ['draft', 'rejected', 'published', 'disabled'].includes(packageItem.status)
-    && canAuthorScenarioPackage(actor)) actions.push('edit')
+  const isAdmin = hasActorId(actor) && scenarioPackageRole(actor) === 'admin'
+  const canMaintain = (isOwner && canAuthorScenarioPackage(actor))
+    || (isAdmin && (['published', 'disabled'].includes(packageItem.status) || hasIndependentPublishedEvidence(packageItem)))
+  if (packageItem.status === 'review' && hasActorId(actor)
+    && (isOwner || actor.id === packageItem.submittedBy) && (canAuthorScenarioPackage(actor) || isAdmin)) {
+    actions.push('withdraw')
+    return actions
+  }
+  if (canMaintain && ['draft', 'rejected', 'published', 'disabled'].includes(packageItem.status)) actions.push('edit')
   if (evaluateScenarioPackageReview(packageItem, actor).ok) actions.push('approve', 'reject')
   if (hasActorId(actor) && scenarioPackageRole(actor) === 'admin' && hasIndependentPublishedEvidence(packageItem)) {
     const onlineStatus = packageItem.onlineStatus || packageItem.status
@@ -765,6 +779,17 @@ export function scenarioPackageActions(packageItem, actor) {
     if (onlineStatus === 'disabled') actions.push('enable')
   }
   return actions
+}
+
+function revisionEditorIds(packageItem) {
+  return Array.isArray(packageItem?.revisionEditors)
+    ? packageItem.revisionEditors.filter(id => typeof id === 'string' && id.trim()).map(id => id.trim())
+    : []
+}
+
+function nextRevisionEditors(previous, actor) {
+  const earlier = previous && !['published', 'disabled'].includes(previous.status) ? revisionEditorIds(previous) : []
+  return [...new Set([...earlier, actor.id])]
 }
 
 function nextPackageVersion(version) {
@@ -795,12 +820,13 @@ export function editableScenarioPackageDraft(packageItem, actor) {
  * @param {ScenarioPackageDraft} [previous]
  */
 export function saveScenarioPackageDraft(draft, actor, now, previous) {
-  if (!hasActorId(actor) || draft?.ownerId !== actor.id || (previous && previous.ownerId !== actor.id)) {
-    throw new Error('仅原包所有者可以保存场景技能包草稿')
+  if (!hasActorId(actor) || draft?.ownerId !== (previous?.ownerId || actor.id)) {
+    throw new Error('不能更换原包所有者，仅原创建人或授权管理员可以维护')
   }
-  if (!canAuthorScenarioPackage(actor)) {
+  if (!previous && !canAuthorScenarioPackage(actor)) {
     throw new Error('保存草稿需要创建技能包和跨菜单编排权限')
   }
+  if (!previous && draft.baseUpdatedAt) throw new Error('原场景技能包不存在，请重新打开当前版本')
   if (typeof draft.id !== 'string' || !draft.id.trim()) throw new Error('技能包 ID 不能为空')
   if (typeof draft.name !== 'string' || !draft.name.trim()) throw new Error('请填写技能包名称后保存草稿')
   if (previous && (previous.id !== draft.id || !scenarioPackageActions(previous, actor).includes('edit'))) {
@@ -817,7 +843,8 @@ export function saveScenarioPackageDraft(draft, actor, now, previous) {
     name: draft.name.trim(),
     description: typeof draft.description === 'string' ? draft.description : '',
     targetAudience: typeof draft.targetAudience === 'string' ? draft.targetAudience : '',
-    ownerId: actor.id,
+    ownerId: previous?.ownerId || actor.id,
+    revisionEditors: nextRevisionEditors(previous, actor),
     version: previous ? ['published', 'disabled'].includes(previous.status) ? nextPackageVersion(previous.version) : previous.version : 'v1.0.0',
     status: 'draft',
     onlineStatus: previous?.onlineStatus || (previous?.status === 'published' || previous?.status === 'disabled' ? previous.status : 'unpublished'),
@@ -834,11 +861,17 @@ export function saveScenarioPackageDraft(draft, actor, now, previous) {
 
 /** Apply only lifecycle changes allowed by the current trusted record. */
 export function transitionScenarioPackage(packageItem, actor, action, now) {
-  if (!['disable', 'enable'].includes(action) || !scenarioPackageActions(packageItem, actor).includes(action)) {
+  if (!['disable', 'enable', 'withdraw'].includes(action) || !scenarioPackageActions(packageItem, actor).includes(action)) {
     return { ok: false, reasons: ['当前账号或场景技能包状态不允许此操作'] }
   }
   const result = cloneScenarioTestSnapshot(packageItem)
   result.updatedAt = now
+  if (action === 'withdraw') {
+    result.status = 'draft'
+    result.auditEvents = [...(result.auditEvents || []), { type: 'withdrawn', actorId: actor.id, at: now }]
+    for (const field of ['submittedAt', 'submittedBy', 'submitterId', 'reviewedAt', 'reviewedBy', 'reviewNote', 'approvedAt', 'publishedAt']) delete result[field]
+    return { ok: true, reasons: [], package: result }
+  }
   result.auditEvents = [...(result.auditEvents || []), { type: action === 'disable' ? 'disabled' : 'enabled', actorId: actor.id, at: now }]
   result.publishedSnapshot = scenarioPublishedSnapshot(packageItem)
   result.onlineStatus = action === 'disable' ? 'disabled' : 'published'
@@ -855,8 +888,9 @@ export function transitionScenarioPackage(packageItem, actor, action, now) {
  * @param {ScenarioPackageDraft} [previous]
  */
 export function submitScenarioPackage(draft, actor, now, authoritativeSkills, previous) {
-  if (previous && (previous.ownerId !== actor.id || draft.ownerId !== previous.ownerId)) {
-    throw new Error('仅原包所有者可以重新提交审核')
+  if (!previous && draft?.baseUpdatedAt) throw new Error('原场景技能包不存在，请重新打开当前版本')
+  if (previous && draft?.ownerId !== previous.ownerId) {
+    throw new Error('不能更换原包所有者，仅原创建人或授权管理员可以重新提交审核')
   }
   if (previous && (previous.id !== draft.id || !scenarioPackageActions(previous, actor).includes('edit'))) {
     throw new Error('当前状态或账号不允许修订场景技能包，待审核内容不能编辑')
@@ -865,7 +899,7 @@ export function submitScenarioPackage(draft, actor, now, authoritativeSkills, pr
     throw new Error('场景技能包已更新或缺少编辑版本，请重新打开编辑后提交')
   }
   const rebuilt = rebuildDraftFromCatalog(draft, authoritativeSkills)
-  const policy = evaluatePackageForPublish(rebuilt.draft, actor)
+  const policy = evaluatePackageForPublish(rebuilt.draft, actor, previous)
   const health = evaluatePackageHealth(rebuilt.draft.steps)
   const trial = evaluateScenarioTrialForSubmit(draft, authoritativeSkills)
   const reasons = [...rebuilt.reasons, ...policy.reasons, ...(health.status === 'paused' ? health.explanations : []), ...trial.reasons]
@@ -879,7 +913,8 @@ export function submitScenarioPackage(draft, actor, now, authoritativeSkills, pr
     name: draft.name,
     description: draft.description,
     targetAudience: draft.targetAudience,
-    ownerId: actor.id,
+    ownerId: previous?.ownerId || actor.id,
+    revisionEditors: nextRevisionEditors(previous, actor),
     version: previous ? ['published', 'disabled'].includes(previous.status) ? nextPackageVersion(previous.version) : previous.version : 'v1.0.0',
     onlineStatus: previous?.onlineStatus || (previous?.status === 'published' || previous?.status === 'disabled' ? previous.status : 'unpublished'),
     ...(previous && scenarioPublishedSnapshot(previous) ? { publishedSnapshot: scenarioPublishedSnapshot(previous) } : {}),

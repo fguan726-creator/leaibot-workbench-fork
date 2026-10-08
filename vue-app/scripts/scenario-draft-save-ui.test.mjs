@@ -133,3 +133,40 @@ test('an empty package name cannot create an unidentifiable draft', async () => 
   assert.deepEqual(events, [])
   assert.match(state.displayedValidationErrors.value.join(' '), /技能包名称/)
 })
+
+test('an administrator edits another creator published package without taking its ownership or replacing the live version', async () => {
+  const current = scope()
+  const original = current.store.findPackage('seed-workplace-certification-operations')
+  const before = JSON.parse(JSON.stringify(original))
+  current.account.user = 'editing-admin'
+  current.account.permissions = ['*']
+  const { state, events } = mount(current, { draft: { ...before, baseUpdatedAt: before.updatedAt } })
+  assert.equal(state.canEditDraft.value, true)
+  assert.equal(state.ownerId.value, 'pm-li')
+  assert.equal(state.actor.value.id, 'editing-admin')
+  state.form.value.name = '管理员修订后的技能包'
+  await state.savePackageDraft()
+  assert.equal(events[0]?.[0], 'saved')
+  const saved = current.store.findPackage(before.id)
+  assert.equal(saved.ownerId, 'pm-li')
+  assert.equal(saved.status, 'draft')
+  assert.equal(saved.version, 'v1.0.1')
+  assert.equal(saved.publishedSnapshot.name, before.name)
+  assert.equal(saved.publishedSnapshot.version, 'v1.0.0')
+  assert.equal(saved.onlineStatus, 'published')
+})
+
+test('changing account locks an opened package editor instead of saving under a different actor', async () => {
+  const current = scope()
+  const before = JSON.parse(JSON.stringify(current.store.findPackage('seed-workplace-certification-operations')))
+  current.account.user = 'editing-admin'
+  current.account.permissions = ['*']
+  const { state, events } = mount(current, { draft: { ...before, baseUpdatedAt: before.updatedAt } })
+  assert.equal(state.canEditDraft.value, true)
+  current.account.user = 'another-admin'
+  await nextTick()
+  assert.equal(state.canEditDraft.value, false)
+  await state.savePackageDraft()
+  assert.deepEqual(events, [])
+  assert.equal(current.store.findPackage(before.id).updatedAt, before.updatedAt)
+})

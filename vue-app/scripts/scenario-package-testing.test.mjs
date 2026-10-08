@@ -364,7 +364,7 @@ test('unavailable fixtures and global gates offer cause-specific repair paths wi
     [draftOf(), [{ ...catalog[0], onlineStatus: 'disabled' }, catalog[1]], actor, /返回编排.*不可用.*已发布/],
     [draftOf(), [{ ...catalog[0], online: 'v2.0.0' }, catalog[1]], actor, /返回编排.*线上版本/],
     [{ ...draftOf(), steps: draftOf().steps.map(step => ({ ...step, predecessorId: null })) }, catalog, actor, /返回编排.*连接/],
-    [draftOf(), catalog, scenarioPmActor('not-owner', catalog), /所有者.*账号/],
+    [draftOf(), catalog, scenarioPmActor('not-owner', catalog), /具备编辑权限.*创建者或管理员.*账号/],
     [draftOf(), [{ ...catalog[0], permissions: { ...catalog[0].permissions, data: [] } }, catalog[1]], actor, /权限快照.*重新选择/],
   ]
   for (const [draft, skills, currentActor, repair] of cases) {

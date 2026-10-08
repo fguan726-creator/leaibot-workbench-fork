@@ -33,8 +33,8 @@ const unique = values => [...new Set(values)]
 /** Keep the authoritative cause visible while pointing to an available repair path. */
 function gateSuggestion(reason) {
   if (reason.includes('权限快照')) return `请联系 Skill 管理员补齐提示的权限快照，再返回编排重新选择该 Skill 并试运行。检查项：${reason}`
-  if (reason.includes('权限')) return `请联系管理员核实并补齐以下权限，再使用原所有者账号重新试运行：${reason}`
-  if (/所有者|主责任人|账号/.test(reason)) return '请由技能包所有者使用自己的账号继续编排和试运行，确认场景包归属正确后再提交审核。'
+  if (reason.includes('权限')) return `请联系管理员核实并补齐当前编辑账号的以下权限，再重新试运行：${reason}`
+  if (/所有者|主责任人|账号/.test(reason)) return '请由具备编辑权限的创建者或管理员使用自己的账号继续编排和试运行，保留原创建者后再提交审核。'
   if (/依赖|禁用|撤回|不再发布/.test(reason)) return `返回编排，移除提示的不可用 Skill，选择已发布且可用的 Skill，重新连接链路后再试运行。检查项：${reason}`
   if (/版本/.test(reason)) return `返回编排，重新选择提示的 Skill 以固定当前线上版本，再重新试运行。检查项：${reason}`
   if (/连接|执行链|前序|环路|后继|起点/.test(reason)) return `返回编排，按提示修复节点连接，将全部节点连接为一条无环路、无分叉的执行链后重新试运行。检查项：${reason}`
@@ -80,14 +80,15 @@ export function createScenarioSimulationRequest(draft) {
  * @param {ScenarioSimulationRequest} request
  * @param {ScenarioActor} actor
  * @param {string} [now]
+ * @param {ScenarioDraft} [previous] Trusted stored record for an existing revision.
  * @returns {ScenarioSimulationReport}
  */
-export function runScenarioSimulation(draft, skills, request, actor, now = new Date().toISOString()) {
+export function runScenarioSimulation(draft, skills, request, actor, now = new Date().toISOString(), previous) {
   const copiedRequest = normalizeScenarioSimulationRequest(request)
   const fingerprint = getScenarioTestFingerprint(draft, skills, copiedRequest)
   const rebuilt = rebuildDraftFromCatalog(draft, skills)
   const resolved = resolveScenarioChain(rebuilt.draft.steps)
-  const policy = evaluatePackageForPublish(rebuilt.draft, actor)
+  const policy = evaluatePackageForPublish(rebuilt.draft, actor, previous)
   const health = evaluatePackageHealth(resolved.steps)
   const gateIssues = unique([
     ...rebuilt.reasons, ...policy.reasons,

@@ -14,6 +14,7 @@ const props = defineProps<{
   modelValue: ScenarioSimulationRequest
   report: ScenarioSimulationReport | null
   disabled?: boolean
+  simulate?: (draft: ScenarioSkillPackageDraft, request: ScenarioSimulationRequest, actor: ScenarioPackageActor) => ScenarioSimulationReport
 }>()
 const emit = defineEmits<{
   'update:modelValue': [request: ScenarioSimulationRequest]
@@ -91,7 +92,9 @@ async function runTrial(requestOverride?: ScenarioSimulationRequest) {
     // Give the simulated run a visible working state before replacing its result.
     await new Promise(resolve => setTimeout(resolve, 200))
     if (sequence !== runSequence || props.disabled) return
-    const report = runScenarioSimulation(clone(props.draft), clone(props.skills), request, clone(props.actor))
+    const report = props.simulate
+      ? props.simulate(clone(props.draft), request, clone(props.actor))
+      : runScenarioSimulation(clone(props.draft), clone(props.skills), request, clone(props.actor))
     activeNodeId.value = report.nodes.find(nodeHasError)?.id || orderedSteps.value[0]?.id || ''
     emit('update:report', report)
   } catch (cause) {
