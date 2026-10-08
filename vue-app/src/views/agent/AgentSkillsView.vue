@@ -200,6 +200,15 @@
       </div>
 
       <div class="scenario-package-list-workspace" data-flow-role="list-workspace">
+        <details class="scenario-package-edit-rules">
+          <summary>编辑规则</summary>
+          <ul>
+            <li>未发布的草稿、驳回内容：由具备创建及跨菜单编排权限的创建者编辑。</li>
+            <li>已发布、已禁用及其草稿或驳回修订：具备相应权限的创建者或管理员可编辑，原创建者不变；新版审核前，线上版本保持原状态。</li>
+            <li>待审核内容不可直接编辑；具备相应权限的创建者或本轮提交人可先撤回。</li>
+            <li>修改后需重新试运行并提审；创建者、提交人及本轮编辑者均不能自审。</li>
+          </ul>
+        </details>
         <div class="scenario-package-toolbar">
           <input v-model="packageKeyword" type="search" aria-label="搜索场景技能包" placeholder="搜索名称、场景描述或主责任人">
           <select v-model="packageStatusFilter" aria-label="场景技能包状态" @change="packageSummaryFilter = 'all'">
@@ -272,6 +281,7 @@
                       <button v-if="hasPackageAction(packageItem, 'disable')" class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'disable')">禁用</button>
                       <button v-if="hasPackageAction(packageItem, 'enable')" class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'enable')">启用</button>
                     </div>
+                    <p v-if="!hasPackageAction(packageItem, 'edit')" class="scenario-package-edit-hint">{{ packageEditGuidance(packageItem).summary }}</p>
                   </td>
                 </tr>
                 <tr v-if="!filteredScenarioPackages.length">
@@ -403,6 +413,11 @@
             <div v-if="packageDetailItem.reviewedAt"><dt>审核时间</dt><dd>{{ formatPackageUpdatedAt(packageDetailItem.reviewedAt) }}</dd></div>
             <div v-if="packageDetailItem.reviewNote"><dt>审核意见</dt><dd>{{ packageDetailItem.reviewNote }}</dd></div>
           </dl>
+
+          <section class="scenario-package-detail-section scenario-package-edit-guidance">
+            <h4>当前账号编辑说明</h4>
+            <p>{{ packageEditGuidance(packageDetailItem).detail }}</p>
+          </section>
 
           <section class="scenario-package-detail-section">
             <h4>固定版本链路</h4>
@@ -1183,6 +1198,51 @@ function hasPackageAction(packageItem: ScenarioSkillPackage, action: ScenarioPac
   return scenarioStore.actionsFor(packageItem.id, packageActor.value).includes(action)
 }
 
+function packageEditGuidance(packageItem: ScenarioSkillPackage) {
+  const actions = scenarioStore.actionsFor(packageItem.id, packageActor.value)
+  const actorId = packageActor.value.id
+  const isOwner = Boolean(actorId && actorId === packageItem.ownerId)
+  const hasPublishedVersion = Boolean(packageItem.publishedSnapshot) || ['published', 'disabled'].includes(packageItem.status)
+  if (actions.includes('edit')) {
+    return {
+      summary: hasPublishedVersion ? '可编辑修订' : '可编辑',
+      detail: hasPublishedVersion
+        ? '当前账号可编辑该技能包的修订，原创建者不变。保存、试运行并重新提审后，由未参与本轮修改的其他管理员审核；审核前，线上版本保持原状态。'
+        : '当前账号可编辑此草稿或驳回内容，完成试运行后重新提交审核；须由其他管理员审核。'
+    }
+  }
+  if (packageItem.status === 'review') {
+    if (actions.includes('withdraw')) {
+      return {
+        summary: '待审核暂不可编辑，可先撤回',
+        detail: `你是${isOwner ? '创建者' : '本轮提交人'}，可先撤回审核。撤回后回到草稿；继续编辑和提审仍需具备该内容的编辑权限。撤回不改变线上版本的启停状态；本人不能审核自己的内容。`
+      }
+    }
+    const canReview = actions.includes('approve') && actions.includes('reject')
+    const editedByActor = Boolean(actorId && packageItem.revisionEditors?.includes(actorId))
+    return {
+      summary: '待审核暂不可编辑',
+      detail: canReview
+        ? '当前账号可审批或驳回，不能直接编辑待审核内容。如需修改，应先由具备相应权限的创建者或本轮提交人撤回。'
+        : editedByActor && packageRole.value === 'admin'
+          ? '你参与了本轮编辑，不能审核自己的修改。待审核内容暂不可编辑，需由具备相应权限的创建者或本轮提交人撤回后修改。'
+          : '待审核内容暂不可编辑，当前账号没有撤回或审核权限。需由具备相应权限的创建者或本轮提交人撤回后修改。'
+    }
+  }
+  if (['draft', 'rejected'].includes(packageItem.status) && !hasPublishedVersion && !isOwner) {
+    return {
+      summary: '未发布内容，仅创建者可编辑',
+      detail: '此技能包尚未发布，草稿或驳回内容由具备创建及跨菜单编排权限的创建者维护。当前账号仅可查看。'
+    }
+  }
+  return {
+    summary: '当前账号无编辑权限',
+    detail: isOwner
+      ? '当前账号是创建者，但缺少所需的编辑权限。需具备创建及跨菜单编排权限后，再按当前状态编辑。'
+      : '已发布技能包及其修订可由具备相应权限的创建者或管理员维护，当前账号没有编辑权限。'
+  }
+}
+
 function openPackageDetail(packageItem: ScenarioSkillPackage, event?: MouseEvent, mode: PackageDetailMode = 'detail') {
   if (packageReviewBusy.value || (mode !== 'detail' && !hasPackageAction(packageItem, mode))) return
   packageDetailTrigger = typeof HTMLButtonElement !== 'undefined' && event?.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null
@@ -1694,6 +1754,45 @@ onBeforeUnmount(() => {
 .scenario-package-table th:nth-child(7) { width: 10%; }
 .scenario-package-table th:last-child { width: 216px; }
 .scenario-package-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+.scenario-package-edit-hint {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.scenario-package-edit-rules {
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+}
+
+.scenario-package-edit-rules summary {
+  width: fit-content;
+  color: var(--color-primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.scenario-package-edit-rules summary:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.scenario-package-edit-rules ul {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
 
 .scenario-package-table tbody tr:last-child td {
   border-bottom: 0;

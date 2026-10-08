@@ -126,6 +126,75 @@ function rowActions(html, id) {
   return [...row.matchAll(/<button\b[^>]*>(.*?)<\/button>/g)].map(match => match[1].trim())
 }
 
+test('package editing rules are discoverable while each unavailable edit has a visible reason', async () => {
+  const { html, record, dialog } = await fixture({ status: 'draft', mode: 'detail' })
+  assert.match(html, /<details class="scenario-package-edit-rules"[^>]*><summary[^>]*>编辑规则<\/summary>/)
+  assert.doesNotMatch(html, /<details class="scenario-package-edit-rules"[^>]*\bopen\b/)
+  for (const text of ['未发布的草稿、驳回内容', '已发布、已禁用及其草稿或驳回修订', '本轮提交人可先撤回', '本轮编辑者均不能自审']) assert.ok(html.includes(text))
+  const row = packageRowHtml(html, record.id)
+  assert.match(row, /<p class="scenario-package-edit-hint"[^>]*>未发布内容，仅创建者可编辑<\/p>/)
+  assert.deepEqual(rowActions(html, record.id), ['详情'])
+  assert.match(dialog, /当前账号编辑说明/)
+  assert.match(dialog, /此技能包尚未发布/)
+})
+
+test('editing guidance follows actual owner and revision actions without changing permissions', async () => {
+  for (const status of ['draft', 'rejected', 'published', 'disabled']) {
+    for (const actor of ['pm-li', reviewer.id, 'read-only-viewer']) {
+      const permissions = actor === 'pm-li' ? creationPermissions : actor === reviewer.id ? reviewer.permissions : []
+      const { state, record, html, store } = await fixture({ actor, permissions, status })
+      const canEdit = store.actionsFor(record.id, { id: actor, permissions }).includes('edit')
+      assert.equal(packageRowHtml(html, record.id).includes('scenario-package-edit-hint'), !canEdit)
+      const guidance = state.packageEditGuidance(record)
+      if (canEdit) assert.match(guidance.detail, /当前账号可编辑/)
+      else if (['draft', 'rejected'].includes(status)) assert.match(guidance.detail, /由具备创建及跨菜单编排权限的创建者维护/)
+      else assert.match(guidance.detail, /当前账号没有编辑权限/)
+    }
+  }
+  const revision = await fixture({ prepare: async context => {
+    await submitPublishedRevision(context)
+    seedDraft(context.store, context.recordId)
+  } })
+  assert.match(revision.state.packageEditGuidance(revision.record).detail, /当前账号可编辑该技能包的修订/)
+  assert.match(revision.state.packageEditGuidance(revision.record).detail, /线上版本保持原状态/)
+  revision.account.user = revision.record.ownerId
+  revision.account.permissions = []
+  await nextTick()
+  assert.match(revision.state.packageEditGuidance(revision.record).detail, /当前账号是创建者，但缺少所需的编辑权限/)
+})
+
+test('pending guidance distinguishes withdrawal, independent review, contributors and lost permissions', async () => {
+  const creator = await fixture({ actor: 'pm-li', permissions: creationPermissions, mode: 'detail' })
+  assert.match(packageRowHtml(creator.html, creator.record.id), /待审核暂不可编辑，可先撤回/)
+  assert.match(creator.dialog, /你是创建者，可先撤回审核/)
+  const reviewOnlyCreator = await fixture({ actor: 'pm-li', permissions: reviewer.permissions, mode: 'detail' })
+  assert.match(reviewOnlyCreator.dialog, /继续编辑和提审仍需具备该内容的编辑权限/)
+  assert.deepEqual(rowActions(reviewOnlyCreator.html, reviewOnlyCreator.record.id), ['详情', '撤回'])
+  assert.equal(reviewOnlyCreator.store.withdrawPackage(reviewOnlyCreator.record.id, { id: 'pm-li', permissions: reviewer.permissions }, reviewOnlyCreator.record.updatedAt).ok, true)
+  assert.deepEqual(reviewOnlyCreator.store.actionsFor(reviewOnlyCreator.record.id, { id: 'pm-li', permissions: reviewer.permissions }), ['view'])
+  const reviewerView = await fixture({ mode: 'detail' })
+  assert.match(reviewerView.dialog, /当前账号可审批或驳回/)
+  for (const submitted of [true, false]) {
+    const current = await fixture({ actor: 'revision-admin', permissions: reviewer.permissions, mode: 'detail', prepare: ({ store, recordId }) => {
+      const records = copy(store.packages)
+      const pending = records.find(item => item.id === recordId)
+      pending.revisionEditors = ['revision-admin']
+      if (submitted) {
+        pending.submittedBy = 'revision-admin'
+        pending.auditEvents.at(-1).actorId = 'revision-admin'
+      }
+      seedScenarioPackagesForTest(store, records)
+    } })
+    assert.match(current.dialog, submitted ? /你是本轮提交人，可先撤回审核/ : /你参与了本轮编辑，不能审核自己的修改/)
+    current.account.permissions = []
+    await nextTick()
+    const updated = await current.renderCurrent()
+    assert.match(updated.dialog, /当前账号没有撤回或审核权限/)
+    assert.doesNotMatch(updated.dialog, /当前账号可审批或驳回|你是本轮提交人，可先撤回审核/)
+    assert.deepEqual(rowActions(updated.html, current.record.id), ['详情'])
+  }
+})
+
 test('a creator confirms withdrawal before a pending package becomes editable', async () => {
   const { state, record, store, notices } = await fixture({ actor: 'pm-li', permissions: creationPermissions })
   state.openPackageDetail(record, undefined, 'withdraw')
