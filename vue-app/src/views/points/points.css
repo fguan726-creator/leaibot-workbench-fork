@@ -69,7 +69,7 @@
 .points-field .form-input::placeholder {
   color: var(--color-text-tertiary);
 }
-.points-field .form-input:not(:disabled):not([readonly]):not(:focus):hover {
+.points-field .form-input:not(:disabled):not([readonly]):not(:focus):not([aria-invalid="true"]):hover {
   border-color: var(--color-primary-border);
 }
 .points-field .form-input:focus {
@@ -97,7 +97,7 @@
   background-color: var(--color-surface) !important;
   box-shadow: none !important;
 }
-.points-field .form-input[type="date"]:not(:disabled):not([readonly]):not(:focus):hover {
+.points-field .form-input[type="date"]:not(:disabled):not([readonly]):not(:focus):not([aria-invalid="true"]):hover {
   border-color: var(--color-primary-border) !important;
   box-shadow: none !important;
 }
@@ -112,6 +112,8 @@
 }
 .points-field .form-input[type="date"]:disabled {
   cursor: not-allowed !important;
+  border-color: var(--color-border) !important;
+  box-shadow: none !important;
 }
 .points-field .form-input[type="date"][aria-invalid="true"] {
   border-color: var(--color-danger) !important;
