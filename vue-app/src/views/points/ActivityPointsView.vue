@@ -13,6 +13,7 @@ import FeedbackState from '@/components/content/FeedbackState.vue'
 import ActivityPointsEditor from './ActivityPointsEditor.vue'
 import ActivityPointsDetail from './ActivityPointsDetail.vue'
 import PointsDialog from './PointsDialog.vue'
+import PointsSelect from './PointsSelect.vue'
 import { useActivityPointsDemo } from './useActivityPointsDemo'
 import { canUseActivityPoints, type ActivityPointsAction } from '@/services/activityPointsAccess'
 import {
@@ -385,11 +386,13 @@ watch(
                 class="form-input"
                 type="search"
                 placeholder="输入名称或编号"
-              /></label><label class="points-field">累计方式<select v-model="mode" class="form-input">
-                <option value="all">全部累计方式</option>
-                <option value="quantity">满台数</option>
-                <option value="amount">满金额</option>
-              </select></label><label class="points-field">活动查询开始日期<input v-model="start" class="form-input" type="date" /></label><label class="points-field">活动查询结束日期<input v-model="end" class="form-input" type="date"/></label>
+              /></label>
+              <PointsSelect
+                v-model="mode"
+                label="累计方式"
+                :options="[{ value: 'all', label: '全部累计方式' }, { value: 'quantity', label: '满台数' }, { value: 'amount', label: '满金额' }]"
+              />
+              <label class="points-field">活动查询开始日期<input v-model="start" class="form-input" type="date" /></label><label class="points-field">活动查询结束日期<input v-model="end" class="form-input" type="date"/></label>
               <div class="points-actions points-filter-actions">
                 <span class="points-muted">条件变更后实时筛选</span><button class="btn btn-secondary" @click="resetFilters">重置筛选</button>
               </div>

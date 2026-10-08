@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import SectionHeader from '@/components/content/SectionHeader.vue'
 import PointsDialog from './PointsDialog.vue'
+import PointsSelect from './PointsSelect.vue'
 import {
   activeProducts,
   checkProductCodes,
@@ -149,10 +150,13 @@ function save(draft: boolean) {
         </div>
       </section>
       <section class="points-section">
-        <SectionHeader title="参与商品" /><label class="points-field">商品选择方式<select v-model="activity.productMode" class="form-input">
-          <option value="codes">按商品编码选择</option>
-          <option value="filter">FA 与产品组取交集</option>
-        </select></label>
+        <SectionHeader title="参与商品" />
+        <PointsSelect
+          :model-value="activity.productMode"
+          label="商品选择方式"
+          :options="[{ value: 'codes', label: '按商品编码选择' }, { value: 'filter', label: 'FA 与产品组取交集' }]"
+          @update:model-value="activity.productMode = $event as Activity['productMode']"
+        />
         <div v-if="activity.productMode === 'codes'" class="points-code-entry">
           <label class="points-field">商品编码（必填）<textarea
             ref="codeField"
@@ -187,15 +191,8 @@ function save(draft: boolean) {
           </p>
         </div>
         <div v-else class="points-fields">
-          <label class="points-field">FA<select v-model="activity.fa" class="form-input">
-            <option v-for="fa in ['全部', 'ThinkPad', 'ThinkCentre', 'ThinkBook']" :key="fa">
-              {{ fa }}
-            </option>
-          </select></label><label class="points-field">产品组<select v-model="activity.group" class="form-input">
-            <option v-for="group in ['全部', '笔记本', '台式机']" :key="group">
-              {{ group }}
-            </option>
-          </select></label>
+          <PointsSelect v-model="activity.fa" label="FA" :options="['全部', 'ThinkPad', 'ThinkCentre', 'ThinkBook'].map((value) => ({ value, label: value }))" />
+          <PointsSelect v-model="activity.group" label="产品组" :options="['全部', '笔记本', '台式机'].map((value) => ({ value, label: value }))" />
         </div>
         <div v-if="activity.productMode === 'filter'" class="points-code-entry">
           <label class="points-field">排除商品编码（选填）<textarea
@@ -242,10 +239,14 @@ function save(draft: boolean) {
         </div>
       </section>
       <section class="points-section">
-        <SectionHeader title="累计方式与档位" /><label class="points-field">累计方式<select v-model="activity.mode" class="form-input" @change="changeMode">
-          <option value="quantity">满台数</option>
-          <option value="amount">满金额</option>
-        </select></label>
+        <SectionHeader title="累计方式与档位" />
+        <PointsSelect
+          :model-value="activity.mode"
+          label="累计方式"
+          :options="[{ value: 'quantity', label: '满台数' }, { value: 'amount', label: '满金额' }]"
+          @update:model-value="activity.mode = $event as Activity['mode']"
+          @change="changeMode"
+        />
         <div v-for="(tier, index) in activity.tiers" :key="index" class="points-tier-row">
           <label class="points-field">第 {{ index + 1 }} 档门槛（{{ activity.mode === 'quantity' ? '台' : '元' }}）<input
             v-model.number="tier.threshold"
@@ -291,10 +292,13 @@ function save(draft: boolean) {
             type="number"
             min="1"
             max="90"
-          /></label><label class="points-field">日历类型<select v-model="activity.calendar" class="form-input">
-            <option value="natural">自然日</option>
-            <option value="weekday">周一至周五（演示）</option>
-          </select></label>
+          /></label>
+          <PointsSelect
+            :model-value="activity.calendar"
+            label="日历类型"
+            :options="[{ value: 'natural', label: '自然日' }, { value: 'weekday', label: '周一至周五（演示）' }]"
+            @update:model-value="activity.calendar = $event as Activity['calendar']"
+          />
         </div>
         <div class="points-notice">
           <strong>计划发放：{{ planned }} 10:00</strong>

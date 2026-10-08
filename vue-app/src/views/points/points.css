@@ -51,13 +51,73 @@
   min-width: 0;
   color: var(--color-text-secondary);
   font-size: var(--text-sm, 13px);
+  line-height: 1.5;
 }
 .points-field .form-input {
   width: 100%;
   min-width: 0;
-  height: 36px;
+  height: var(--control-height-md, 36px);
+  padding: 0 var(--space-3, 12px);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
   font-size: var(--text-sm, 13px);
   border-radius: var(--radius-md);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.points-field .form-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+.points-field .form-input:not(:disabled):not([readonly]):not(:focus):hover {
+  border-color: var(--color-primary-border);
+}
+.points-field .form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+.points-field .form-input:disabled,
+.points-field .form-input[readonly] {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+.points-field .form-input:disabled {
+  cursor: not-allowed;
+}
+.points-field .form-input[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+.points-field .form-input[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--color-danger-subtle);
+}
+/* Limit compatibility with the legacy global date !important rules to points forms. */
+.points-field .form-input[type="date"] {
+  border-radius: var(--radius-md) !important;
+  background-color: var(--color-surface) !important;
+  box-shadow: none !important;
+}
+.points-field .form-input[type="date"]:not(:disabled):not([readonly]):not(:focus):hover {
+  border-color: var(--color-primary-border) !important;
+  box-shadow: none !important;
+}
+.points-field .form-input[type="date"]:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+.points-field .form-input[type="date"]:disabled,
+.points-field .form-input[type="date"][readonly] {
+  background-color: var(--color-surface-muted) !important;
+  color: var(--color-text-secondary) !important;
+}
+.points-field .form-input[type="date"]:disabled {
+  cursor: not-allowed !important;
+}
+.points-field .form-input[type="date"][aria-invalid="true"] {
+  border-color: var(--color-danger) !important;
+}
+.points-field .form-input[type="date"][aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--color-danger-subtle) !important;
 }
 .points-field-full {
   grid-column: 1/-1;
@@ -69,11 +129,9 @@
 }
 .points-field .points-code-input {
   height: auto;
+  padding-block: var(--space-2, 8px);
   resize: vertical;
   line-height: 1.65;
-}
-.points-field .points-code-input[aria-invalid="true"] {
-  border-color: var(--color-danger);
 }
 .points-code-feedback,
 .points-code-examples {

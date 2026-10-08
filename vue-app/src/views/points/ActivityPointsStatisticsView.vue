@@ -12,6 +12,7 @@ import Pagination from '@/components/content/Pagination.vue'
 import FeedbackState from '@/components/content/FeedbackState.vue'
 import StatusTag from '@/components/content/StatusTag.vue'
 import PointsDialog from './PointsDialog.vue'
+import PointsSelect from './PointsSelect.vue'
 import { useActivityPointsDemo, exportPointsCsv } from './useActivityPointsDemo'
 import { canUseActivityPoints } from '@/services/activityPointsAccess'
 import { activityStatus, payoutDate, ordersFor, number as n } from '@/services/activityPoints'
@@ -38,6 +39,16 @@ const initialActivity = () =>
   state.activities[0]?.id ||
   ''
 const activityId = ref(initialActivity())
+const activityOptions = computed(() => state.activities.map((item) => ({
+  value: item.id,
+  label: `${item.name}（${activityStatus(item, state.date)}）`,
+  description: item.id,
+  keywords: item.id
+})))
+const statusOptions = [
+  { value: '', label: '全部状态' },
+  ...statisticsStatuses.map((status) => ({ value: status, label: status }))
+]
 const activity = computed(() => state.activities.find((a) => a.id === activityId.value))
 const accumulating = computed(() => !!activity.value && state.date <= activity.value.end)
 const activityPointsLabel = computed(() => accumulating.value ? '预计活动积分' : '应发活动积分')
@@ -347,11 +358,13 @@ watch(
         <div class="points-list-workspace" data-flow-role="list-workspace">
           <div class="points-filter">
             <div class="points-filter-grid">
-              <label class="points-field">活动<select v-model="activityId" class="form-input">
-                <option v-for="item in state.activities" :key="item.id" :value="item.id">
-                  {{ item.name }}（{{ activityStatus(item, state.date) }}）
-                </option>
-              </select></label>
+              <PointsSelect
+                v-model="activityId"
+                label="活动"
+                :options="activityOptions"
+                searchable
+                placeholder="输入活动名称或编号检索"
+              />
               <label class="points-field">企业名称 / 标识<input
                 v-model="filters.enterprise"
                 class="form-input"
@@ -379,10 +392,12 @@ watch(
                 /></label>
                 <label class="points-field">付款开始日期<input v-model="filters.start" class="form-input" type="date"/></label>
                 <label class="points-field">付款结束日期<input v-model="filters.end" class="form-input" type="date"/></label>
-                <label class="points-field">发放状态<select v-model="filters.status" class="form-input">
-                  <option value="">全部状态</option>
-                  <option v-for="status in statisticsStatuses" :key="status">{{ status }}</option>
-                </select></label>
+                <PointsSelect
+                  :model-value="filters.status || ''"
+                  label="发放状态"
+                  :options="statusOptions"
+                  @update:model-value="filters.status = $event"
+                />
               </template>
               <div class="points-actions points-filter-actions">
                 <span class="points-muted">条件变更后实时筛选</span>
