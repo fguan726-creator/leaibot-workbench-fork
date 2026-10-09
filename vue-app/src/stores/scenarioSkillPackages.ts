@@ -105,6 +105,7 @@ export interface ScenarioSkillPackage {
   publishedAt?: string
   submittedAt?: string
   submittedBy?: string
+  revisionEditors?: string[]
   reviewedBy?: string
   reviewedAt?: string
   reviewNote?: string
@@ -132,7 +133,7 @@ export interface ScenarioPackageActor {
   permissions: string[] | (Partial<ScenarioSkillPermissionSnapshot> & { policy?: string[] })
 }
 
-export type ScenarioPackageAction = 'view' | 'edit' | 'approve' | 'reject' | 'disable' | 'enable'
+export type ScenarioPackageAction = 'view' | 'edit' | 'withdraw' | 'approve' | 'reject' | 'disable' | 'enable'
 export interface ScenarioPackageMutationResult {
   ok: boolean
   reasons: string[]
@@ -438,6 +439,8 @@ function isUnchangedLegacyAuthorSeed(item: ScenarioSkillPackage, defaults: Scena
   // This is the historical V1 review identity, not a role inferred from a username.
   const reviewerId = item.ownerId === 'admin' ? 'zhangrui' : 'admin'
   const restoreLegacyIdentity = (record: ScenarioSkillPackage) => {
+    // Released V1 seeds predate revision-editor tracking; retain their exact historical shape.
+    delete record.revisionEditors
     record.id = item.id
     record.ownerId = item.ownerId
     if (specialReview) record.name = '职场客户协同（待审核）'
@@ -499,6 +502,7 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
   function clonePackage(packageItem: ScenarioSkillPackage): ScenarioSkillPackage {
     return {
       ...packageItem,
+      revisionEditors: packageItem.revisionEditors ? [...packageItem.revisionEditors] : undefined,
       publishedSnapshot: packageItem.publishedSnapshot ? clonePackage(packageItem.publishedSnapshot) : undefined,
       testReport: cloneScenarioTestSnapshot(packageItem.testReport),
       testRequest: cloneScenarioTestSnapshot(packageItem.testRequest),
@@ -600,9 +604,12 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     return editableScenarioPackageDraft(findPackage(id), actor) as (ScenarioSkillPackageDraft & { baseUpdatedAt: string }) | null
   }
 
-  function changeLifecycle(id: string, actor: ScenarioPackageActor, action: 'disable' | 'enable'): ScenarioPackageMutationResult {
+  function changeLifecycle(id: string, actor: ScenarioPackageActor, action: 'disable' | 'enable' | 'withdraw', expectedUpdatedAt?: string): ScenarioPackageMutationResult {
     const current = storedPackages.value.find(item => item.id === id)
     if (!current) return { ok: false, reasons: ['场景技能包不存在'] }
+    if (action === 'withdraw' && (!expectedUpdatedAt || expectedUpdatedAt !== current.updatedAt)) {
+      return { ok: false, reasons: ['场景技能包已更新，请重新打开当前版本后撤回'] }
+    }
     const result = transitionScenarioPackage(current, actor, action, nextWriteTime(current)) as ScenarioPackageMutationResult
     if (!result.ok || !result.package) return result
     const next = result.package
@@ -616,6 +623,7 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
 
   const disablePackage = (id: string, actor: ScenarioPackageActor) => changeLifecycle(id, actor, 'disable')
   const enablePackage = (id: string, actor: ScenarioPackageActor) => changeLifecycle(id, actor, 'enable')
+  const withdrawPackage = (id: string, actor: ScenarioPackageActor, expectedUpdatedAt: string) => changeLifecycle(id, actor, 'withdraw', expectedUpdatedAt)
 
   function evaluateDraft(draft: ScenarioSkillPackageDraft, actor: ScenarioPackageActor): ScenarioDraftEvaluation {
     const rebuilt = rebuildDraftFromCatalog(draft, selectableSkills.value) as {
@@ -625,7 +633,8 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     const eligibilityReasons = rebuilt.reasons
     const resolved = resolveScenarioChain(rebuilt.draft.steps)
     const reconciledDraft = { ...rebuilt.draft, steps: resolved.steps } as ScenarioSkillPackageDraft
-    const policy = evaluatePackageForPublish(reconciledDraft, actor) as ScenarioPackagePolicyEvaluation
+    const current = storedPackages.value.find(item => item.id === draft.id)
+    const policy = evaluatePackageForPublish(reconciledDraft, actor, current) as ScenarioPackagePolicyEvaluation
     const health = evaluatePackageHealth(reconciledDraft.steps) as ScenarioPackageHealth
     const reasons = [...new Set([
       ...eligibilityReasons,
@@ -641,6 +650,11 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
       policy,
       health
     }
+  }
+
+  function simulateDraft(draft: ScenarioSkillPackageDraft, request: ScenarioSimulationRequest, actor: ScenarioPackageActor): ScenarioSimulationReport {
+    const current = storedPackages.value.find(item => item.id === draft.id)
+    return runScenarioSimulation(draft, selectableSkills.value, request, actor, new Date().toISOString(), current)
   }
 
   function saveDraft(draft: ScenarioSkillPackageDraft, actor: ScenarioPackageActor): ScenarioSkillPackage {
@@ -738,6 +752,8 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     selectableSkills,
     actionsFor,
     editableDraft,
+    withdrawPackage,
+    simulateDraft,
     disablePackage,
     enablePackage,
     evaluateDraft,

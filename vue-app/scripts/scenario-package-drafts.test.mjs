@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import * as domain from '../src/domain/scenarioSkillPackages.js'
@@ -16,7 +17,7 @@ globalThis.localStorage = {
   setItem(name, value) { if (failWrite) throw new Error('QuotaExceededError'); data.set(name, value) },
   removeItem: name => data.delete(name)
 }
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
 const [{ useScenarioSkillPackagesStore }, { useSkillHubStore }, { useAppStore }] = await Promise.all([
   server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts'), server.ssrLoadModule('/src/stores/skillHub.ts'), server.ssrLoadModule('/src/stores/app.ts')
 ])
@@ -87,15 +88,15 @@ test('first published revision save increments once and retains its trusted runn
   assert.equal(saved.status, 'draft'); assert.equal(saved.version, 'v1.0.1'); assert.equal(saved.onlineStatus, 'published')
   assert.deepEqual(copy(saved.publishedSnapshot), snapshot)
   assert.equal(store.prepareRunPlan(published.id, owner).version, 'v1.0.0')
-  assert.deepEqual(store.actionsFor(published.id, reviewer), ['view', 'disable'])
+  assert.deepEqual(store.actionsFor(published.id, reviewer), ['view', 'edit', 'disable'])
   const again = store.saveDraft(store.editableDraft(published.id, owner), owner)
   assert.equal(again.version, 'v1.0.1')
   const queued = store.submitDraft(trial(store.editableDraft(published.id, owner), store), owner)
   assert.equal(queued.version, 'v1.0.1'); assert.equal(queued.publishedSnapshot.version, 'v1.0.0')
-  assert.deepEqual(store.actionsFor(published.id, owner), ['view'])
+  assert.deepEqual(store.actionsFor(published.id, owner), ['view', 'withdraw'])
   assert.throws(() => store.saveDraft({ ...editing, baseUpdatedAt: queued.updatedAt }, owner), /状态|审核/)
   assert.throws(() => store.approvePackage(published.id, owner), /本人|其他管理员/)
-  assert.equal(store.withdrawPackage, undefined)
+  assert.equal(store.withdrawPackage(published.id, reviewer, queued.updatedAt).ok, false)
 })
 
 test('saved disabled revisions stay disabled through review and preserve the same revision after rejection', () => {
@@ -136,7 +137,7 @@ test('saved state survives recreation and account switching without changing own
   reloaded.store.saveDraft({ ...reloaded.store.editableDraft(draft.id, owner), ...draft }, owner)
   reloaded.store.submitDraft(trial(reloaded.store.editableDraft(draft.id, owner), reloaded.store), owner)
   const reviewed = fixture(false, reviewer.id)
-  assert.deepEqual(reviewed.store.actionsFor(draft.id, owner), ['view'])
+  assert.deepEqual(reviewed.store.actionsFor(draft.id, owner), ['view', 'withdraw'])
   assert.deepEqual(reviewed.store.actionsFor(draft.id, reviewer), ['view', 'approve', 'reject'])
   reviewed.store.approvePackage(draft.id, reviewer)
   assert.equal(fixture(false).store.prepareRunPlan(draft.id, owner).status, 'ready')
@@ -169,6 +170,80 @@ test('separate page instances cannot overwrite a newer saved revision and preser
   assert.equal(reloaded.findPackage('another-package').name, '独立场景')
   reloaded.resetToInitialMock()
   assert.throws(() => second.store.saveDraft(second.store.editableDraft(draft.id, owner), owner), /已更新|重新打开/)
+})
+
+test('administrator revisions preserve ownership, contributors and runtime through storage while using the actual simulation actor', () => {
+  const { store, published } = publishedFixture()
+  const editor = { id: 'maintenance-admin', permissions: ['scenario-package:review', ...owner.permissions.filter(value => !['scenario-package:create', 'scenario-package:compose:cross-menu'].includes(value))] }
+  const editing = store.editableDraft(published.id, editor)
+  assert.equal(store.evaluateDraft(editing, editor).ok, true)
+  const request = trial(editing, store).testRequest
+  const simulated = store.simulateDraft(editing, request, editor)
+  assert.notEqual(simulated.status, 'blocked')
+  assert.equal(simulated.testerId, editor.id)
+  const missingReferences = store.simulateDraft(editing, request, reviewer)
+  assert.equal(missingReferences.status, 'blocked')
+  assert.ok(missingReferences.issues.some(reason => /引用权限|元数据读取权限/.test(reason)))
+  const saved = store.saveDraft({ ...editing, name: '管理员保存的修订' }, editor)
+  assert.equal(saved.ownerId, owner.id)
+  assert.deepEqual(saved.revisionEditors, [editor.id])
+  const reloaded = fixture(false).store
+  assert.equal(reloaded.findPackage(published.id).ownerId, owner.id)
+  assert.deepEqual(reloaded.findPackage(published.id).revisionEditors, [editor.id])
+  assert.equal(reloaded.prepareRunPlan(published.id, owner).version, published.version)
+  const revised = reloaded.editableDraft(published.id, editor)
+  const retested = reloaded.simulateDraft(revised, request, editor)
+  const submitted = reloaded.submitDraft({ ...revised, testRequest: request, testReport: retested }, editor)
+  assert.equal(submitted.ownerId, owner.id)
+  assert.equal(submitted.submittedBy, editor.id)
+  assert.equal(reloaded.reviewDecision(published.id, editor).ok, false)
+  assert.equal(reloaded.withdrawPackage(published.id, editor, submitted.updatedAt).ok, true)
+  assert.equal(reloaded.findPackage(published.id).version, 'v1.0.1')
+})
+
+test('administrator stale saves and withdrawals cannot overwrite a newer page instance', () => {
+  const { store, published } = publishedFixture()
+  const editor = { id: 'maintenance-admin', permissions: ['*'] }
+  const oldEdit = store.editableDraft(published.id, editor)
+  const second = fixture(false).store
+  second.saveDraft({ ...second.editableDraft(published.id, owner), name: '创建者的新修订' }, owner)
+  assert.throws(() => store.saveDraft({ ...oldEdit, name: '过期管理员修订' }, editor), /已更新|重新打开/)
+  assert.equal(fixture(false).store.findPackage(published.id).name, '创建者的新修订')
+  const review = second.submitDraft(trial(second.editableDraft(published.id, owner), second), owner)
+  const another = fixture(false).store
+  assert.equal(another.withdrawPackage(published.id, owner, review.updatedAt).ok, true)
+  another.submitDraft(trial(another.editableDraft(published.id, owner), another), owner)
+  assert.equal(second.withdrawPackage(published.id, owner, review.updatedAt).ok, false)
+  assert.equal(fixture(false).store.findPackage(published.id).status, 'review')
+})
+
+for (const surface of ['findPackage', 'packages', 'saveDraft result']) {
+  test(`${surface} contributor history is detached from the trusted edit and approval record`, () => {
+    const { store, published } = publishedFixture()
+    const editor = { id: 'maintenance-admin', permissions: ['*'] }
+    const saved = store.saveDraft(store.editableDraft(published.id, editor), editor)
+    const displayed = surface === 'findPackage' ? store.findPackage(published.id)
+      : surface === 'packages' ? store.packages.find(item => item.id === published.id) : saved
+    displayed.revisionEditors.splice(0)
+    displayed.publishedSnapshot.revisionEditors.push(reviewer.id)
+    store.submitDraft(trial(store.editableDraft(published.id, owner), store), owner)
+    assert.equal(store.reviewDecision(published.id, editor).ok, false)
+    assert.deepEqual(store.findPackage(published.id).revisionEditors, [editor.id, owner.id])
+    assert.deepEqual(store.findPackage(published.id).publishedSnapshot.revisionEditors, [owner.id])
+    assert.equal(store.prepareRunPlan(published.id, owner).status, 'ready')
+  })
+}
+
+test('invalid persisted revision contributor arrays are rejected instead of reaching review or runtime checks', () => {
+  const { store, draft } = fixture()
+  store.saveDraft(draft, owner)
+  const raw = data.get(key)
+  for (const revisionEditors of [42, 'creator', [42], [''], ['   ']]) {
+    const corrupt = JSON.parse(raw)
+    corrupt.packages.find(item => item.id === draft.id).revisionEditors = revisionEditors
+    data.set(key, JSON.stringify(corrupt))
+    assert.equal(fixture(false).store.findPackage(draft.id), undefined)
+  }
 })
 
 test('corrupted persisted trial structures cannot restore a record that breaks report rendering', () => {

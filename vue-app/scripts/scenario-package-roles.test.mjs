@@ -117,7 +117,7 @@ test('administrators with wildcard or combined permissions can save, edit and su
     assert.equal(reopened.id, saved.id); assert.equal(reopened.baseUpdatedAt, saved.updatedAt)
     const review = domain.submitScenarioPackage(tested({ ...reopened, ...ownDraft }, admin), admin, later, catalog, saved)
     assert.equal(review.status, 'review'); assert.equal(review.submittedBy, admin.id)
-    assert.deepEqual(domain.scenarioPackageActions(review, admin), ['view'])
+    assert.deepEqual(domain.scenarioPackageActions(review, admin), ['view', 'withdraw'])
     assert.equal(domain.editableScenarioPackageDraft(review, admin), null)
     assert.throws(() => domain.saveScenarioPackageDraft({ ...ownDraft, baseUpdatedAt: review.updatedAt }, admin, later, review), /待审核|状态/)
     assert.throws(() => domain.submitScenarioPackage(tested({ ...ownDraft, baseUpdatedAt: review.updatedAt }, admin), admin, later, catalog, review), /待审核|状态/)
@@ -183,7 +183,7 @@ test('PM authoring capability never grants review or lifecycle management', () =
 test('a historical administrator-owned submission stays read-only and owner or submitter self-review remains forbidden', () => {
   const review = queued()
   const promotedOwner = { id: pm.id, permissions: ['*'] }
-  assert.deepEqual(domain.scenarioPackageActions(review, promotedOwner), ['view'])
+  assert.deepEqual(domain.scenarioPackageActions(review, promotedOwner), ['view', 'withdraw'])
   assert.equal(domain.editableScenarioPackageDraft(review, promotedOwner), null)
   assert.throws(() => domain.publishScenarioPackage(review, promotedOwner, later, catalog), /本人|其他管理员/)
   assert.throws(() => domain.rejectScenarioPackage(review, promotedOwner, '说明', later), /本人|其他管理员/)
@@ -196,12 +196,12 @@ test('PM authoring through independent admin approval preserves publication and 
   const saved = domain.saveScenarioPackageDraft(draft(), pm, at)
   const editing = domain.editableScenarioPackageDraft(saved, pm)
   const review = domain.submitScenarioPackage(tested(editing), pm, later, catalog, saved)
-  assert.deepEqual(domain.scenarioPackageActions(review, pm), ['view'])
+  assert.deepEqual(domain.scenarioPackageActions(review, pm), ['view', 'withdraw'])
   assert.deepEqual(domain.scenarioPackageActions(review, reviewer), ['view', 'approve', 'reject'])
   const online = domain.publishScenarioPackage(review, reviewer, later, catalog)
   assert.equal(online.ownerId, pm.id); assert.equal(online.reviewedBy, reviewer.id)
   assert.deepEqual(domain.scenarioPackageActions(online, pm), ['view', 'edit'])
-  assert.deepEqual(domain.scenarioPackageActions(online, reviewer), ['view', 'disable'])
+  assert.deepEqual(domain.scenarioPackageActions(online, reviewer), ['view', 'edit', 'disable'])
   assert.equal(domain.evaluateRuntimeAccess(online, pm).status, 'ready')
   assert.equal(domain.evaluateRuntimeAccess(online, reviewer).status, 'blocked', 'review permission must not become package-use permission')
   const caller = copy(pm); caller.permissions.policy = ['scenario-package:role-package:use']

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import * as domain from '../src/domain/scenarioSkillPackages.js'
 import { scenarioPmActor } from './helpers/scenarioActors.mjs'
 
@@ -364,7 +365,7 @@ test('unavailable fixtures and global gates offer cause-specific repair paths wi
     [draftOf(), [{ ...catalog[0], onlineStatus: 'disabled' }, catalog[1]], actor, /返回编排.*不可用.*已发布/],
     [draftOf(), [{ ...catalog[0], online: 'v2.0.0' }, catalog[1]], actor, /返回编排.*线上版本/],
     [{ ...draftOf(), steps: draftOf().steps.map(step => ({ ...step, predecessorId: null })) }, catalog, actor, /返回编排.*连接/],
-    [draftOf(), catalog, scenarioPmActor('not-owner', catalog), /所有者.*账号/],
+    [draftOf(), catalog, scenarioPmActor('not-owner', catalog), /具备编辑权限.*创建者或管理员.*账号/],
     [draftOf(), [{ ...catalog[0], permissions: { ...catalog[0].permissions, data: [] } }, catalog[1]], actor, /权限快照.*重新选择/],
   ]
   for (const [draft, skills, currentActor, repair] of cases) {
@@ -492,7 +493,7 @@ after(async () => {
   else globalThis.localStorage = previousStorage
 })
 test('reports remain isolated and only a successful current retrial allows submission or resubmission', async () => {
-  server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+  server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
   const [{ createPinia, setActivePinia }, module] = await Promise.all([import('pinia'), server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts')])
   setActivePinia(createPinia())
   const store = module.useScenarioSkillPackagesStore()

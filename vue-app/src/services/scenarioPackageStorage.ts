@@ -38,6 +38,7 @@ function validPackage(value: unknown, depth = 0): value is ScenarioSkillPackage 
   if (!['id', 'name', 'ownerId', 'version', 'updatedAt'].every(key => typeof value[key] === 'string' && value[key].trim())) return false
   if (!['description', 'targetAudience'].every(key => typeof value[key] === 'string')) return false
   if (!optionalStrings(value, ['baseUpdatedAt', 'approvedAt', 'publishedAt', 'submittedAt', 'submittedBy', 'submitterId', 'reviewedAt', 'reviewedBy', 'reviewNote', 'degradationNote'])) return false
+  if (value.revisionEditors !== undefined && (!strings(value.revisionEditors) || value.revisionEditors.some(id => !id.trim()))) return false
   if (!Number.isFinite(Date.parse(value.updatedAt as string))) return false
   if (!['draft', 'review', 'rejected', 'published', 'disabled'].includes(String(value.status))) return false
   if (value.onlineStatus !== undefined && !['unpublished', 'published', 'disabled'].includes(String(value.onlineStatus))) return false

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { evaluateScenarioTrialForSubmit } from '../src/domain/scenarioSkillPackages.js'
@@ -9,7 +10,7 @@ import { scenarioPmActor, scenarioPmPermissions } from './helpers/scenarioActors
 
 const previousStorage = globalThis.localStorage
 globalThis.localStorage = { getItem() { return null }, setItem() {}, removeItem() {} }
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
 const [{ useAppStore }, { useSkillHubStore }, { useScenarioSkillPackagesStore }] = await Promise.all([
   server.ssrLoadModule('/src/stores/app.ts'),
   server.ssrLoadModule('/src/stores/skillHub.ts'),
@@ -77,7 +78,7 @@ for (const username of ['admin', 'zhangrui', 'pm-li']) {
       assert.equal(editing.baseUpdatedAt, own.updatedAt)
     }
     const ownReview = findState(store, 'review', username)
-    assert.deepEqual(store.actionsFor(ownReview.id, current), ['view'])
+    assert.deepEqual(store.actionsFor(ownReview.id, current), ['view', 'withdraw'])
     assert.equal(store.editableDraft(ownReview.id, current), null)
     assert.throws(() => store.approvePackage(ownReview.id, current), /本人|其他管理员/)
     const otherReview = store.packages.find(item => item.status === 'review' && item.ownerId !== reviewer.id && item.submittedBy !== reviewer.id)
@@ -86,7 +87,7 @@ for (const username of ['admin', 'zhangrui', 'pm-li']) {
     assert.ok(store.actionsFor(otherReview.id, reviewer).includes('approve'))
     assert.ok(store.actionsFor(otherReview.id, reviewer).includes('reject'))
     assert.deepEqual(store.actionsFor(otherReview.id, { id: username, permissions: [] }), ['view'])
-    assert.equal(store.withdrawPackage, undefined)
+    assert.equal(store.withdrawPackage(ownReview.id, reviewer, ownReview.updatedAt).ok, false)
   })
 }
 

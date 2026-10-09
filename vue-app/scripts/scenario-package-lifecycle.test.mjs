@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { runScenarioSimulation } from '../src/domain/scenarioPackageTesting.js'
 import * as domain from '../src/domain/scenarioSkillPackages.js'
@@ -13,7 +14,7 @@ const owner = scenarioPmActor('lifecycle-owner', ['employee-certification-insigh
 const reviewer = { id: 'independent-reviewer', permissions: ['scenario-package:review'] }
 const stranger = { id: 'stranger', permissions: ['scenario-package:create', 'scenario-package:compose:cross-menu'] }
 const copy = value => JSON.parse(JSON.stringify(value))
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
 const [{ useScenarioSkillPackagesStore }, { useSkillHubStore }] = await Promise.all([
   server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts'),
   server.ssrLoadModule('/src/stores/skillHub.ts')
@@ -58,13 +59,13 @@ test('lifecycle actions follow owner permissions and independent review, not adm
   const { store, draft } = fixture()
   store.submitDraft(draft, owner)
   assert.equal(typeof store.actionsFor, 'function', 'the store must enforce the shared action policy')
-  assert.deepEqual(store.actionsFor(draft.id, owner), ['view'])
+  assert.deepEqual(store.actionsFor(draft.id, owner), ['view', 'withdraw'])
   assert.deepEqual(store.actionsFor(draft.id, reviewer), ['view', 'approve', 'reject'])
   assert.deepEqual(store.actionsFor(draft.id, stranger), ['view'])
   assert.equal(store.editableDraft(draft.id, owner), null)
   store.approvePackage(draft.id, reviewer)
   assert.deepEqual(store.actionsFor(draft.id, owner), ['view', 'edit'])
-  assert.deepEqual(store.actionsFor(draft.id, reviewer), ['view', 'disable'])
+  assert.deepEqual(store.actionsFor(draft.id, reviewer), ['view', 'edit', 'disable'])
   assert.deepEqual(store.actionsFor(draft.id, { ...owner, permissions: [] }), ['view'])
   assert.equal(store.editableDraft(draft.id, stranger), null)
 })
@@ -94,7 +95,7 @@ test('published revisions keep the old version runnable through review and rejec
   assert.equal(queued.version, 'v1.0.1')
   assert.equal(queued.onlineStatus, 'published')
   assert.equal(queued.publishedSnapshot.version, 'v1.0.0')
-  assert.deepEqual(store.actionsFor(published.id, owner), ['view'])
+  assert.deepEqual(store.actionsFor(published.id, owner), ['view', 'withdraw'])
   assert.equal(store.disablePackage(published.id, owner).ok, false)
   assert.equal(store.prepareRunPlan(published.id, owner).version, 'v1.0.0')
   assert.equal(store.prepareRunPlan(published.id, owner).steps[0].task, oldTask)
@@ -110,17 +111,24 @@ test('published revisions keep the old version runnable through review and rejec
   assert.equal(updated.auditEvents.filter(event => event.type === 'approved').length, 2)
 })
 
-test('pending review is read-only for its owner and has no withdrawal API or domain transition', () => {
+test('pending review stays read-only until its owner withdraws the exact viewed submission', () => {
   const { store, draft } = fixture()
   const submitted = store.submitDraft(draft, owner)
   const before = copy(store.findPackage(draft.id))
-  assert.deepEqual(store.actionsFor(draft.id, owner), ['view'])
+  assert.deepEqual(store.actionsFor(draft.id, owner), ['view', 'withdraw'])
   assert.equal(store.editableDraft(draft.id, owner), null)
-  assert.equal(store.withdrawPackage, undefined)
-  const denied = domain.transitionScenarioPackage(submitted, owner, 'withdraw', new Date().toISOString())
-  assert.equal(denied.ok, false)
   assert.throws(() => store.submitDraft({ ...draft, baseUpdatedAt: submitted.updatedAt }, owner), /状态|账号|审核/)
+  assert.equal(store.withdrawPackage(draft.id, reviewer, submitted.updatedAt).ok, false)
+  assert.equal(store.withdrawPackage(draft.id, owner).ok, false)
+  assert.equal(store.withdrawPackage(draft.id, owner, 'stale').ok, false)
   assert.deepEqual(copy(store.findPackage(draft.id)), before)
+  const result = store.withdrawPackage(draft.id, owner, submitted.updatedAt)
+  assert.equal(result.ok, true)
+  assert.equal(result.package.status, 'draft')
+  assert.equal(result.package.submittedBy, undefined)
+  assert.equal(result.package.auditEvents.at(-1).type, 'withdrawn')
+  assert.ok(store.editableDraft(draft.id, owner))
+  assert.equal(store.withdrawPackage(draft.id, owner, result.package.updatedAt).ok, false)
 })
 
 test('only package administrators can disable or enable and approval cannot silently re-enable a disabled package', () => {
@@ -133,7 +141,7 @@ test('only package administrators can disable or enable and approval cannot sile
   const edited = store.editableDraft(published.id, owner)
   edited.steps[0].task = '修改后的禁用版任务'
   store.submitDraft(withTrial(edited, store.selectableSkills), owner)
-  assert.deepEqual(store.actionsFor(published.id, owner), ['view'])
+  assert.deepEqual(store.actionsFor(published.id, owner), ['view', 'withdraw'])
   assert.equal(store.enablePackage(published.id, owner).ok, false)
   const result = store.approvePackage(published.id, reviewer)
   assert.equal(result.status, 'disabled')

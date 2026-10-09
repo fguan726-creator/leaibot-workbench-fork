@@ -1,7 +1,7 @@
 <template>
   <ScenarioSkillPackageCreateView
     v-if="isPackageCreate"
-    :key="editingPackage?.id || `new-package-${newPackageSessionOwner}`"
+    :key="editingPackage ? `${editingPackage.id}-${editingPackageActorId}` : `new-package-${newPackageSessionOwner}`"
     :draft="editingPackage"
     @cancel="closePackageCreate"
     @saved="handlePackageSaved"
@@ -200,6 +200,15 @@
       </div>
 
       <div class="scenario-package-list-workspace" data-flow-role="list-workspace">
+        <details class="scenario-package-edit-rules">
+          <summary>编辑规则</summary>
+          <ul>
+            <li>未发布的草稿、驳回内容：由具备创建及跨菜单编排权限的创建者编辑。</li>
+            <li>已发布、已禁用及其草稿或驳回修订：具备相应权限的创建者或管理员可编辑，原创建者不变；新版审核前，线上版本保持原状态。</li>
+            <li>待审核内容不可直接编辑；具备相应权限的创建者或本轮提交人可先撤回。</li>
+            <li>修改后需重新试运行并提审；创建者、提交人及本轮编辑者均不能自审。</li>
+          </ul>
+        </details>
         <div class="scenario-package-toolbar">
           <input v-model="packageKeyword" type="search" aria-label="搜索场景技能包" placeholder="搜索名称、场景描述或主责任人">
           <select v-model="packageStatusFilter" aria-label="场景技能包状态" @change="packageSummaryFilter = 'all'">
@@ -264,6 +273,7 @@
                     <div class="scenario-package-actions">
                       <button class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event)">详情</button>
                       <button v-if="hasPackageAction(packageItem, 'edit')" class="skill-hub-action" type="button" @click="editPackage(packageItem)">编辑</button>
+                      <button v-if="hasPackageAction(packageItem, 'withdraw')" class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'withdraw')">撤回</button>
                       <template v-if="canReviewPackage(packageItem)">
                         <button class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'approve')">审批</button>
                         <button class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'reject')">驳回</button>
@@ -271,6 +281,7 @@
                       <button v-if="hasPackageAction(packageItem, 'disable')" class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'disable')">禁用</button>
                       <button v-if="hasPackageAction(packageItem, 'enable')" class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'enable')">启用</button>
                     </div>
+                    <p v-if="!hasPackageAction(packageItem, 'edit')" class="scenario-package-edit-hint">{{ packageEditGuidance(packageItem).summary }}</p>
                   </td>
                 </tr>
                 <tr v-if="!filteredScenarioPackages.length">
@@ -403,6 +414,11 @@
             <div v-if="packageDetailItem.reviewNote"><dt>审核意见</dt><dd>{{ packageDetailItem.reviewNote }}</dd></div>
           </dl>
 
+          <section class="scenario-package-detail-section scenario-package-edit-guidance">
+            <h4>当前账号编辑说明</h4>
+            <p>{{ packageEditGuidance(packageDetailItem).detail }}</p>
+          </section>
+
           <section class="scenario-package-detail-section">
             <h4>固定版本链路</h4>
             <ol class="scenario-package-detail-steps">
@@ -486,6 +502,7 @@
         <div class="skill-hub-detail-foot">
           <button class="btn btn-secondary" type="button" @click="closePackageDetail">关闭</button>
           <button v-if="packageReviewMode === 'detail' && hasPackageAction(packageDetailItem, 'edit')" class="btn btn-primary" type="button" @click="editPackage(packageDetailItem)">编辑</button>
+          <button v-if="packageReviewMode === 'detail' && hasPackageAction(packageDetailItem, 'withdraw')" class="btn btn-primary" type="button" @click="openPackageDetail(packageDetailItem, $event, 'withdraw')">撤回审核</button>
           <template v-if="!packageActionStale && packageReviewDecision.ok && (packageReviewMode === 'approve' || packageReviewMode === 'reject')">
             <button v-if="packageReviewMode === 'reject'" class="btn btn-primary" type="button" :disabled="packageReviewBusy" @click="reviewPackage('reject')">确认驳回</button>
             <button v-else class="btn btn-primary" type="button" :disabled="packageReviewBusy" @click="reviewPackage('approve')">{{ packageDetailItem.onlineStatus === 'disabled' ? '审批通过' : '审批通过并发布' }}</button>
@@ -624,7 +641,7 @@ import {
 
 type HubTabId = 'skills' | 'packages'
 type PackageListFilter = 'all' | 'draft' | 'review' | 'rejected' | 'published' | 'upgrade_required' | 'degraded' | 'paused' | 'disabled'
-type PackageManagementMode = 'disable' | 'enable'
+type PackageManagementMode = 'disable' | 'enable' | 'withdraw'
 type PackageDetailMode = 'detail' | 'approve' | 'reject' | PackageManagementMode
 
 const route = useRoute()
@@ -650,23 +667,27 @@ const canCreatePackage = computed(() => Boolean(user.value)
 const packageCreateRoute = computed(() => route.path === '/agent/skills' && activeHubTab.value === 'packages' && route.query.mode === 'create')
 const packageEditId = computed(() => packageCreateRoute.value && typeof route.query.edit === 'string' ? route.query.edit : '')
 const editingPackage = ref<ScenarioSkillPackageDraft>()
+const editingPackageActorId = ref('')
 const newPackageSessionOwner = ref('')
 watch([packageCreateRoute, packageEditId, user, permissions], ([creating, id, ownerId]) => {
   if (!creating || !ownerId) {
     editingPackage.value = undefined
+    editingPackageActorId.value = ''
     newPackageSessionOwner.value = ''
     return
   }
   if (newPackageSessionOwner.value !== ownerId) newPackageSessionOwner.value = ''
   if (!id) {
     editingPackage.value = undefined
+    editingPackageActorId.value = ''
     if (canCreatePackage.value) newPackageSessionOwner.value = ownerId
     return
   }
   newPackageSessionOwner.value = ''
   // Keep the opened copy when storage or permissions change; the editor locks stale writes.
-  if (editingPackage.value?.id === id && editingPackage.value.ownerId === ownerId) return
+  if (editingPackage.value?.id === id && editingPackageActorId.value === ownerId) return
   editingPackage.value = scenarioStore.editableDraft(id, { id: ownerId, permissions: permissions.value }) || undefined
+  editingPackageActorId.value = editingPackage.value ? ownerId : ''
 }, { immediate: true, flush: 'sync' })
 const isPackageCreate = computed(() => packageCreateRoute.value && (packageEditId.value
   ? Boolean(editingPackage.value) : Boolean(user.value && newPackageSessionOwner.value === user.value)))
@@ -697,17 +718,18 @@ const packageReviewNote = ref('')
 const packageReviewError = ref('')
 const packageReviewBusy = ref(false)
 const packageReviewMode = ref<PackageDetailMode>('detail')
-const packageManagementLabels = { disable: '确认禁用', enable: '确认启用' }
+const packageManagementLabels = { disable: '确认禁用', enable: '确认启用', withdraw: '确认撤回' }
 const packageManagementDescriptions = {
+  withdraw: '撤回后回到草稿，可继续编辑并重新提交审核；当前已发布或已禁用的线上版本保持原状态。',
   disable: '禁用后，当前已审核版本将停止被调用。正在编辑或审核的内容会保留，后续审批通过也不会自动启用。',
   enable: '启用后恢复当前已审核版本的调用；运行时仍检查依赖和调用权限。正在编辑或审核的内容不会提前生效。'
 }
 const packageManagementMode = computed<PackageManagementMode | null>(() =>
-  ['disable', 'enable'].includes(packageReviewMode.value) ? packageReviewMode.value as PackageManagementMode : null
+  ['disable', 'enable', 'withdraw'].includes(packageReviewMode.value) ? packageReviewMode.value as PackageManagementMode : null
 )
 const packageModeTitle = computed(() => ({
   detail: '', approve: '审批场景技能包 · ', reject: '驳回场景技能包 · ',
-  disable: '禁用场景技能包 · ', enable: '启用场景技能包 · '
+  disable: '禁用场景技能包 · ', enable: '启用场景技能包 · ', withdraw: '撤回场景技能包 · '
 })[packageReviewMode.value])
 const packageReviewInput = ref<HTMLTextAreaElement | null>(null)
 const packageDetailId = ref('')
@@ -752,8 +774,8 @@ const pageDesc = computed(() => {
   if (activeHubTab.value === 'packages') {
     return packageRole.value === 'admin'
       ? canCreatePackage.value
-        ? '创建和维护本人的场景技能包，审核他人的提交，管理已审核版本的启停与依赖状态。'
-        : '审核他人提交的场景技能包，管理已审核版本的启用、禁用与依赖状态。'
+        ? '创建和维护本人的场景技能包，编辑已发布技能包及其修订，审核他人的提交并管理启停。'
+        : '编辑已发布技能包及其修订，审核他人提交，管理已审核版本的启停与依赖状态。'
       : packageRole.value === 'pm'
         ? '创建和维护本人的场景技能包，编排、试运行后提交管理员审核。'
         : '查看场景技能包的配置、审核状态与依赖情况。'
@@ -852,7 +874,7 @@ function packageHealthHint(packageItem: ScenarioSkillPackage) {
   const onlineHint = packageItem.publishedSnapshot
     ? `；已审核版本 ${packageItem.publishedSnapshot.version} ${onlineState}`
     : ''
-  if (packageItem.status === 'draft') return `本人可编辑、试运行后提交审核${onlineHint}`
+  if (packageItem.status === 'draft') return `${packageItem.publishedSnapshot ? '创建者或管理员可编辑修订' : '创建者可编辑'}，试运行后提交审核${onlineHint}`
   if (packageItem.status === 'review') return `等待管理员审核${onlineHint || '，尚未发布'}`
   if (packageItem.status === 'rejected') return `${packageItem.reviewNote || '按审核意见修改后重新提交'}${onlineHint}`
   if (packageItem.status === 'disabled') return '已审核版本暂停调用，启用后恢复'
@@ -1176,6 +1198,51 @@ function hasPackageAction(packageItem: ScenarioSkillPackage, action: ScenarioPac
   return scenarioStore.actionsFor(packageItem.id, packageActor.value).includes(action)
 }
 
+function packageEditGuidance(packageItem: ScenarioSkillPackage) {
+  const actions = scenarioStore.actionsFor(packageItem.id, packageActor.value)
+  const actorId = packageActor.value.id
+  const isOwner = Boolean(actorId && actorId === packageItem.ownerId)
+  const hasPublishedVersion = Boolean(packageItem.publishedSnapshot) || ['published', 'disabled'].includes(packageItem.status)
+  if (actions.includes('edit')) {
+    return {
+      summary: hasPublishedVersion ? '可编辑修订' : '可编辑',
+      detail: hasPublishedVersion
+        ? '当前账号可编辑该技能包的修订，原创建者不变。保存、试运行并重新提审后，由未参与本轮修改的其他管理员审核；审核前，线上版本保持原状态。'
+        : '当前账号可编辑此草稿或驳回内容，完成试运行后重新提交审核；须由其他管理员审核。'
+    }
+  }
+  if (packageItem.status === 'review') {
+    if (actions.includes('withdraw')) {
+      return {
+        summary: '待审核暂不可编辑，可先撤回',
+        detail: `你是${isOwner ? '创建者' : '本轮提交人'}，可先撤回审核。撤回后回到草稿；继续编辑和提审仍需具备该内容的编辑权限。撤回不改变线上版本的启停状态；本人不能审核自己的内容。`
+      }
+    }
+    const canReview = actions.includes('approve') && actions.includes('reject')
+    const editedByActor = Boolean(actorId && packageItem.revisionEditors?.includes(actorId))
+    return {
+      summary: '待审核暂不可编辑',
+      detail: canReview
+        ? '当前账号可审批或驳回，不能直接编辑待审核内容。如需修改，应先由具备相应权限的创建者或本轮提交人撤回。'
+        : editedByActor && packageRole.value === 'admin'
+          ? '你参与了本轮编辑，不能审核自己的修改。待审核内容暂不可编辑，需由具备相应权限的创建者或本轮提交人撤回后修改。'
+          : '待审核内容暂不可编辑，当前账号没有撤回或审核权限。需由具备相应权限的创建者或本轮提交人撤回后修改。'
+    }
+  }
+  if (['draft', 'rejected'].includes(packageItem.status) && !hasPublishedVersion && !isOwner) {
+    return {
+      summary: '未发布内容，仅创建者可编辑',
+      detail: '此技能包尚未发布，草稿或驳回内容由具备创建及跨菜单编排权限的创建者维护。当前账号仅可查看。'
+    }
+  }
+  return {
+    summary: '当前账号无编辑权限',
+    detail: isOwner
+      ? '当前账号是创建者，但缺少所需的编辑权限。需具备创建及跨菜单编排权限后，再按当前状态编辑。'
+      : '已发布技能包及其修订可由具备相应权限的创建者或管理员维护，当前账号没有编辑权限。'
+  }
+}
+
 function openPackageDetail(packageItem: ScenarioSkillPackage, event?: MouseEvent, mode: PackageDetailMode = 'detail') {
   if (packageReviewBusy.value || (mode !== 'detail' && !hasPackageAction(packageItem, mode))) return
   packageDetailTrigger = typeof HTMLButtonElement !== 'undefined' && event?.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null
@@ -1251,6 +1318,7 @@ async function editPackage(item: ScenarioSkillPackage) {
   const draft = scenarioStore.editableDraft(item.id, { id: user.value || '', permissions: permissions.value })
   if (!draft) return
   editingPackage.value = draft
+  editingPackageActorId.value = user.value || ''
   clearPackageDetailWithoutFocus()
   await router.replace({ path: '/agent/skills', query: { tab: 'packages', mode: 'create', edit: item.id } })
   await focusPackageCreator()
@@ -1262,10 +1330,12 @@ async function managePackage(action: PackageManagementMode) {
   packageReviewBusy.value = true
   packageReviewError.value = ''
   try {
-    const result = action === 'disable' ? scenarioStore.disablePackage(item.id, packageActor.value)
+    const result = action === 'withdraw'
+      ? scenarioStore.withdrawPackage(item.id, packageActor.value, packageOpenedUpdatedAt.value)
+      : action === 'disable' ? scenarioStore.disablePackage(item.id, packageActor.value)
         : scenarioStore.enablePackage(item.id, packageActor.value)
     if (!result.ok) throw new Error(result.reasons.join('；'))
-    toast(`${item.name}：${{ disable: '已禁用', enable: '已启用已审核版本' }[action]}`)
+    toast(`${item.name}：${{ disable: '已禁用', enable: '已启用已审核版本', withdraw: '已撤回审核，可继续编辑' }[action]}`)
     packageReviewMode.value = 'detail'
     await nextTick()
     packageDetailClose.value?.focus()
@@ -1684,6 +1754,45 @@ onBeforeUnmount(() => {
 .scenario-package-table th:nth-child(7) { width: 10%; }
 .scenario-package-table th:last-child { width: 216px; }
 .scenario-package-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+.scenario-package-edit-hint {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.scenario-package-edit-rules {
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+}
+
+.scenario-package-edit-rules summary {
+  width: fit-content;
+  color: var(--color-primary);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.scenario-package-edit-rules summary:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.scenario-package-edit-rules ul {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 20px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
 
 .scenario-package-table tbody tr:last-child td {
   border-bottom: 0;
