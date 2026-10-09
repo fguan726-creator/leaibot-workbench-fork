@@ -49,7 +49,8 @@ test('login keeps the confirmed internal and external account lifecycle', async 
   assert.match(login, /内部用户登录/)
   assert.match(login, /外部用户登录/)
   assert.match(login, /内网ADFS登录/)
-  assert.match(login, /忘记密码/)
+  assert.doesNotMatch(login, /忘记密码|<ExternalPasswordRecoveryModal|@click="openEnableRequest"/)
+  assert.match(login, /EXTERNAL_DISABLED_MESSAGE/)
   assert.match(login, /创建账户\/注册/)
 })
 

@@ -6,10 +6,11 @@
         <RouterLink to="/login">返回登录</RouterLink>
       </header>
       <div class="enable-request-heading">
-        <h1>申请启用账号</h1>
-        <p>当前账号已禁用。提交申请后，需由系统管理员审批启用。</p>
+        <h1>{{ externalRequest ? '账号已禁用' : '申请启用账号' }}</h1>
+        <p>{{ externalRequest ? EXTERNAL_DISABLED_MESSAGE : '当前账号已禁用。提交申请后，需由系统管理员审批启用。' }}</p>
       </div>
       <AccountEnableRequestFlow
+        v-if="!externalRequest"
         :key="account + ':' + loginType"
         v-model="draft"
         v-model:step="step"
@@ -27,12 +28,13 @@
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import AccountEnableRequestFlow from '@/components/permissions/AccountEnableRequestFlow.vue'
-import { disabledIdentityError, DISABLED_ACCOUNT_KEY, DISABLED_ACCOUNT_TYPE_KEY, type EnableRequestDraft, type EnableSubmission } from '@/services/accountEnableRequest'
+import { disabledIdentityError, DISABLED_ACCOUNT_KEY, DISABLED_ACCOUNT_TYPE_KEY, EXTERNAL_DISABLED_MESSAGE, type EnableRequestDraft, type EnableSubmission } from '@/services/accountEnableRequest'
 
 const route = useRoute()
 const router = useRouter()
 const account = computed(() => String(route.query.account || '').trim())
 const loginType = computed(() => route.query.loginType === 'external' ? 'external' : 'internal')
+const externalRequest = computed(() => loginType.value === 'external')
 const step = ref(1)
 onMounted(() => {
   document.documentElement.classList.add('account-enable-route')
@@ -53,6 +55,7 @@ function createDraft(): EnableRequestDraft {
 }
 watch([account, loginType], () => { draft.value = createDraft(); step.value = 1 })
 function authorize() {
+  if (externalRequest.value) return EXTERNAL_DISABLED_MESSAGE
   const identityError = disabledIdentityError(account.value, loginType.value, window.sessionStorage)
   if (identityError) return identityError
   if (draft.value.itcode !== account.value || draft.value.applicant !== account.value

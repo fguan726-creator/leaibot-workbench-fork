@@ -29,21 +29,25 @@ context.on('request', (request) => {
 const key = 'leaibot-account-request-status-rows'
 const password = 'Poc123456!'
 const localAdminPassword = loadEnv('development', process.cwd(), 'LOCAL_POC_').LOCAL_POC_ADMIN_PASSWORD
-const expectedOptionCount = localAdminPassword ? 6 : 5
+const expectedOptionCount = localAdminPassword ? 4 : 3
 const accounts = [
   ['noaccess', 'internal', false],
-  ['guest01', 'internal', false],
+  ['internal-active', 'internal', false],
   ['internal-disabled', 'internal', true],
-  ['external-noaccess', 'external', false],
+  ['external-active', 'external', false],
   ['external-disabled', 'external', true]
 ]
 let server
 async function choose(account, from = '/login?loginType=external') {
+  if (page.url().startsWith(base)) await page.evaluate(() => localStorage.removeItem('preview_user'))
   await page.goto(base + from)
   const saved = await page.evaluate(() => ({ local: { ...localStorage }, session: { ...sessionStorage } }))
   const beforeRequests = requests.length
   await page.getByRole('combobox').click()
   assert.equal(await page.getByRole('option').count(), expectedOptionCount)
+  for (const hiddenAccount of ['internal-active', 'external-active']) {
+    assert.equal(await page.getByRole('option').filter({ has: page.locator('small', { hasText: hiddenAccount }) }).count(), 0, 'Redundant normal-login choices must stay hidden')
+  }
   await page.getByRole('option').filter({ has: page.locator('small', { hasText: new RegExp('^' + account + '$') }) }).click()
   const internal = accounts.find((row) => row[0] === account)[1] === 'internal'
   await page.waitForURL(internal ? '**/adfs-login?**' : '**/login?**')
@@ -59,22 +63,32 @@ async function submit(type) {
   await page.getByRole('button', { name: type === 'internal' ? 'Submit' : '登录工作台', exact: true }).click()
 }
 async function assertNoAccess(account, type) {
+  if (account !== 'noaccess') { await page.waitForURL('**/portal/home'); return }
   await page.waitForURL('**/access-denied?**')
   assert.equal(new URL(page.url()).searchParams.get('userType'), type)
-  const expectedTitle = account === 'noaccess'
-    ? '当前账号暂无工作台权限，请申请访问权限。'
-    : '当前账号因为长时间未登录，权限已被移除，请重新申请'
+  const expectedTitle = '当前账号暂无工作台权限，请申请访问权限。'
   await page.getByRole('heading', { name: expectedTitle, exact: true }).waitFor()
   assert.equal(await page.getByLabel('申请人 ITCode').inputValue(), account)
   assert.equal(await page.getByPlaceholder('请输入关联人 ITCode').count(), type === 'external' ? 1 : 0)
 }
 try {
   for (const [account, type, disabled] of accounts) {
-    await choose(account)
+    if (account === 'internal-active' || account === 'external-active') {
+      // Hiding a shortcut must not change existing account authentication.
+      await page.evaluate(() => localStorage.removeItem('preview_user'))
+      await page.goto(base + (type === 'internal' ? '/adfs-login' : '/login?loginType=external'))
+      assert.equal(await page.getByRole('combobox').inputValue(), '')
+      assert.equal(await page.locator('input[type=password]').inputValue(), '')
+      await page.getByRole('combobox').fill(account)
+      await page.locator('input[type=password]').fill(password)
+    } else await choose(account)
     await submit(type)
     if (disabled) {
-      await page.getByText('当前账号已禁用，请申请启用后再登录。', { exact: true }).waitFor()
-      await page.getByRole('button', { name: '申请启用账号', exact: true }).click()
+      if (type === 'external') {
+        await page.getByText('当前账号已被禁用，请联系对应的联想业务接口人申请启用。', { exact: true }).waitFor()
+        assert.equal(await page.getByRole('button', { name: '申请启用账号', exact: true }).count(), 0)
+        continue
+      }
       await page.waitForURL('**/account-enable-request?**')
       assert.equal(new URL(page.url()).searchParams.get('loginType'), type)
       await page.getByRole('button', { name: '下一步', exact: true }).waitFor()
@@ -82,8 +96,8 @@ try {
     console.log(account + ': expected login flow passed')
   }
   assert.equal(requests.length, 0, 'Fixtures must not hit production login')
-  await choose('guest01', '/login')
-  await choose('external-noaccess', '/adfs-login')
+  await choose('noaccess', '/login')
+  await choose('external-disabled', '/adfs-login')
   await choose('external-disabled')
   const done = { id: 'QA-ENABLE', typeKey: 'enable', targetItcode: 'internal-disabled', statusKey: 'done', nodeType: 'done' }
   await page.evaluate(({ key, done }) => localStorage.setItem(key, JSON.stringify([done])), { key, done })
@@ -92,6 +106,7 @@ try {
   await assertNoAccess('internal-disabled', 'internal')
 
   // Keyboard selection must not submit, Escape/Tab/outside must dismiss.
+  await page.evaluate(() => localStorage.removeItem('preview_user'))
   await page.goto(base + '/login?loginType=external')
   let combo = page.getByRole('combobox')
   await combo.focus()
@@ -112,11 +127,11 @@ try {
   assert.equal(await combo.getAttribute('aria-expanded'), 'false')
 
   // Wrong password and type must not fall back to preview workspace.
-  await choose('guest01')
+  await choose('noaccess')
   await page.locator('input[type=password]').fill('wrong')
   await submit('internal')
   await page.getByText('用户名或密码错误', { exact: true }).waitFor()
-  await page.getByRole('combobox').fill('external-noaccess')
+  await page.getByRole('combobox').fill('external-active')
   await page.locator('input[type=password]').fill(password)
   await submit('internal')
   await page.getByText('该演示账号属于外部用户，请切换外部用户登录。', { exact: true }).waitFor()

@@ -42,18 +42,18 @@ for (const type of ['internal', 'external']) {
     assert.deepEqual(rows.slice(0, 30), unrelated)
     assert.equal(rows[30].id, completed.id)
     assert.equal(rows[30].statusKey, 'done')
-    assert.equal(login(data), 'no-access', 'Enabled does not mean workspace permission granted')
+    assert.equal(login(data), 'active', 'Enabled preserves the original demo workspace permissions')
   })
   test(type + ': a new pending/rejected request cannot revoke an already completed enable', () => {
     const data = storage([completed])
-    assert.equal(login(data), 'no-access')
+    assert.equal(login(data), 'active')
     const { request } = submitEnableRequest(draft, data)
     assert.equal(request.statusKey, 'pending')
-    assert.equal(login(data), 'no-access')
+    assert.equal(login(data), 'active')
     assert.equal(submitEnableRequest(draft, data).duplicate, true)
     const sync = componentFunction('agent/AgentPermissionsView.vue', 'syncPublicEnableRequest', data)
     sync({ ...request, statusKey: 'rejected', nodeType: 'rework', status: '已驳回' }, '2026-10-09 12:01')
-    assert.equal(login(data), 'no-access')
+    assert.equal(login(data), 'active')
     assert.deepEqual(JSON.parse(data.getItem())[1], completed)
   })
   test(type + ': absent, pending, rejected or partially executed approval never enables', () => {
@@ -61,7 +61,7 @@ for (const type of ['internal', 'external']) {
       [{ ...completed, nodeType: 'system-admin' }], [{ ...completed, targetItcode: 'someone-else' }]]) {
       assert.equal(login(storage(rows)), 'disabled')
     }
-    assert.equal(login(storage([null, ...unrelated, completed])), 'no-access')
+    assert.equal(login(storage([null, ...unrelated, completed])), 'active')
     assert.equal(resolvePocLogin(account, 'wrong', type, true, () => JSON.stringify([completed])), 'invalid-password')
     assert.equal(resolvePocLogin(account, POC_EXTERNAL_PASSWORD, type, false, () => { throw new Error('Must not read POC state') }), null)
   })

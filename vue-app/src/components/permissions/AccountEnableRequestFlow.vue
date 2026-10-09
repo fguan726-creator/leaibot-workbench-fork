@@ -15,7 +15,7 @@
     <form v-else-if="step === 1" id="enable-account-info" class="enable-body" @submit.prevent="review">
       <h3>填写信息</h3>
       <p>根据人员类型填写被申请人信息，申请单号将在提交后自动生成。</p>
-      <div class="enable-type-card"><span>03</span><div><b>启用账号</b><small>申请恢复已停用账号，不会自动恢复已清理的工作台权限。</small></div></div>
+      <div class="enable-type-card"><span>03</span><div><b>启用账号</b><small>申请恢复已停用账号，原有权限保持不变。</small></div></div>
       <div class="enable-fields application-info-form" :data-form-variant="schema.key">
         <div class="full enable-field">
           <span class="field-label required">人员类型 <em>必填</em></span>

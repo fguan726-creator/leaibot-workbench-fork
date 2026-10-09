@@ -2,6 +2,7 @@
 export const ACCOUNT_REQUESTS_KEY = 'leaibot-account-request-status-rows'
 export const DISABLED_ACCOUNT_KEY = 'leaibot-disabled-login-account'
 export const DISABLED_ACCOUNT_TYPE_KEY = 'leaibot-disabled-login-type'
+export const EXTERNAL_DISABLED_MESSAGE = '当前账号已被禁用，请联系对应的联想业务接口人申请启用。'
 
 export type PersonType = 'internal' | 'external'
 export interface EnableRequestDraft {
@@ -56,6 +57,7 @@ export function validateEnableRequest(draft: EnableRequestDraft): EnableErrors {
 }
 
 export function disabledIdentityError(account: string, personType: PersonType, storage: Pick<Storage, 'getItem'>): string {
+  if (personType === 'external') return EXTERNAL_DISABLED_MESSAGE
   try {
     if (account.trim()
       && storage.getItem(DISABLED_ACCOUNT_KEY)?.toLowerCase() === account.trim().toLowerCase()

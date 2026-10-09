@@ -20,6 +20,7 @@
     "test:poc-enable-state:browser": "node scripts/verify-poc-enable-state-browser.mjs",
     "test:poc-login:browser": "node scripts/verify-poc-login-picker-browser.mjs",
     "test:account-enable:browser": "node scripts/verify-account-enable-request-browser.mjs",
+    "test:account-request-status:browser": "node scripts/verify-account-request-status-browser.mjs",
     "test:permission-scope": "node --experimental-strip-types scripts/test-permission-scope.mjs",
     "test:user-management": "node scripts/test-user-management.mjs",
     "test:custom-table-authorization": "node scripts/test-custom-table-authorization.mjs",

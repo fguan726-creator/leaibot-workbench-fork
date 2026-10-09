@@ -678,7 +678,7 @@
                 </div>
               </div>
               <div class="org-search-box">
-                <input v-model.trim="organizationSearchKeyword" placeholder="搜索组织名称、编码、负责人">
+                <input v-model.trim="organizationSearchKeyword" placeholder="搜索组织名称、负责人">
                 <button v-if="organizationSearchKeyword" type="button" class="link-btn" @click="organizationSearchKeyword = ''">清空</button>
               </div>
               <div v-if="organizationSearchKeyword" class="org-chart-search-results">
@@ -689,7 +689,7 @@
                   type="button"
                   :class="{ active: selectedOrganizationId === org.id }"
                   @click="selectOrganization(org.id)"
-                >{{ org.name }} · {{ org.code }}</button>
+                >{{ org.name }}</button>
                 <small v-if="!orgChartSearchResults.length">没有找到匹配组织</small>
               </div>
               <div v-if="selectedOrganization" class="org-chart-canvas">
@@ -698,7 +698,7 @@
                     <button type="button" class="org-chart-focus" @click="selectOrganization(selectedOrganizationParent.id)">
                       <span>上级组织</span>
                       <b>{{ selectedOrganizationParent.name }}</b>
-                      <small>{{ selectedOrganizationParent.owner || '未配置负责人' }} · {{ selectedOrganizationParent.code }}</small>
+                      <small>{{ selectedOrganizationParent.owner || '未配置负责人' }}</small>
                     </button>
                     <button type="button" class="org-chart-detail-btn" @click="openOrganizationDetail(selectedOrganizationParent.id)">详情</button>
                   </article>
@@ -707,7 +707,6 @@
                 <div class="org-chart-tier current-tier">
                   <article class="org-chart-card current-card active">
                     <button type="button" class="org-chart-focus" @click="selectOrganization(selectedOrganization.id)">
-                      <span>{{ selectedOrganization.code }}</span>
                       <b>{{ selectedOrganization.name }}</b>
                       <small>{{ selectedOrganization.owner || '未配置负责人' }} · {{ selectedOrganization.memberCount }} 人</small>
                     </button>
@@ -722,7 +721,6 @@
                     class="org-chart-card child-card"
                   >
                     <button type="button" class="org-chart-focus" @click="selectOrganization(child.id)">
-                      <span>{{ child.code }}</span>
                       <b>{{ child.name }}</b>
                       <small>{{ child.owner || '未配置负责人' }} · {{ child.memberCount }} 人</small>
                     </button>
@@ -1890,14 +1888,13 @@
               <small v-if="userWorkspace.errors.tenant" class="field-error">{{ userWorkspace.errors.tenant }}</small>
             </div>
             <BusinessApproverField v-if="!userWorkspaceReadonly && (userWorkspace.mode === 'create' || userPermissionChanged)" v-model="userWorkspace.draft.businessApprover" :error="userWorkspace.errors.businessApprover" :disabled="userWorkspacePermissionReadonly" @update:model-value="userWorkspace.errors.businessApprover = ''" />
-            <label><span class="field-label required">有效期 <em>必填</em></span><input v-model.trim="userWorkspace.draft.validUntil" :readonly="userWorkspaceReadonly" :class="{ invalid: userWorkspace.errors.validUntil }" placeholder="例如 2026-12-31"><small v-if="userWorkspace.errors.validUntil" class="field-error">{{ userWorkspace.errors.validUntil }}</small></label>
             <div class="permission-form-field full">
               <span>所属组织（可多选）</span>
               <div class="tenant-multi-options organization-multi-options">
                 <label v-for="org in organizationOptions" :key="org" :class="{ selected: userWorkspace.draft.organization.includes(org) }"><input type="checkbox" :checked="userWorkspace.draft.organization.includes(org)" :disabled="userWorkspaceReadonly" @change="toggleUserOrganization(org)"><span>{{ org }}</span></label>
               </div>
             </div>
-            <label class="full"><span>备注</span><textarea v-model.trim="userWorkspace.draft.remark" :readonly="userWorkspaceReadonly" rows="3" placeholder="补充账号用途、有效期或运营备注。"></textarea></label>
+            <label class="full"><span>备注</span><textarea v-model.trim="userWorkspace.draft.remark" :readonly="userWorkspaceReadonly" rows="3" placeholder="补充账号用途或运营备注。"></textarea></label>
           </div>
         </section>
 
@@ -2078,7 +2075,6 @@
           <button type="button" class="modal-close" aria-label="关闭组织详情" @click="closeOrganizationDetail">×</button>
           <div class="org-detail-head">
             <div>
-              <span>{{ selectedOrganization.code }}</span>
               <h3 id="organization-detail-title">{{ selectedOrganization.name }}</h3>
               <p>{{ selectedOrganization.description || '暂无组织描述。' }}</p>
             </div>
@@ -2150,15 +2146,6 @@
             <label>
               <span>负责人</span>
               <input v-model.trim="organizationEditor.draft.owner" placeholder="请输入负责人账号或姓名">
-            </label>
-            <label v-if="organizationEditor.mode === 'edit'">
-              <span>创建人</span>
-              <input v-model.trim="organizationEditor.draft.creator" placeholder="请输入创建人账号或姓名">
-            </label>
-            <label v-if="organizationEditor.mode === 'edit'">
-              <span>Code</span>
-              <input v-model.trim="organizationEditor.draft.code" :readonly="organizationEditor.mode === 'edit'" :class="{ invalid: organizationEditor.errors.code }" placeholder="例如 OPS-MALL">
-              <small v-if="organizationEditor.errors.code" class="field-error">{{ organizationEditor.errors.code }}</small>
             </label>
             <label class="full">
               <span>组织描述 <em>{{ organizationEditor.draft.description.length }}/120</em></span>
@@ -3576,7 +3563,7 @@ const applySteps = computed(() => {
 })
 const infoStepDescription = computed(() => {
   if (isPasswordResetRequest.value) return '重置密码仅支持当前用户本人自助修改，可使用旧密码或绑定手机号 / 邮箱完成身份验证。'
-  if (isAccountStatusRequest.value) return '根据人员类型填写被申请人信息；手机号、邮箱选填，申请单号将在提交后自动生成。'
+  if (isAccountStatusRequest.value) return '根据人员类型填写被申请人信息，申请单号将在提交后自动生成。'
   if (isCreateAccountRequest.value) return '为外部协作人员创建账号时，需填写关联人 ITCode；外部用户不设置直线经理，下一步同步选择权限范围。'
   if (isExternalApplicant.value) return '外部用户没有直线经理，需要填写关联人；被申请人为外部用户时同样不设置被申请人直线经理。'
   if (isExternalPerson.value) return '申请人直线经理由当前登录信息带出；外部被申请人不设置直线经理，需要填写关联人。'
@@ -7878,7 +7865,6 @@ function validateUserWorkspace() {
   userWorkspace.errors.targetManager = !externalUser && !draft.targetManager ? '内部人员必须填写用户直线经理。' : ''
   userWorkspace.errors.tenant = normalizeTenantList(draft.tenant).length ? '' : '请至少选择一个所属租户。'
   userWorkspace.errors.businessApprover = (userWorkspace.mode === 'create' || userPermissionChanged.value) ? businessApproverError(draft.businessApprover) : ''
-  userWorkspace.errors.validUntil = draft.validUntil ? '' : '请填写有效期，例如 2026-12-31 或长期有效。'
   const customRuleError = validateCustomTableRules(draft.customDataRules)
   userWorkspace.errors.dataMode = draft.extraDataPermissionIds.length && draft.customDataRules.length ? '普通授权和自定义授权只能选择一种，请先删除其中一类数据权限。' : customRuleError
   const roleConflicts = detectCustomDataRoleConflicts(roleObjectsForIds(draft.roleIds))
@@ -8370,7 +8356,7 @@ function flattenOrganizations(list, rows = []) {
 }
 
 function organizationMatchesKeyword(org, keyword) {
-  return `${org.name} ${org.code} ${org.owner} ${org.description} ${org.scope}`.toLowerCase().includes(keyword)
+  return `${org.name} ${org.owner} ${org.description} ${org.scope}`.toLowerCase().includes(keyword)
 }
 
 function findOrganizationById(id, list = organizations) {

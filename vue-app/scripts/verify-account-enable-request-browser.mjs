@@ -21,11 +21,10 @@ async function setup(viewport = { width: 1440, height: 900 }) {
   return { context, page: await context.newPage() }
 }
 async function loginDisabled(page) {
-  await page.goto(base + '/login?loginType=external')
-  await page.getByLabel('用户名', { exact: true }).fill('external-disabled')
-  await page.getByLabel('密码', { exact: true }).fill('Poc123456!')
-  await page.getByRole('button', { name: '登录工作台', exact: true }).click()
-  await page.getByRole('button', { name: '申请启用账号', exact: true }).click()
+  await page.goto(base + '/adfs-login')
+  await page.getByRole('combobox').fill('internal-disabled')
+  await page.locator('input[type=password]').fill('Poc123456!')
+  await page.getByRole('button', { name: 'Submit', exact: true }).click()
   await page.locator('.account-enable-flow').waitFor()
 }
 async function geometry(page, label) {
@@ -45,15 +44,13 @@ try {
     const { context, page } = await setup(viewport)
     await loginDisabled(page)
     const flow = page.locator('.account-enable-flow')
-    assert.equal(await flow.getByLabel('被申请人用户名', { exact: true }).inputValue(), 'external-disabled')
-    assert.equal(await flow.getByLabel('被申请人用户名', { exact: true }).getAttribute('readonly'), '')
+    assert.equal(await flow.getByLabel('被申请人 ITCode', { exact: true }).inputValue(), 'internal-disabled')
+    assert.equal(await flow.getByLabel('被申请人 ITCode', { exact: true }).getAttribute('readonly'), '')
     assert.equal(await flow.getByRole('radio').first().isDisabled(), true)
     assert.equal(await flow.locator('[data-info-field="mobile"], [data-info-field="email"]').count(), 0)
     assert.equal(await flow.getByRole('button', { name: /审批执行/ }).isDisabled(), true)
     await flow.getByRole('button', { name: '下一步', exact: true }).click()
     await flow.getByText('请填写申请原因。', { exact: true }).waitFor()
-    await flow.getByText('请填写负责对接的内部员工 ITCode。', { exact: true }).waitFor()
-    await flow.getByLabel('关联人 ITCode', { exact: true }).fill('wangxt8')
     await flow.getByLabel('申请原因', { exact: true }).fill('恢复使用，请启用账号。')
     await geometry(page, 'login-info-' + viewport.width)
     await flow.getByRole('button', { name: '下一步', exact: true }).click()
@@ -97,8 +94,7 @@ try {
 
   const { context, page } = await setup()
   await loginDisabled(page)
-  await page.goto(base + '/account-enable-request?account=another-user&loginType=external')
-  await page.getByLabel('关联人 ITCode', { exact: true }).fill('wangxt8')
+  await page.goto(base + '/account-enable-request?account=another-user&loginType=internal')
   await page.getByLabel('申请原因', { exact: true }).fill('不应提交')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await page.getByRole('alert').filter({ hasText: '请返回登录页重新验证账号状态' }).waitFor()
@@ -107,8 +103,7 @@ try {
   await page.getByLabel('申请原因', { exact: true }).fill('不应更换人员类型')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await page.getByRole('alert').filter({ hasText: '请返回登录页重新验证账号状态' }).waitFor()
-  await page.goto(base + '/account-enable-request?account=external-disabled&loginType=external')
-  await page.getByLabel('关联人 ITCode', { exact: true }).fill('wangxt8')
+  await page.goto(base + '/account-enable-request?account=internal-disabled&loginType=internal')
   await page.getByLabel('申请原因', { exact: true }).fill('保存失败后重试')
   await page.getByRole('button', { name: '下一步', exact: true }).click()
   await page.evaluate(() => {

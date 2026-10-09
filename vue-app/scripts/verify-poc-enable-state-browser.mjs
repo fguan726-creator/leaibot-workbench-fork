@@ -42,14 +42,13 @@ async function decide(page, request, action = '同意') {
     { key, id: request.id, status: action === '同意' ? 'done' : 'rejected' })
 }
 async function loginNoAccess(page, type) {
+  await page.evaluate(() => localStorage.removeItem('preview_user'))
   await page.goto(base + (type === 'internal' ? '/adfs-login' : '/login?loginType=external'))
   await page.getByRole('combobox').fill(type + '-disabled')
   await page.locator('input[type=password]').fill('Poc123456!')
   await page.getByRole('button', { name: type === 'internal' ? 'Submit' : '登录工作台', exact: true }).click()
-  await page.waitForURL('**/access-denied?**')
-  await page.getByRole('heading', { name: '当前账号因为长时间未登录，权限已被移除，请重新申请', exact: true }).waitFor()
-  assert.equal(new URL(page.url()).searchParams.get('userType'), type)
-  assert.equal(await page.evaluate(() => localStorage.getItem('preview_user')), null)
+  await page.waitForURL('**/portal/home')
+  assert.equal(await page.evaluate(() => localStorage.getItem('preview_user')), type + '-disabled')
 }
 async function assertStatus(page, request) {
   await page.goto(base + '/account-request/status?ticket=' + request.id + '&token=' + request.token)
@@ -82,7 +81,7 @@ try {
           await assertStatus(page, request)
           await loginNoAccess(page, type)
           await page.reload()
-          await page.getByRole('heading', { name: '当前账号因为长时间未登录，权限已被移除，请重新申请', exact: true }).waitFor()
+          await page.waitForURL('**/portal/home')
         } else {
           await decide(page, request)
           await loginNoAccess(page, type)

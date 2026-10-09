@@ -50,7 +50,6 @@
         <div class="form-group">
           <div class="login-field-head">
             <label class="form-label" for="external-login-password">密码</label>
-            <button ref="forgotPasswordTrigger" type="button" class="forgot-password-btn" @click="openPasswordRecovery">忘记密码</button>
           </div>
           <input
             id="external-login-password"
@@ -66,7 +65,6 @@
           class="login-error"
           :style="{ display: errorMsg ? 'block' : '' }"
         >{{ errorMsg }}</div>
-        <button v-if="disabledAccount" type="button" class="forgot-password-btn enable-account-entry" @click="openEnableRequest">申请启用账号</button>
         <button class="btn btn-primary login-btn" @click="doLogin">登录工作台</button>
         <div class="login-register-entry">
           <span>还没有工作台账号？</span>
@@ -74,12 +72,6 @@
       </div>
     </div>
 
-    <ExternalPasswordRecoveryModal
-      :visible="passwordRecoveryVisible"
-      :initial-account="username"
-      @close="closePasswordRecovery"
-      @complete="finishPasswordRecovery"
-    />
 
     <div v-if="registerModalVisible" class="register-modal-layer" @click.self="closeRegisterModal">
       <div class="register-modal-panel" role="dialog" aria-modal="true" aria-labelledby="register-modal-title">
@@ -180,14 +172,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { allowPreviewAuth } from '@/config/runtimeMode'
 import { POC_ACCOUNT_REQUESTS_KEY, resolvePocExternalLogin } from '@/services/pocExternalLogin'
 import { findPocLoginChoice, getPocLoginPassword, type PocLoginChoice } from '@/services/pocLoginChoices'
 import PocLoginAccountPicker from '@/components/auth/PocLoginAccountPicker.vue'
-import ExternalPasswordRecoveryModal from '@/components/auth/ExternalPasswordRecoveryModal.vue'
+import { EXTERNAL_DISABLED_MESSAGE } from '@/services/accountEnableRequest'
 
 const router   = useRouter()
 const route    = useRoute()
@@ -196,7 +188,6 @@ const appStore = useAppStore()
 const username = ref('')
 const password = ref('')
 const errorMsg = ref('')
-const disabledAccount = ref('')
 const loginTab = ref<'internal' | 'external'>(route.query.loginType === 'external' ? 'external' : 'internal')
 const initialPocAccount = findPocLoginChoice(route.query.pocAccount)
 if (initialPocAccount?.loginType === 'external') {
@@ -208,7 +199,6 @@ if (initialPocAccount?.loginType === 'external') {
 function selectPocAccount(account: PocLoginChoice) {
   if (!allowPreviewAuth) return
   errorMsg.value = ''
-  disabledAccount.value = ''
   if (account.loginType === 'internal') {
     router.push({ path: '/adfs-login', query: { pocAccount: account.username, redirect: String(route.query.redirect || '/') } })
     return
@@ -217,8 +207,6 @@ function selectPocAccount(account: PocLoginChoice) {
   username.value = account.username
   password.value = getPocLoginPassword(account)
 }
-const passwordRecoveryVisible = ref(false)
-const forgotPasswordTrigger = ref<HTMLButtonElement | null>(null)
 
 const registerModalVisible = ref(false)
 const registerStep = ref(0)
@@ -275,16 +263,10 @@ const approvalRoute = computed(() => [
 function switchLoginTab(tab: 'internal' | 'external') {
   loginTab.value = tab
   errorMsg.value = ''
-  disabledAccount.value = ''
 }
 
 function isDisabledLoginResponse(status: number, data: any) {
   return status === 423 || data?.code === 'ACCOUNT_DISABLED' || data?.error === '账号已禁用'
-}
-
-function openEnableRequest() {
-  if (!disabledAccount.value) return
-  router.push({ path: '/account-enable-request', query: { account: disabledAccount.value, loginType: 'external' } })
 }
 
 function goAdfsLogin() {
@@ -295,27 +277,9 @@ function goAdfsLogin() {
 }
 
 // 对应原 doLogin()
-function openPasswordRecovery() {
-  passwordRecoveryVisible.value = true
-  errorMsg.value = ''
-}
-
-function closePasswordRecovery() {
-  passwordRecoveryVisible.value = false
-  nextTick(() => forgotPasswordTrigger.value?.focus())
-}
-
-function finishPasswordRecovery(account: string) {
-  username.value = account
-  password.value = ''
-  errorMsg.value = ''
-  closePasswordRecovery()
-}
-
 async function doLogin() {
   const u = username.value.trim()
   const p = password.value
-  disabledAccount.value = ''
   errorMsg.value = ''
   if (!u || !p) { showLoginError('请输入用户名和密码'); return }
 
@@ -340,10 +304,11 @@ async function doLogin() {
       appStore.visibleMenus = []
       const account = u.toLowerCase()
       if (pocResult === 'disabled') {
-        disabledAccount.value = account
-        sessionStorage.setItem('leaibot-disabled-login-account', account)
-        sessionStorage.setItem('leaibot-disabled-login-type', 'external')
-        showLoginError('当前账号已禁用，请申请启用后再登录。')
+        showLoginError(EXTERNAL_DISABLED_MESSAGE)
+      } else if (pocResult === 'active') {
+        localStorage.setItem('preview_user', account)
+        appStore.usePreviewSession(account)
+        await router.replace(String(route.query.redirect || '/'))
       } else {
         await router.replace({ path: '/access-denied', query: { itcode: account, userType: 'external' } })
       }
@@ -355,7 +320,6 @@ async function doLogin() {
   }
 
   try {
-    disabledAccount.value = ''
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -364,10 +328,9 @@ async function doLogin() {
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
       if (isDisabledLoginResponse(res.status, data)) {
-        disabledAccount.value = u
-        window.sessionStorage.setItem('leaibot-disabled-login-account', u)
-        window.sessionStorage.setItem('leaibot-disabled-login-type', 'external')
-        showLoginError('当前账号已禁用，请申请启用后再登录。')
+        window.sessionStorage.removeItem('leaibot-disabled-login-account')
+        window.sessionStorage.removeItem('leaibot-disabled-login-type')
+        showLoginError(EXTERNAL_DISABLED_MESSAGE)
         return
       }
       showLoginError(data.error || '登录失败')
@@ -690,6 +653,10 @@ function submitRegisterApplication() {
 </script>
 
 <style scoped>
+:global(html:has(#login-screen)),
+:global(body:has(#login-screen)) { min-width: 0; }
+#login-screen { overflow: auto; padding: 16px; }
+#login-screen .login-card { max-width: 100%; margin-block: auto; }
 .login-tabs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

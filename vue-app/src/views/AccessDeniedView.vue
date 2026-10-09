@@ -9,28 +9,14 @@
         <button type="button" class="text-btn" @click="backToLogin">返回登录页</button>
       </header>
 
-      <div v-if="submittedApplication" class="success-panel">
-        <span class="success-icon">✓</span>
-        <p class="access-eyebrow success">申请已提交</p>
-        <h1>权限申请已进入审批</h1>
-        <p>申请单号：<b>{{ submittedApplication.id }}</b>。审批全部通过后，系统会一次性开通所申请的权限。</p>
-        <div class="approval-flow">
-          <article class="current">
-            <span>1</span>
-            <b>{{ isExternal ? '关联人' : '申请人直线经理' }}</b>
-            <small>{{ isExternal ? submittedApplication.relatedAccount : submittedApplication.applicantManager }}</small>
-          </article>
-          <article v-for="(owner, index) in submittedApplication.businessOwners" :key="owner">
-            <span>{{ index + 2 }}</span>
-            <b>业务负责人</b>
-            <small>{{ businessApproverLabel(owner) }}</small>
-          </article>
-          <article>
-            <span>{{ submittedApplication.businessOwners.length + 2 }}</span>
-            <b>系统自动生效</b>
-            <small>全部审批通过后执行</small>
-          </article>
-        </div>
+      <section v-if="isExternal" class="access-intro">
+        <h1>当前账号暂无工作台权限</h1>
+        <p>请联系对应的联想业务接口人处理。</p>
+      </section>
+      <div v-else-if="submittedApplication" class="success-panel">
+        <ApplicationProgressSummary title="权限申请已进入审批" status="申请已提交" :steps="submittedSteps">
+          申请单号：<b>{{ submittedApplication.id }}</b>。审批全部通过后，系统会一次性开通所申请的权限。
+        </ApplicationProgressSummary>
         <div class="success-actions">
           <button type="button" class="secondary-btn" @click="backToLogin">返回登录页</button>
         </div>
@@ -38,8 +24,8 @@
 
       <template v-else>
         <section class="access-intro">
-          <p class="access-eyebrow">{{ permissionsRemoved ? '访问权限已移除' : '访问权限未开通' }}</p>
-          <h1>{{ permissionsRemoved ? '当前账号因为长时间未登录，权限已被移除，请重新申请' : '当前账号暂无工作台权限，请申请访问权限。' }}</h1>
+          <p class="access-eyebrow">访问权限未开通</p>
+          <h1>当前账号暂无工作台权限，请申请访问权限。</h1>
           <p>{{ isExternal ? '账号已完成认证，无需重新创建账号。请补充关联人和权限范围，提交后进入统一审批。' : '您的内部账号已完成认证，无需另行申请账号。请在当前页面补充基本信息并选择权限范围，提交后进入统一审批。' }}</p>
           <div class="account-strip">
             <span>{{ isExternal ? '当前账号' : '当前 ITCode' }}</span>
@@ -226,10 +212,9 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import ApplicationProgressSummary, { type ApplicationProgressStep } from '@/components/auth/ApplicationProgressSummary.vue'
 import BusinessApproverField from '@/components/permissions/BusinessApproverField.vue'
 import { businessApproverError, businessApproverLabel } from '@/components/permissions/businessApprovers.js'
-import { allowPreviewAuth } from '@/config/runtimeMode'
-import { findPocLoginAccount } from '@/services/pocExternalLogin'
 import PermissionCopyRoleModal from '@/components/permissions/PermissionCopyRoleModal.vue'
 import PermissionDataPickerModal from '@/components/permissions/PermissionDataPickerModal.vue'
 import PermissionScopeEditor from '@/components/permissions/PermissionScopeEditor.vue'
@@ -278,6 +263,15 @@ const currentStep = ref(0)
 const maxStep = ref(0)
 const submitError = ref('')
 const submittedApplication = ref<FirstAccessApplication | null>(null)
+const submittedSteps = computed<ApplicationProgressStep[]>(() => {
+  const application = submittedApplication.value
+  if (!application) return []
+  return [
+    { title: isExternal.value ? '关联人' : '申请人直线经理', detail: (isExternal.value ? application.relatedAccount : application.applicantManager) || '', state: 'current' },
+    ...application.businessOwners.map(owner => ({ title: '业务负责人', detail: businessApproverLabel(owner) })),
+    { title: '系统自动生效', detail: '全部审批通过后执行' }
+  ]
+})
 const selectedRoleIds = ref<string[]>([])
 const copiedRoleIds = ref<string[]>([])
 const copiedDataSourceMap = reactive<Record<string, string>>({})
@@ -292,7 +286,6 @@ const dataModal = reactive({ visible: false, selectedIds: [] as string[] })
 
 const itcode = computed(() => String(route.query.itcode || appStore.user || 'noaccess'))
 const isExternal = computed(() => route.query.userType === 'external')
-const permissionsRemoved = computed(() => findPocLoginAccount(itcode.value, allowPreviewAuth)?.accessReason === 'permissions-removed')
 const form = reactive({
   manager: 'sunll1',
   relatedAccount: '',
@@ -537,6 +530,7 @@ function applicationNumber() {
 }
 
 function submitApplication() {
+  if (isExternal.value) return
   if (!validateBasic()) {
     currentStep.value = 0
     return
@@ -631,7 +625,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 :global(html.access-denied-route),
-:global(body.access-denied-route) { min-width: 0; overflow: hidden; }
+:global(html.access-denied-route body.access-denied-route) { min-width: 0; overflow: hidden; }
 :global(body.access-denied-route) { display: block; }
 :global(body.access-denied-route #app) { display: block; width: 100%; min-width: 0; }
 .access-denied-page { box-sizing: border-box; width: 100%; min-width: 0; height: 100vh; overflow-x: hidden; overflow-y: auto; padding: 32px 18px; background: #f3f6fb; color: #172033; font-family: Arial, "Microsoft YaHei", sans-serif; }
@@ -642,7 +636,6 @@ onBeforeUnmount(() => {
 .text-btn { border: 0; background: transparent; color: #316dff; cursor: pointer; }
 .access-intro, .success-panel { box-sizing: border-box; width: min(860px, 100%); margin: 0 auto; padding: 28px 36px 22px; }
 .access-eyebrow { display: inline-flex; margin: 0 0 10px; border-radius: 999px; padding: 5px 10px; background: #fff4e5; color: #b45309; font-size: 12px; font-weight: 800; }
-.access-eyebrow.success { background: #ecfdf3; color: #027a48; }
 h1 { margin: 0; color: #101828; font-size: 26px; line-height: 1.35; }
 .access-intro > p:not(.access-eyebrow), .success-panel > p { margin: 10px 0 0; color: #667085; line-height: 1.7; }
 .account-strip { display: flex; align-items: center; gap: 14px; margin-top: 20px; border: 1px solid #dce8f8; border-radius: 8px; padding: 12px 14px; background: #f7faff; }
@@ -734,9 +727,7 @@ input:focus, textarea:focus, select:focus { border-color: #316dff; outline: 2px 
 .primary-btn { border: 1px solid #316dff; background: #316dff; color: #fff; }
 .secondary-btn { border: 1px solid #d8e1ee; background: #fff; color: #455468; }
 .submit-error { margin: 16px 0 0; color: #d92d20; }
-.success-panel { padding-block: 54px; text-align: center; }
-.success-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 18px; border-radius: 50%; background: #12b76a; color: #fff; font-size: 28px; }
-.success-panel .approval-flow { text-align: left; }
+.success-panel { padding-block: var(--space-14, 56px); text-align: center; }
 .permission-modal { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: rgba(15, 23, 42, .48); }
 .modal-panel { position: relative; box-sizing: border-box; width: min(860px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; border-radius: 12px; padding: 24px; background: #fff; box-shadow: 0 24px 64px rgba(15, 23, 42, .22); }
 .modal-panel.small { width: min(520px, 100%); }

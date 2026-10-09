@@ -35,7 +35,6 @@
           <span>使我保持登录状态</span>
         </label>
         <div v-if="errorMsg" class="adfs-error">{{ errorMsg }}</div>
-        <button v-if="disabledAccount" type="button" class="adfs-enable-entry" @click="openEnableRequest">申请启用账号</button>
         <button class="adfs-submit" type="submit">Submit</button>
       </form>
       <footer>© 2026 Lenovo</footer>
@@ -85,9 +84,9 @@ function isDisabledLoginResponse(status: number, data: any) {
   return status === 423 || data?.code === 'ACCOUNT_DISABLED' || data?.error === '账号已禁用'
 }
 
-function openEnableRequest() {
+async function openEnableRequest() {
   if (!disabledAccount.value) return
-  router.push({ path: '/account-enable-request', query: { account: disabledAccount.value, loginType: 'internal' } })
+  await router.replace({ path: '/account-enable-request', query: { account: disabledAccount.value, loginType: 'internal' } })
 }
 
 async function submitAdfsLogin() {
@@ -117,7 +116,11 @@ async function submitAdfsLogin() {
         disabledAccount.value = account.toLowerCase()
         sessionStorage.setItem('leaibot-disabled-login-account', disabledAccount.value)
         sessionStorage.setItem('leaibot-disabled-login-type', 'internal')
-        errorMsg.value = '当前账号已禁用，请申请启用后再登录。'
+        await openEnableRequest()
+      } else if (result === 'active') {
+        localStorage.setItem('preview_user', account.toLowerCase())
+        appStore.usePreviewSession(account.toLowerCase())
+        await router.replace(String(route.query.redirect || '/'))
       } else {
         await router.replace({ path: '/access-denied', query: { itcode: account.toLowerCase(), userType: 'internal' } })
       }
@@ -141,7 +144,7 @@ async function submitAdfsLogin() {
         disabledAccount.value = account
         sessionStorage.setItem('leaibot-disabled-login-account', account)
         sessionStorage.setItem('leaibot-disabled-login-type', 'internal')
-        errorMsg.value = '当前账号已禁用，请申请启用后再登录。'
+        await openEnableRequest()
         return
       }
       errorMsg.value = data.error || '登录失败'

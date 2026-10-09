@@ -72,7 +72,7 @@ assert.equal(await editor.getByText('申请人直线经理', { exact: false }).c
 assert.equal(await editor.locator('.tenant-multi-options:not(.organization-multi-options) input').count() > 1, true, '所属租户必须支持多选')
 assert.equal(await editor.locator('.tenant-multi-options:not(.organization-multi-options) input:checked').count(), 1, '历史单租户数据应归一化为多选状态')
 assert.equal(await editor.getByText('申请单号', { exact: true }).count(), 0, '编辑页不得展示手工申请单号字段')
-for (const removedField of ['用户显示名称', '用户账号', '内部 AD 账户', '是否绑定 ITCode']) {
+for (const removedField of ['用户显示名称', '用户账号', '内部 AD 账户', '是否绑定 ITCode', '有效期', '有效时间']) {
   assert.equal(await editor.getByText(removedField, { exact: false }).count(), 0, `用户基本信息不得展示 ${removedField}`)
 }
 assert.equal(await editor.locator('.organization-multi-options input').count() > 1, true, '所属组织必须支持多选')
@@ -149,6 +149,7 @@ for (let index = 0; index < await tenantOptions.count(); index += 1) {
   }
 }
 assert.equal(changedTenant, true, '必须存在可新增的租户')
+await editor.getByRole('combobox', { name: '业务负责人', exact: true }).selectOption('zhangjq4')
 await editor.getByRole('button', { name: '提交权限变更申请', exact: true }).click()
 const successNotice = editor.locator('.approval-feedback')
 await successNotice.waitFor()
