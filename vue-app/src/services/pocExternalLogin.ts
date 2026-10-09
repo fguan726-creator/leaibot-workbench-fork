@@ -51,10 +51,12 @@ export function resolvePocLogin(
 
   const rows: unknown = JSON.parse(readRequests() || '[]')
   if (!Array.isArray(rows)) throw new Error('Invalid POC account request storage')
-  // The shared request list is newest-first. Pending/rejected requests never enable an account.
-  const latest = rows.find((row) => row && typeof row === 'object'
+  // Only an executed approval changes the fixture's initial disabled state.
+  // A newer pending/rejected request must not undo an already completed enable.
+  const completedEnable = rows.find((row) => row && typeof row === 'object'
     && row.typeKey === 'enable'
+    && row.statusKey === 'done' && row.nodeType === 'done'
     && typeof row.targetItcode === 'string'
     && row.targetItcode.toLowerCase() === fixture.username)
-  return latest?.statusKey === 'done' && latest?.nodeType === 'done' ? 'no-access' : 'disabled'
+  return completedEnable ? 'no-access' : 'disabled'
 }

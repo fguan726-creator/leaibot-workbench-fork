@@ -6579,7 +6579,8 @@ function syncPublicEnableRequest(row, time) {
         : rows[index].result,
       logs: [...(rows[index].logs || []), { node: '系统管理员审批', detail: row.statusKey === 'done' ? '系统管理员已批准账号启用申请。' : '账号启用申请已提交处理。', time }]
     }
-    window.localStorage.setItem(key, JSON.stringify(rows.slice(0, 20)))
+    // Preserve completed approvals and older tickets, including the row just updated.
+    window.localStorage.setItem(key, JSON.stringify(rows))
   } catch {}
 }
 

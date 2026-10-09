@@ -23,7 +23,7 @@ assert.equal(login('external-disabled', password, true, requests([{ ...done, nod
 assert.equal(login('external-disabled', password, true, requests([{ ...done, targetItcode: 'other-user' }])), 'disabled')
 assert.equal(login('external-disabled', password, true, requests([{ ...done, typeKey: 'change' }])), 'disabled')
 assert.equal(login('external-disabled', password, true, requests([done])), 'no-access', 'Enable approval must not grant workspace permissions')
-assert.equal(login('external-disabled', password, true, requests([{ ...done, statusKey: 'rejected' }, done])), 'disabled', 'An older completed row cannot override the latest request')
+assert.equal(login('external-disabled', password, true, requests([{ ...done, statusKey: 'rejected' }, done])), 'no-access', 'A rejected request must not undo an executed enable approval')
 assert.throws(() => login('external-disabled', password, true, requests({})))
 assert.throws(() => login('external-disabled', password, true, () => 'broken-json'))
 assert.throws(() => login('external-disabled', password, true, unreadable))

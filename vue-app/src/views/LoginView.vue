@@ -535,7 +535,8 @@ function persistRegisterRequest(request: any) {
     const key = 'leaibot-account-request-status-rows'
     const existing = JSON.parse(window.localStorage.getItem(key) || '[]').filter((item: any) => item.id !== request.id)
     existing.unshift(request)
-    window.localStorage.setItem(key, JSON.stringify(existing.slice(0, 20)))
+    // Shared approval history also determines POC account state; do not truncate it.
+    window.localStorage.setItem(key, JSON.stringify(existing))
   } catch {}
 }
 
