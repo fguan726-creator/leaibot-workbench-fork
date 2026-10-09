@@ -25,6 +25,10 @@
       </div>
 
       <div v-if="loginTab === 'internal'" class="login-adfs-panel" role="tabpanel">
+        <div v-if="allowPreviewAuth" class="form-group">
+          <label class="form-label" for="internal-demo-account">演示账号</label>
+          <PocLoginAccountPicker id="internal-demo-account" v-model="username" placeholder="选择 POC 演示场景" @select="selectPocAccount" />
+        </div>
         <button class="btn btn-primary login-btn" type="button" @click="goAdfsLogin">内网ADFS登录</button>
         <p>内网环境下，可通过您的 ITCode 账号免输入密码直接登录！</p>
       </div>
@@ -32,7 +36,9 @@
       <div v-else role="tabpanel">
         <div class="form-group">
           <label class="form-label" for="external-login-username">用户名</label>
+          <PocLoginAccountPicker v-if="allowPreviewAuth" id="external-login-username" v-model="username" placeholder="请输入用户名或选择演示账号" @select="selectPocAccount" @submit="doLogin" />
           <input
+            v-else
             id="external-login-username"
             class="form-input"
             v-model="username"
@@ -60,6 +66,7 @@
           class="login-error"
           :style="{ display: errorMsg ? 'block' : '' }"
         >{{ errorMsg }}</div>
+        <button v-if="disabledAccount" type="button" class="forgot-password-btn enable-account-entry" @click="openEnableRequest">申请启用账号</button>
         <button class="btn btn-primary login-btn" @click="doLogin">登录工作台</button>
         <div class="login-register-entry">
           <span>还没有工作台账号？</span>
@@ -177,6 +184,8 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { allowPreviewAuth } from '@/config/runtimeMode'
+import { POC_ACCOUNT_REQUESTS_KEY, POC_EXTERNAL_PASSWORD, findPocLoginAccount, resolvePocExternalLogin, type PocLoginAccount } from '@/services/pocExternalLogin'
+import PocLoginAccountPicker from '@/components/auth/PocLoginAccountPicker.vue'
 import ExternalPasswordRecoveryModal from '@/components/auth/ExternalPasswordRecoveryModal.vue'
 
 const router   = useRouter()
@@ -186,7 +195,27 @@ const appStore = useAppStore()
 const username = ref('')
 const password = ref('')
 const errorMsg = ref('')
-const loginTab = ref<'internal' | 'external'>('internal')
+const disabledAccount = ref('')
+const loginTab = ref<'internal' | 'external'>(route.query.loginType === 'external' ? 'external' : 'internal')
+const initialPocAccount = findPocLoginAccount(route.query.pocAccount, allowPreviewAuth)
+if (initialPocAccount?.loginType === 'external') {
+  loginTab.value = 'external'
+  username.value = initialPocAccount.username
+  password.value = POC_EXTERNAL_PASSWORD
+}
+
+function selectPocAccount(account: PocLoginAccount) {
+  if (!allowPreviewAuth) return
+  errorMsg.value = ''
+  disabledAccount.value = ''
+  if (account.loginType === 'internal') {
+    router.push({ path: '/adfs-login', query: { pocAccount: account.username, redirect: String(route.query.redirect || '/') } })
+    return
+  }
+  loginTab.value = 'external'
+  username.value = account.username
+  password.value = POC_EXTERNAL_PASSWORD
+}
 const passwordRecoveryVisible = ref(false)
 const forgotPasswordTrigger = ref<HTMLButtonElement | null>(null)
 
@@ -245,6 +274,16 @@ const approvalRoute = computed(() => [
 function switchLoginTab(tab: 'internal' | 'external') {
   loginTab.value = tab
   errorMsg.value = ''
+  disabledAccount.value = ''
+}
+
+function isDisabledLoginResponse(status: number, data: any) {
+  return status === 423 || data?.code === 'ACCOUNT_DISABLED' || data?.error === '账号已禁用'
+}
+
+function openEnableRequest() {
+  if (!disabledAccount.value) return
+  router.push({ path: '/account-enable-request', query: { account: disabledAccount.value, loginType: 'external' } })
 }
 
 function goAdfsLogin() {
@@ -275,20 +314,72 @@ function finishPasswordRecovery(account: string) {
 async function doLogin() {
   const u = username.value.trim()
   const p = password.value
+  disabledAccount.value = ''
+  errorMsg.value = ''
   if (!u || !p) { showLoginError('请输入用户名和密码'); return }
 
+  // Resolve POC fixtures before the network fallback; storage failures must not create an admin preview session.
   try {
+    const pocResult = resolvePocExternalLogin(u, p, allowPreviewAuth, () => localStorage.getItem(POC_ACCOUNT_REQUESTS_KEY))
+    if (pocResult) {
+      if (pocResult === 'invalid-password') {
+        showLoginError('用户名或密码错误')
+        return
+      }
+      if (pocResult === 'wrong-login-type') {
+        showLoginError('该演示账号属于内部用户，请切换内部用户登录。')
+        return
+      }
+      localStorage.removeItem('preview_user')
+      sessionStorage.removeItem('leaibot-disabled-login-account')
+      sessionStorage.removeItem('leaibot-disabled-login-type')
+      appStore.user = null
+      appStore.role = null
+      appStore.permissions = []
+      appStore.visibleMenus = []
+      const account = u.toLowerCase()
+      if (pocResult === 'disabled') {
+        disabledAccount.value = account
+        sessionStorage.setItem('leaibot-disabled-login-account', account)
+        sessionStorage.setItem('leaibot-disabled-login-type', 'external')
+        showLoginError('当前账号已禁用，请申请启用后再登录。')
+      } else {
+        await router.replace({ path: '/access-denied', query: { itcode: account, userType: 'external' } })
+      }
+      return
+    }
+  } catch {
+    showLoginError('演示账号状态读取失败，请检查浏览器存储后重试。')
+    return
+  }
+
+  try {
+    disabledAccount.value = ''
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: u, password: p })
     })
-    const data = await res.json()
-    if (!res.ok) { showLoginError(data.error || '登录失败'); return }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      if (isDisabledLoginResponse(res.status, data)) {
+        disabledAccount.value = u
+        window.sessionStorage.setItem('leaibot-disabled-login-account', u)
+        window.sessionStorage.setItem('leaibot-disabled-login-type', 'external')
+        showLoginError('当前账号已禁用，请申请启用后再登录。')
+        return
+      }
+      showLoginError(data.error || '登录失败')
+      return
+    }
 
     // 写入 store，然后跳转（等价于原来隐藏 login-screen、显示 sidebar + main）
     appStore.user = data.username || u
     await appStore.loadUserContext()
+    if (!appStore.permissions.length) {
+      await router.replace({ path: '/access-denied', query: { itcode: data.username || u, userType: 'external' } })
+      return
+    }
     router.replace(String(route.query.redirect || '/'))
   } catch {
     if (!allowPreviewAuth) {
@@ -661,6 +752,12 @@ function submitRegisterApplication() {
   border-radius: 3px;
   outline: 2px solid var(--primary, #316dff);
   outline-offset: 2px;
+}
+
+.enable-account-entry {
+  display: block;
+  margin: 0 0 12px;
+  text-align: left;
 }
 
 .login-register-entry {

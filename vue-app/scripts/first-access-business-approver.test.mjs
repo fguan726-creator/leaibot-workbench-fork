@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test, { after, afterEach, beforeEach } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer } from 'vite'
 import { createPinia, setActivePinia } from 'pinia'
@@ -22,7 +23,7 @@ globalThis.window = { localStorage: storage, location: { origin: 'http://first-a
 globalThis.document = { documentElement: { classList }, body: { classList }, querySelector() { return null } }
 const host = createHttpServer()
 const server = await createServer({
-  root: new URL('..', import.meta.url).pathname,
+  root: fileURLToPath(new URL('..', import.meta.url)),
   logLevel: 'error', appType: 'custom',
   server: { middlewareMode: true, hmr: { server: host } }
 })

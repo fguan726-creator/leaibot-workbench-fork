@@ -105,7 +105,7 @@
             <template #meta><span class="status-pill">POC 链路</span></template>
           </SectionHeader>
 
-          <div class="permission-stage-tabs">
+          <div v-if="form.type !== 'enable' || currentStep === 0" class="permission-stage-tabs">
             <button
               v-for="(step, index) in applySteps"
               :key="step.key"
@@ -118,7 +118,17 @@
             </button>
           </div>
 
-          <div v-if="currentStep === 0" class="permission-step">
+          <AccountEnableRequestFlow
+            v-if="form.type === 'enable' && currentStep > 0"
+            :model-value="form"
+            :step="currentStep"
+            include-type-step
+            @update:model-value="Object.assign(form, $event)"
+            @update:step="setEnableRequestStep"
+            @back="currentStep = 0"
+            @submitted="onEnableRequestSubmitted"
+          />
+          <div v-else-if="currentStep === 0" class="permission-step">
             <h3>选择申请类型</h3>
             <p>不同类型会自动匹配审批人和执行路径。</p>
             <div class="permission-type-grid">
@@ -366,7 +376,7 @@
             </div>
           </div>
 
-          <div class="flow-actions">
+          <div v-if="form.type !== 'enable' || currentStep === 0" class="flow-actions">
             <span v-if="applySubmitNotice" class="approval-feedback apply-submit-feedback">{{ applySubmitNotice }}</span>
             <button type="button" class="ghost-btn" :disabled="currentStep === 0" @click="prevStep">上一步</button>
             <button v-if="currentStep < applySteps.length - 1" type="button" class="primary-btn" @click="nextStep">{{ nextButtonText }}</button>
@@ -598,7 +608,6 @@
                 <tr>
                   <th>登录账号</th>
                   <th>用户姓名</th>
-                  <th>有效期</th>
                   <th>最近 admin 登录</th>
                   <th>状态</th>
                   <th>操作</th>
@@ -613,7 +622,6 @@
                     </div>
                   </td>
                   <td>{{ user.name }}</td>
-                  <td>{{ user.validUntil }}</td>
                   <td>
                     <div class="admin-login-cell">
                       <b>{{ lastAdminLoginText(user) }}</b>
@@ -638,7 +646,7 @@
                   </td>
                 </tr>
                 <tr v-if="!filteredUsers.length">
-                  <td colspan="6">
+                  <td colspan="5">
                     <div class="table-empty">
                       <b>没有找到匹配的用户</b>
                       <p>请调整用户账号、用户姓名或 ITCode 绑定状态后再查看。</p>
@@ -2143,11 +2151,11 @@
               <span>负责人</span>
               <input v-model.trim="organizationEditor.draft.owner" placeholder="请输入负责人账号或姓名">
             </label>
-            <label>
+            <label v-if="organizationEditor.mode === 'edit'">
               <span>创建人</span>
               <input v-model.trim="organizationEditor.draft.creator" placeholder="请输入创建人账号或姓名">
             </label>
-            <label>
+            <label v-if="organizationEditor.mode === 'edit'">
               <span>Code</span>
               <input v-model.trim="organizationEditor.draft.code" :readonly="organizationEditor.mode === 'edit'" :class="{ invalid: organizationEditor.errors.code }" placeholder="例如 OPS-MALL">
               <small v-if="organizationEditor.errors.code" class="field-error">{{ organizationEditor.errors.code }}</small>
@@ -2269,6 +2277,7 @@ import PermissionDataDirectoryList from '@/components/permissions/PermissionData
 import PermissionDataPickerModal from '@/components/permissions/PermissionDataPickerModal.vue'
 import PermissionScopeEditor from '@/components/permissions/PermissionScopeEditor.vue'
 import BusinessApproverField from '@/components/permissions/BusinessApproverField.vue'
+import AccountEnableRequestFlow from '@/components/permissions/AccountEnableRequestFlow.vue'
 import { BUSINESS_APPROVER_GROUPS, businessApproverError, businessApproverLabel, createSelectedBusinessApprovalTasks } from '@/components/permissions/businessApprovers.js'
 import { createPermissionDataSources, createPermissionScopeCatalog, groupDataPermissionsByDirectory, groupPermissionCatalog } from '@/components/permissions/permissionScopeCatalog'
 import { permissionScopeDiff, permissionScopeValidation, resolvePermissionScopeFunctionIds } from '@/components/permissions/permissionScopeSnapshot.js'
@@ -5769,6 +5778,37 @@ function submitApplication() {
   resetApplyStepProgress()
 }
 
+function setEnableRequestStep(step) {
+  currentStep.value = step
+  unlockApplyStep(step)
+}
+
+function onEnableRequestSubmitted({ request, duplicate }) {
+  const existing = approvals.value.find(row => row.id === request.id)
+  const row = existing || createApprovalRow({
+    ...request,
+    mobile: '', email: '', applicantManager: '', targetManager: '',
+    approvalLogs: request.logs.map(log => ({ ...log, role: '申请人', result: '已提交', detail: log.detail }))
+  })
+  if (!existing) approvals.value.unshift(row)
+  if (!duplicate) {
+    row.notificationLogs = createApprovalNotificationLogs(row)
+    openApprovalMailMockTabs(row)
+    approvalNotificationModal.rowId = row.id
+    approvalNotificationModal.visible = true
+    records.value.unshift({
+      time: request.time,
+      title: '启用账号申请已提交',
+      detail: `${request.target} 的申请单号已自动生成为 ${request.id}，申请进入审批列表。`,
+      status: 'POC 记录'
+    })
+  }
+  activeModule.value = 'approval'
+  resetApprovalFilters()
+  approvalSearch.viewer = 'applicant'
+  resetApplyStepProgress()
+}
+
 function openRoleModal() {
   roleModal.visible = true
   roleModal.keyword = ''
@@ -6516,6 +6556,31 @@ function completeApprovalExecution(row, time = '2026-07-13 16:30') {
     opinion: '全部必要审批已通过，系统已一次性执行权限变更，执行结果：成功。',
     time
   })
+  syncPublicEnableRequest(row, time)
+}
+
+function syncPublicEnableRequest(row, time) {
+  if (row?.typeKey !== 'enable' || typeof window === 'undefined') return
+  try {
+    const key = 'leaibot-account-request-status-rows'
+    const rows = JSON.parse(window.localStorage.getItem(key) || '[]')
+    const index = rows.findIndex((item) => item.id === row.id)
+    if (index < 0) return
+    rows[index] = {
+      ...rows[index],
+      status: row.statusKey === 'done' ? '已完成' : row.status,
+      statusKey: row.statusKey,
+      nodeType: row.nodeType,
+      node: row.node,
+      approverItcode: row.approverItcode,
+      handlers: [...(row.handlers || [])],
+      result: row.statusKey === 'done'
+        ? '系统管理员已批准账号启用申请，请重新登录并重新检查工作台权限。'
+        : rows[index].result,
+      logs: [...(rows[index].logs || []), { node: '系统管理员审批', detail: row.statusKey === 'done' ? '系统管理员已批准账号启用申请。' : '账号启用申请已提交处理。', time }]
+    }
+    window.localStorage.setItem(key, JSON.stringify(rows.slice(0, 20)))
+  } catch {}
 }
 
 function createApprovalRow(payload) {
@@ -6879,6 +6944,7 @@ function submitApprovalDecision() {
   } else {
     completeApprovalExecution(row, '2026-07-13 16:30')
   }
+  if (row.typeKey === 'enable' && row.statusKey === 'rejected') syncPublicEnableRequest(row, '2026-07-13 16:30')
   records.value.unshift({
     time: row.time,
     title: `${row.id} ${approvalDecisionTitleByNode(approvalWorkspace.nodeType)}已提交`,
@@ -7455,6 +7521,8 @@ function syncRegisterApprovalRows() {
         type: item.type || '创建账号',
         applicant: item.applicant,
         applicantItcode: item.applicantItcode,
+        applicantPersonType: item.applicantPersonType || item.personType,
+        personType: item.personType,
         target: item.target,
         targetItcode: item.targetItcode,
         applicantManager: item.applicantManager,
@@ -7494,7 +7562,10 @@ function syncMailApprovalActions() {
     let changed = false
     actions.filter((item) => item.source === 'permissions').forEach((actionRecord) => {
       const row = approvals.value.find((item) => item.id === actionRecord.ticket)
-      if (row && applyMailApprovalActionToRow(row, actionRecord)) changed = true
+      if (row && applyMailApprovalActionToRow(row, actionRecord)) {
+        if (row.typeKey === 'enable') syncPublicEnableRequest(row, actionRecord.time)
+        changed = true
+      }
     })
     if (changed) {
       records.value.unshift({

@@ -46,7 +46,7 @@ function breakMetadata(f) {
 test('default guard selects 0914 over the old copy and runs its real contract checker', t => {
   const result = runGuard(fixture(t))
   assert.equal(result.status, 0, result.output)
-  assert.match(result.output, /当前使用：<project-root>\/skill\/portal-workbench-ui-0914/)
+  assert.match(result.output, /当前使用：<project-root>[\\/]skill[\\/]portal-workbench-ui-0914/)
   assert.match(result.output, /\[OK\] portal-workbench-ui-0914 metadata, assets, templates, matrix and evidence are internally consistent/)
 })
 

@@ -82,6 +82,21 @@ test('missing registration continues to block the new source route', t => {
   assert.match(result.output, /未登记.*points.activity|points.activity.*未登记/)
 })
 
+test('LF and CRLF matrices preserve both extension rows and the original Skill', t => {
+  const f = fixture(t)
+  const matrixFile = join(f.skill, 'references/page-spec-coverage-matrix.md')
+  const matrix = readFileSync(matrixFile, 'utf8').replace(/\r\n/g, '\n')
+  for (const newline of ['\n', '\r\n']) {
+    writeFileSync(matrixFile, matrix.replace(/\n/g, newline))
+    const before = treeHashes(f.skill)
+    const result = run(f)
+    assert.equal(result.status, 0, result.output)
+    assert.match(result.output, /points.activity T7/)
+    assert.match(result.output, /points.activityDetails T2/)
+    assert.deepEqual(treeHashes(f.skill), before)
+  }
+})
+
 test('duplicate extension route or pageId cannot hide behind a Map overwrite', t => {
   const f = fixture(t)
   for (const second of [{ ...page }, { ...page, route: '/points/duplicate' }, { ...page, pageId: 'points.duplicate' }]) {

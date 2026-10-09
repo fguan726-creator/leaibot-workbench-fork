@@ -72,8 +72,6 @@ export const APPLICATION_INFO_SCHEMAS = Object.freeze({
     fields: Object.freeze([
       FIELD.applicantIdentity,
       FIELD.targetItcode,
-      FIELD.mobile,
-      FIELD.email,
       FIELD.reason
     ]),
     requiredFields: Object.freeze([FIELD.targetItcode, FIELD.reason])
@@ -84,8 +82,6 @@ export const APPLICATION_INFO_SCHEMAS = Object.freeze({
       FIELD.applicantIdentity,
       FIELD.targetUser,
       FIELD.relatedAccount,
-      FIELD.mobile,
-      FIELD.email,
       FIELD.reason
     ]),
     requiredFields: Object.freeze([FIELD.targetUser, FIELD.relatedAccount, FIELD.reason])

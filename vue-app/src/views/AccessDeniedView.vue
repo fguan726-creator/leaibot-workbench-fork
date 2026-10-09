@@ -12,13 +12,13 @@
       <div v-if="submittedApplication" class="success-panel">
         <span class="success-icon">✓</span>
         <p class="access-eyebrow success">申请已提交</p>
-        <h1>首次访问权限申请已进入审批</h1>
+        <h1>权限申请已进入审批</h1>
         <p>申请单号：<b>{{ submittedApplication.id }}</b>。审批全部通过后，系统会一次性开通所申请的权限。</p>
         <div class="approval-flow">
           <article class="current">
             <span>1</span>
-            <b>申请人直线经理</b>
-            <small>{{ submittedApplication.applicantManager }}</small>
+            <b>{{ isExternal ? '关联人' : '申请人直线经理' }}</b>
+            <small>{{ isExternal ? submittedApplication.relatedAccount : submittedApplication.applicantManager }}</small>
           </article>
           <article v-for="(owner, index) in submittedApplication.businessOwners" :key="owner">
             <span>{{ index + 2 }}</span>
@@ -38,17 +38,17 @@
 
       <template v-else>
         <section class="access-intro">
-          <p class="access-eyebrow">访问权限未开通</p>
-          <h1>当前账号暂无乐享 AI 工作台访问权限</h1>
-          <p>您的内部账号已完成认证，无需另行申请账号。请在当前页面补充基本信息并选择权限范围，提交后进入统一审批。</p>
+          <p class="access-eyebrow">{{ permissionsRemoved ? '访问权限已移除' : '访问权限未开通' }}</p>
+          <h1>{{ permissionsRemoved ? '当前账号因为长时间未登录，权限已被移除，请重新申请' : '当前账号暂无工作台权限，请申请访问权限。' }}</h1>
+          <p>{{ isExternal ? '账号已完成认证，无需重新创建账号。请补充关联人和权限范围，提交后进入统一审批。' : '您的内部账号已完成认证，无需另行申请账号。请在当前页面补充基本信息并选择权限范围，提交后进入统一审批。' }}</p>
           <div class="account-strip">
-            <span>当前 ITCode</span>
+            <span>{{ isExternal ? '当前账号' : '当前 ITCode' }}</span>
             <b>{{ itcode }}</b>
-            <em>内部用户首次访问</em>
+            <em>{{ isExternal ? '外部用户权限申请' : '工作台权限申请' }}</em>
           </div>
         </section>
 
-        <nav class="step-tabs" aria-label="首次访问权限申请步骤">
+        <nav class="step-tabs" aria-label="工作台权限申请步骤">
           <button
             v-for="(step, index) in steps"
             :key="step"
@@ -68,7 +68,7 @@
                 <h2>填写基本信息</h2>
                 <p>账号信息用于识别申请人，联系方式用于审批沟通。</p>
               </div>
-              <span>首次访问申请</span>
+              <span>权限申请</span>
             </div>
             <div class="form-grid">
               <label>
@@ -76,10 +76,15 @@
                 <input :value="itcode" readonly>
                 <small class="field-help">登录认证后自动带出。</small>
               </label>
-              <label>
+              <label v-if="!isExternal">
                 <span>直线经理</span>
                 <input v-model.trim="form.manager" readonly>
                 <small class="field-help">根据组织关系自动带出。</small>
+              </label>
+              <label v-if="isExternal">
+                <span>关联人 <em>必填</em></span>
+                <input v-model.trim="form.relatedAccount" :class="{ invalid: errors.relatedAccount }" placeholder="请输入关联人 ITCode" @input="errors.relatedAccount = ''">
+                <small v-if="errors.relatedAccount" class="field-error">{{ errors.relatedAccount }}</small>
               </label>
               <label>
                 <span>手机号 <em class="optional">选填</em></span>
@@ -130,10 +135,15 @@
               <span>等待提交</span>
             </div>
             <div class="approval-flow">
-              <article>
+              <article v-if="!isExternal">
                 <span>1</span>
                 <b>申请人直线经理</b>
                 <small>{{ form.manager }}</small>
+              </article>
+              <article v-else>
+                <span>1</span>
+                <b>关联人</b>
+                <small>{{ form.relatedAccount }}</small>
               </article>
               <article v-for="(owner, index) in businessOwners" :key="owner">
                 <span>{{ index + 2 }}</span>
@@ -218,6 +228,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import BusinessApproverField from '@/components/permissions/BusinessApproverField.vue'
 import { businessApproverError, businessApproverLabel } from '@/components/permissions/businessApprovers.js'
+import { allowPreviewAuth } from '@/config/runtimeMode'
+import { findPocLoginAccount } from '@/services/pocExternalLogin'
 import PermissionCopyRoleModal from '@/components/permissions/PermissionCopyRoleModal.vue'
 import PermissionDataPickerModal from '@/components/permissions/PermissionDataPickerModal.vue'
 import PermissionScopeEditor from '@/components/permissions/PermissionScopeEditor.vue'
@@ -233,9 +245,11 @@ interface FirstAccessApplication {
   applicant: string
   applicantItcode: string
   applicantPersonType: string
+  source?: string
   target: string
   targetItcode: string
   personType: string
+  relatedAccount?: string
   applicantManager: string
   targetManager: string
   businessApprover: string
@@ -277,15 +291,18 @@ const copyModal = reactive({ visible: false, itcode: '', error: '' })
 const dataModal = reactive({ visible: false, selectedIds: [] as string[] })
 
 const itcode = computed(() => String(route.query.itcode || appStore.user || 'noaccess'))
+const isExternal = computed(() => route.query.userType === 'external')
+const permissionsRemoved = computed(() => findPocLoginAccount(itcode.value, allowPreviewAuth)?.accessReason === 'permissions-removed')
 const form = reactive({
   manager: 'sunll1',
+  relatedAccount: '',
   mobile: '',
   email: '',
   businessApprover: '',
   reason: '',
   tenant: [] as string[]
 })
-const errors = reactive({ tenant: '', businessApprover: '' })
+const errors = reactive({ tenant: '', businessApprover: '', relatedAccount: '' })
 const selectedRoles = computed(() => roles.filter((role) => selectedRoleIds.value.includes(role.id)))
 const copiedRoles = computed(() => roles.filter((role) => copiedRoleIds.value.includes(role.id)))
 const allSelectedRoles = computed(() => [...selectedRoles.value, ...copiedRoles.value.filter((role) => !selectedRoleIds.value.includes(role.id))])
@@ -321,7 +338,8 @@ const dataPermissionDirectories = computed(() => groupDataPermissionsByDirectory
 
 function validateBasic() {
   errors.businessApprover = businessApproverError(form.businessApprover)
-  return !errors.businessApprover
+  errors.relatedAccount = isExternal.value && !form.relatedAccount.trim() ? '请填写关联人 ITCode。' : ''
+  return !errors.businessApprover && !errors.relatedAccount
 }
 
 function roleConflictMessage(conflicts: ReturnType<typeof detectCustomDataRoleConflicts>) {
@@ -538,22 +556,24 @@ function submitApplication() {
     const now = new Date().toLocaleString('zh-CN', { hour12: false })
     const application: FirstAccessApplication = {
       id: applicationNumber(),
+      source: 'first-access',
       typeKey: 'change',
-      type: '首次访问权限',
+      type: isExternal.value ? '外部用户权限申请' : '首次访问权限',
       applicant: itcode.value,
       applicantItcode: itcode.value,
-      applicantPersonType: 'internal',
+      applicantPersonType: isExternal.value ? 'external' : 'internal',
       target: itcode.value,
       targetItcode: itcode.value,
-      personType: 'internal',
-      applicantManager: form.manager,
-      targetManager: form.manager,
+      personType: isExternal.value ? 'external' : 'internal',
+      relatedAccount: form.relatedAccount,
+      applicantManager: isExternal.value ? '' : form.manager,
+      targetManager: isExternal.value ? '' : form.manager,
       businessApprover: form.businessApprover,
       businessOwners: businessOwners.value,
-      approverItcode: form.manager,
-      handlers: [form.manager],
-      nodeType: 'applicant-manager',
-      node: '申请人直线经理审批',
+      approverItcode: isExternal.value ? form.relatedAccount : form.manager,
+      handlers: [isExternal.value ? form.relatedAccount : form.manager],
+      nodeType: isExternal.value ? 'relation' : 'applicant-manager',
+      node: isExternal.value ? '关联人审批' : '申请人直线经理审批',
       status: '审批中',
       statusKey: 'pending',
       time: now,
@@ -573,7 +593,7 @@ function submitApplication() {
         tenant: [...form.tenant],
         changeSummary: [`首次开通 ${allSelectedRoles.value.length} 个角色`, `包含 ${selectedFunctionIds.value.length} 项功能权限`, `包含 ${selectedDataIds.value.length} 项数据权限`, `开通 ${form.tenant.length} 个租户`]
       },
-      approvalLogs: [{ node: '申请提交', action: 'submit', operator: itcode.value, opinion: '内部用户在无权限页提交首次访问申请。', time: now }]
+      approvalLogs: [{ node: '申请提交', action: 'submit', operator: itcode.value, opinion: isExternal.value ? '外部用户在无权限页提交工作台权限申请。' : '内部用户在无权限页提交首次访问申请。', time: now }]
     }
     stored.unshift(application)
     window.localStorage.setItem(storageKey, JSON.stringify(stored.slice(0, 20)))
@@ -594,7 +614,7 @@ function restorePendingApplication() {
 
 function backToLogin() {
   appStore.user = null
-  router.replace('/login')
+  router.replace({ path: '/login', query: { loginType: isExternal.value ? 'external' : 'internal' } })
 }
 
 onMounted(() => {

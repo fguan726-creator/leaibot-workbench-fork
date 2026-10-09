@@ -37,6 +37,7 @@ const AgentSkills = () => import('@/views/agent/AgentSkillsView.vue')
 const AgentSkillCreate = () => import('@/views/agent/AgentSkillCreateView.vue')
 const AgentPermissions = () => import('@/views/agent/AgentPermissionsView.vue')
 const AdminCleanupEmailMock = () => import('@/views/agent/AdminCleanupEmailMockView.vue')
+const AccountEnableRequest = () => import('@/views/AccountEnableRequestView.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -57,6 +58,11 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/account-request/status',
     component: () => import('@/views/AccountRequestStatusView.vue'),
+    meta: { public: true }
+  },
+  {
+    path: '/account-enable-request',
+    component: AccountEnableRequest,
     meta: { public: true }
   },
   {
