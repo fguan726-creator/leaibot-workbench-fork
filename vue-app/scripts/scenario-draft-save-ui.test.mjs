@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test, { after, afterEach } from 'node:test'
 import { createServer as createHttpServer } from 'node:http'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { createRenderer, createSSRApp, h, nextTick, reactive, ssrContextKey } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -10,7 +11,7 @@ import { scenarioPmPermissions } from './helpers/scenarioActors.mjs'
 const previousStorage = globalThis.localStorage
 globalThis.localStorage = { getItem() { return null }, setItem() {}, removeItem() {} }
 const httpHost = createHttpServer()
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'error', server: { middlewareMode: true, hmr: { server: httpHost } } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'error', server: { middlewareMode: true, hmr: { server: httpHost } } })
 const [{ default: Create }, { useAppStore }, { useScenarioSkillPackagesStore }, domain] = await Promise.all([
   server.ssrLoadModule('/src/views/agent/ScenarioSkillPackageCreateView.vue'),
   server.ssrLoadModule('/src/stores/app.ts'),

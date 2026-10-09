@@ -9,9 +9,9 @@
       <div v-if="request" class="status-content">
         <div class="status-head">
           <div>
-            <span class="status-eyebrow">账号创建申请进度</span>
+            <span class="status-eyebrow">{{ request.type }}申请进度</span>
             <h1>{{ request.id }}</h1>
-            <p>该页面为免登录只读查询入口，仅用于查看账号创建申请状态和处理记录。</p>
+            <p>该页面为免登录只读查询入口，用于查看账号申请状态和处理记录。</p>
           </div>
           <span :class="['status-pill', statusClass]">{{ displayStatus }}</span>
         </div>
@@ -26,7 +26,7 @@
             <dd>{{ request.applicant }}（{{ request.applicantItcode }}）</dd>
           </div>
           <div>
-            <dt>待创建账号人员</dt>
+            <dt>{{ request.typeKey === 'enable' ? '申请启用账号' : '申请对象' }}</dt>
             <dd>{{ request.target }}</dd>
           </div>
           <div>
@@ -46,7 +46,8 @@
         <section class="status-section">
           <div class="status-section-head">
             <b>申请内容</b>
-            <span>{{ request.roleNames || '未选择角色' }} · {{ request.dataScopeNames || '默认无额外数据权限' }}</span>
+            <span v-if="request.typeKey === 'enable'">仅申请启用账号，工作台权限需另行申请。</span>
+            <span v-else>{{ request.roleNames || '未选择角色' }} · {{ request.dataScopeNames || '默认无额外数据权限' }}</span>
           </div>
           <p>{{ request.reason || '暂无补充说明。' }}</p>
         </section>
@@ -67,6 +68,9 @@
             </li>
           </ol>
         </section>
+        <section v-if="request.typeKey === 'enable'" class="status-section">
+          <RouterLink class="btn btn-primary" :to="{ path: '/login', query: { loginType: request.personType === 'external' ? 'external' : 'internal' } }">返回登录页</RouterLink>
+        </section>
       </div>
 
       <div v-else class="status-empty">
@@ -80,8 +84,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
 
 const STORAGE_KEY = 'leaibot-account-request-status-rows'
 const route = useRoute()
@@ -89,13 +93,28 @@ const route = useRoute()
 function readRequests() {
   if (typeof window === 'undefined') return [] as any[]
   try {
-    return JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '[]')
+    const rows = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '[]')
+    return Array.isArray(rows) ? rows : []
   } catch {
     return [] as any[]
   }
 }
 
-const requests = computed(() => readRequests())
+const requests = ref(readRequests())
+function refreshRequests() {
+  requests.value = readRequests()
+}
+function handleStorage(event: StorageEvent) {
+  if (event.key === STORAGE_KEY || event.key === null) refreshRequests()
+}
+onMounted(() => {
+  window.addEventListener('storage', handleStorage)
+  window.addEventListener('focus', refreshRequests)
+})
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorage)
+  window.removeEventListener('focus', refreshRequests)
+})
 const ticket = computed(() => String(route.query.ticket || ''))
 const token = computed(() => String(route.query.token || ''))
 const request = computed(() => requests.value.find((item: any) => item.id === ticket.value && item.token === token.value) || null)

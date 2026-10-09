@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import * as domain from '../src/domain/scenarioSkillPackages.js'
@@ -16,7 +17,7 @@ globalThis.localStorage = {
   setItem(name, value) { if (failWrite) throw new Error('QuotaExceededError'); data.set(name, value) },
   removeItem: name => data.delete(name)
 }
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
 const [{ useScenarioSkillPackagesStore }, { useSkillHubStore }, { useAppStore }] = await Promise.all([
   server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts'), server.ssrLoadModule('/src/stores/skillHub.ts'), server.ssrLoadModule('/src/stores/app.ts')
 ])

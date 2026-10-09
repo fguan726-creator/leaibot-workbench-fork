@@ -166,6 +166,19 @@ function applyRegisterAction(record: any) {
     return true
   }
 
+  if (row.typeKey === 'enable') {
+    if (currentNodeType !== 'system-admin') return false
+    row.status = '已完成'
+    row.statusKey = 'done'
+    row.nodeType = 'done'
+    row.node = '启用执行完成'
+    row.result = '系统管理员已批准账号启用申请，请重新登录并重新检查工作台权限。'
+    row.logs.push({ node: '系统执行结果', detail: row.result, time: record.time })
+    rows[index] = row
+    writeList(REGISTER_KEY, rows)
+    return true
+  }
+
   if (currentNodeType === 'relation') {
     updateRegisterNode(row, 'applicant-manager')
   } else if (currentNodeType === 'applicant-manager') {

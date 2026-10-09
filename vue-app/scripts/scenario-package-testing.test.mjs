@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import * as domain from '../src/domain/scenarioSkillPackages.js'
 import { scenarioPmActor } from './helpers/scenarioActors.mjs'
 
@@ -492,7 +493,7 @@ after(async () => {
   else globalThis.localStorage = previousStorage
 })
 test('reports remain isolated and only a successful current retrial allows submission or resubmission', async () => {
-  server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+  server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
   const [{ createPinia, setActivePinia }, module] = await Promise.all([import('pinia'), server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts')])
   setActivePinia(createPinia())
   const store = module.useScenarioSkillPackagesStore()

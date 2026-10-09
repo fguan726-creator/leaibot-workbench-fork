@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { runScenarioSimulation } from '../src/domain/scenarioPackageTesting.js'
 import * as domain from '../src/domain/scenarioSkillPackages.js'
@@ -13,7 +14,7 @@ const owner = scenarioPmActor('lifecycle-owner', ['employee-certification-insigh
 const reviewer = { id: 'independent-reviewer', permissions: ['scenario-package:review'] }
 const stranger = { id: 'stranger', permissions: ['scenario-package:create', 'scenario-package:compose:cross-menu'] }
 const copy = value => JSON.parse(JSON.stringify(value))
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
 const [{ useScenarioSkillPackagesStore }, { useSkillHubStore }] = await Promise.all([
   server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts'),
   server.ssrLoadModule('/src/stores/skillHub.ts')

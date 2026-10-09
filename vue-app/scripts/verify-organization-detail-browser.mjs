@@ -117,6 +117,8 @@ try {
   await page.locator('.current-card').getByText('乐享运营', { exact: true }).waitFor()
 
   await page.locator('.add-card').click()
+  assert.equal(await editor(page).locator('label').filter({ hasText: '创建人' }).count(), 0, 'creation must not render creator field')
+  assert.equal(await editor(page).locator('label').filter({ hasText: 'Code' }).count(), 0, 'creation must not render code field')
   const parentSelect = editor(page).locator('label').filter({ hasText: '上级组织' }).locator('select')
   assert.equal(await parentSelect.isEnabled(), true, 'creation must retain parent selection')
   assert.ok(await parentSelect.locator('option').count() > 1)

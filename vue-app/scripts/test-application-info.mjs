@@ -22,11 +22,11 @@ const expectedSchemas = {
     required: [FIELD.targetUser, FIELD.accountPassword, FIELD.confirmAccountPassword, FIELD.relatedAccount, FIELD.businessApprover, FIELD.reason]
   },
   statusInternal: {
-    fields: [FIELD.applicantIdentity, FIELD.targetItcode, FIELD.mobile, FIELD.email, FIELD.reason],
+    fields: [FIELD.applicantIdentity, FIELD.targetItcode, FIELD.reason],
     required: [FIELD.targetItcode, FIELD.reason]
   },
   statusExternal: {
-    fields: [FIELD.applicantIdentity, FIELD.targetUser, FIELD.relatedAccount, FIELD.mobile, FIELD.email, FIELD.reason],
+    fields: [FIELD.applicantIdentity, FIELD.targetUser, FIELD.relatedAccount, FIELD.reason],
     required: [FIELD.targetUser, FIELD.relatedAccount, FIELD.reason]
   }
 }

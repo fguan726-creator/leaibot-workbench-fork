@@ -70,7 +70,9 @@ export function withProjectPageExtensions(projectRoot, skillRoot, runChecker) {
   try {
     const copy = join(temporary, 'portal-workbench-ui-0914')
     cpSync(skillRoot, copy, { recursive: true })
-    const matrix = readFileSync(join(copy, matrixPath), 'utf8')
+    // Git may check out Markdown with CRLF on Windows. Normalize only this
+    // temporary overlay so the first appended row starts at a real line boundary.
+    const matrix = readFileSync(join(copy, matrixPath), 'utf8').replace(/\r\n/g, '\n')
     requireValue(matrix.split(matrixEnd).length === 2, '原版页面矩阵边界不唯一，不能叠加项目登记。')
     const rows = pages.map(page => `| ${page.label} | \`${page.route}\` | ${page.pageType} | ${page.components.join('/')} | ${page.implementation} | [VA-0] | ${page.remainingStates.join('；')} |`)
     writeFileSync(join(copy, matrixPath), matrix.replace(matrixEnd, rows.join('\n') + '\n' + matrixEnd))

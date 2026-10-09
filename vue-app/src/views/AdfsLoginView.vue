@@ -14,10 +14,11 @@
         <h1>Lenovo Corporation</h1>
         <p>Please login with your ITCode / Password and OTP code (if required).</p>
 
-        <label class="adfs-row">
-          <span>ITCode</span>
-          <input v-model.trim="itcode" autofocus autocomplete="username" />
-        </label>
+        <div class="adfs-row">
+          <label for="adfs-login-itcode">ITCode</label>
+          <PocLoginAccountPicker v-if="allowPreviewAuth" id="adfs-login-itcode" v-model="itcode" placeholder="输入或选择演示账号" @select="selectPocAccount" @submit="submitAdfsLogin" />
+          <input v-else id="adfs-login-itcode" v-model.trim="itcode" autofocus autocomplete="username" />
+        </div>
         <label class="adfs-row">
           <span>Password</span>
           <input v-model="password" type="password" autocomplete="current-password" />
@@ -34,6 +35,7 @@
           <span>使我保持登录状态</span>
         </label>
         <div v-if="errorMsg" class="adfs-error">{{ errorMsg }}</div>
+        <button v-if="disabledAccount" type="button" class="adfs-enable-entry" @click="openEnableRequest">申请启用账号</button>
         <button class="adfs-submit" type="submit">Submit</button>
       </form>
       <footer>© 2026 Lenovo</footer>
@@ -45,6 +47,10 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { allowPreviewAuth } from '@/config/runtimeMode'
+import PocLoginAccountPicker from '@/components/auth/PocLoginAccountPicker.vue'
+import { POC_ACCOUNT_REQUESTS_KEY, POC_EXTERNAL_PASSWORD, findPocLoginAccount, resolvePocLogin } from '@/services/pocExternalLogin'
+import { type PocLoginChoice } from '@/services/pocLoginChoices'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,38 +61,98 @@ const password = ref('')
 const otpCode = ref('')
 const rememberMe = ref(false)
 const errorMsg = ref('')
-const noAccessAccounts = ['noaccess', 'guest01']
+const disabledAccount = ref('')
+const initialPocAccount = findPocLoginAccount(route.query.pocAccount, allowPreviewAuth)
+if (initialPocAccount?.loginType === 'internal') {
+  itcode.value = initialPocAccount.username
+  password.value = POC_EXTERNAL_PASSWORD
+}
+
+function selectPocAccount(account: PocLoginChoice) {
+  if (!allowPreviewAuth) return
+  errorMsg.value = ''
+  disabledAccount.value = ''
+  if (account.loginType === 'external') {
+    router.push({ path: '/login', query: { loginType: 'external', pocAccount: account.username, redirect: String(route.query.redirect || '/') } })
+    return
+  }
+  itcode.value = account.username
+  password.value = POC_EXTERNAL_PASSWORD
+  otpCode.value = ''
+}
+
+function isDisabledLoginResponse(status: number, data: any) {
+  return status === 423 || data?.code === 'ACCOUNT_DISABLED' || data?.error === '账号已禁用'
+}
+
+function openEnableRequest() {
+  if (!disabledAccount.value) return
+  router.push({ path: '/account-enable-request', query: { account: disabledAccount.value, loginType: 'internal' } })
+}
 
 async function submitAdfsLogin() {
   const account = itcode.value.trim()
+  errorMsg.value = ''
+  disabledAccount.value = ''
   if (!account || !password.value) {
     errorMsg.value = '请输入 ITCode 和 Password。'
     return
   }
 
-  if (noAccessAccounts.includes(account.toLowerCase())) {
-    localStorage.removeItem('preview_user')
-    appStore.user = account
-    appStore.role = '待申请权限'
-    appStore.permissions = []
-    appStore.visibleMenus = []
-    await router.replace({ path: '/access-denied', query: { itcode: account } })
+  try {
+    const result = resolvePocLogin(account, password.value, 'internal', allowPreviewAuth, () => localStorage.getItem(POC_ACCOUNT_REQUESTS_KEY))
+    if (result) {
+      if (result === 'invalid-password' || result === 'wrong-login-type') {
+        errorMsg.value = result === 'invalid-password' ? '用户名或密码错误' : '该演示账号属于外部用户，请切换外部用户登录。'
+        return
+      }
+      localStorage.removeItem('preview_user')
+      sessionStorage.removeItem('leaibot-disabled-login-account')
+      sessionStorage.removeItem('leaibot-disabled-login-type')
+      appStore.user = null
+      appStore.role = null
+      appStore.permissions = []
+      appStore.visibleMenus = []
+      if (result === 'disabled') {
+        disabledAccount.value = account.toLowerCase()
+        sessionStorage.setItem('leaibot-disabled-login-account', disabledAccount.value)
+        sessionStorage.setItem('leaibot-disabled-login-type', 'internal')
+        errorMsg.value = '当前账号已禁用，请申请启用后再登录。'
+      } else {
+        await router.replace({ path: '/access-denied', query: { itcode: account.toLowerCase(), userType: 'internal' } })
+      }
+      return
+    }
+  } catch {
+    errorMsg.value = '演示账号状态读取失败，请检查浏览器存储后重试。'
     return
   }
 
   try {
+    disabledAccount.value = ''
     const res = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: account, password: password.value, otpCode: otpCode.value, rememberMe: rememberMe.value, loginType: 'adfs' })
     })
-    const data = await res.json()
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
+      if (isDisabledLoginResponse(res.status, data)) {
+        disabledAccount.value = account
+        sessionStorage.setItem('leaibot-disabled-login-account', account)
+        sessionStorage.setItem('leaibot-disabled-login-type', 'internal')
+        errorMsg.value = '当前账号已禁用，请申请启用后再登录。'
+        return
+      }
       errorMsg.value = data.error || '登录失败'
       return
     }
     appStore.user = data.username || account
     await appStore.loadUserContext()
+    if (!appStore.permissions.length) {
+      await router.replace({ path: '/access-denied', query: { itcode: data.username || account, userType: 'internal' } })
+      return
+    }
     await router.replace(String(route.query.redirect || '/'))
   } catch {
     errorMsg.value = '登录服务暂不可用，请稍后重试'
@@ -180,7 +246,8 @@ async function submitAdfsLogin() {
   font-size: 18px;
 }
 
-.adfs-row input {
+.adfs-row input,
+.adfs-row :deep(.poc-account-input) {
   width: 100%;
   height: 39px;
   border: 1px solid #9b9b9b;
@@ -190,7 +257,8 @@ async function submitAdfsLogin() {
   font-size: 16px;
 }
 
-.adfs-row input:focus {
+.adfs-row input:focus,
+.adfs-row :deep(.poc-account-input:focus) {
   outline: 2px solid #111827;
   outline-offset: -2px;
   background: #eaf2ff;
@@ -229,6 +297,18 @@ async function submitAdfsLogin() {
   color: #d92d20;
   font-size: 14px;
 }
+
+.adfs-enable-entry {
+  justify-self: start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.adfs-enable-entry:hover { text-decoration: underline; }
+.adfs-enable-entry:focus-visible { outline: none; border-radius: var(--radius-sm); box-shadow: var(--focus-ring); }
 
 .adfs-submit {
   min-width: 104px;

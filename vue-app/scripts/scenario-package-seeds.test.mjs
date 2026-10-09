@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after } from 'node:test'
 import { createServer } from 'vite'
+import { fileURLToPath } from 'node:url'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { evaluateScenarioTrialForSubmit } from '../src/domain/scenarioSkillPackages.js'
@@ -9,7 +10,7 @@ import { scenarioPmActor, scenarioPmPermissions } from './helpers/scenarioActors
 
 const previousStorage = globalThis.localStorage
 globalThis.localStorage = { getItem() { return null }, setItem() {}, removeItem() {} }
-const server = await createServer({ root: new URL('..', import.meta.url).pathname, logLevel: 'silent', server: { middlewareMode: true } })
+const server = await createServer({ root: fileURLToPath(new URL('..', import.meta.url)), logLevel: 'silent', server: { middlewareMode: true } })
 const [{ useAppStore }, { useSkillHubStore }, { useScenarioSkillPackagesStore }] = await Promise.all([
   server.ssrLoadModule('/src/stores/app.ts'),
   server.ssrLoadModule('/src/stores/skillHub.ts'),

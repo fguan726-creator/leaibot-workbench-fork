@@ -114,8 +114,8 @@ const applicationCases = [
   { type: 'create', person: 'internal', fields: ['applicantIdentity', 'targetUser', 'accountPassword', 'confirmAccountPassword', 'relatedAccount', 'mobile', 'email', 'applicantManager', 'businessApprover', 'reason'], required: ['targetUser', 'accountPassword', 'confirmAccountPassword', 'relatedAccount', 'businessApprover', 'reason'] },
   { type: 'create', person: 'external', fields: ['applicantIdentity', 'targetUser', 'accountPassword', 'confirmAccountPassword', 'relatedAccount', 'mobile', 'email', 'applicantManager', 'businessApprover', 'reason'], required: ['targetUser', 'accountPassword', 'confirmAccountPassword', 'relatedAccount', 'businessApprover', 'reason'] },
   ...['enable', 'disable'].flatMap(type => [
-    { type, person: 'internal', fields: ['applicantIdentity', 'targetItcode', 'mobile', 'email', 'reason'], required: ['targetItcode', 'reason'] },
-    { type, person: 'external', fields: ['applicantIdentity', 'targetUser', 'relatedAccount', 'mobile', 'email', 'reason'], required: ['targetUser', 'relatedAccount', 'reason'] }
+    { type, person: 'internal', fields: ['applicantIdentity', 'targetItcode', 'reason'], required: ['targetItcode', 'reason'] },
+    { type, person: 'external', fields: ['applicantIdentity', 'targetUser', 'relatedAccount', 'reason'], required: ['targetUser', 'relatedAccount', 'reason'] }
   ])
 ]
 
