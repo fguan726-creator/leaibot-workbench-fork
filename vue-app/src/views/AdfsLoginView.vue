@@ -49,7 +49,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { allowPreviewAuth } from '@/config/runtimeMode'
 import PocLoginAccountPicker from '@/components/auth/PocLoginAccountPicker.vue'
-import { POC_ACCOUNT_REQUESTS_KEY, POC_EXTERNAL_PASSWORD, findPocLoginAccount, resolvePocLogin, type PocLoginAccount } from '@/services/pocExternalLogin'
+import { POC_ACCOUNT_REQUESTS_KEY, POC_EXTERNAL_PASSWORD, findPocLoginAccount, resolvePocLogin } from '@/services/pocExternalLogin'
+import { type PocLoginChoice } from '@/services/pocLoginChoices'
 
 const route = useRoute()
 const router = useRouter()
@@ -67,7 +68,7 @@ if (initialPocAccount?.loginType === 'internal') {
   password.value = POC_EXTERNAL_PASSWORD
 }
 
-function selectPocAccount(account: PocLoginAccount) {
+function selectPocAccount(account: PocLoginChoice) {
   if (!allowPreviewAuth) return
   errorMsg.value = ''
   disabledAccount.value = ''

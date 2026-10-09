@@ -184,7 +184,8 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { allowPreviewAuth } from '@/config/runtimeMode'
-import { POC_ACCOUNT_REQUESTS_KEY, POC_EXTERNAL_PASSWORD, findPocLoginAccount, resolvePocExternalLogin, type PocLoginAccount } from '@/services/pocExternalLogin'
+import { POC_ACCOUNT_REQUESTS_KEY, resolvePocExternalLogin } from '@/services/pocExternalLogin'
+import { findPocLoginChoice, getPocLoginPassword, type PocLoginChoice } from '@/services/pocLoginChoices'
 import PocLoginAccountPicker from '@/components/auth/PocLoginAccountPicker.vue'
 import ExternalPasswordRecoveryModal from '@/components/auth/ExternalPasswordRecoveryModal.vue'
 
@@ -197,14 +198,14 @@ const password = ref('')
 const errorMsg = ref('')
 const disabledAccount = ref('')
 const loginTab = ref<'internal' | 'external'>(route.query.loginType === 'external' ? 'external' : 'internal')
-const initialPocAccount = findPocLoginAccount(route.query.pocAccount, allowPreviewAuth)
+const initialPocAccount = findPocLoginChoice(route.query.pocAccount)
 if (initialPocAccount?.loginType === 'external') {
   loginTab.value = 'external'
   username.value = initialPocAccount.username
-  password.value = POC_EXTERNAL_PASSWORD
+  password.value = getPocLoginPassword(initialPocAccount)
 }
 
-function selectPocAccount(account: PocLoginAccount) {
+function selectPocAccount(account: PocLoginChoice) {
   if (!allowPreviewAuth) return
   errorMsg.value = ''
   disabledAccount.value = ''
@@ -214,7 +215,7 @@ function selectPocAccount(account: PocLoginAccount) {
   }
   loginTab.value = 'external'
   username.value = account.username
-  password.value = POC_EXTERNAL_PASSWORD
+  password.value = getPocLoginPassword(account)
 }
 const passwordRecoveryVisible = ref(false)
 const forgotPasswordTrigger = ref<HTMLButtonElement | null>(null)
@@ -382,7 +383,7 @@ async function doLogin() {
     }
     router.replace(String(route.query.redirect || '/'))
   } catch {
-    if (!allowPreviewAuth) {
+    if (!allowPreviewAuth || u.toLowerCase() === 'admin') {
       showLoginError('登录服务暂不可用，请稍后重试')
       return
     }

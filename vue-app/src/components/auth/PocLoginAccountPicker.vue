@@ -42,16 +42,15 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
-import { allowPreviewAuth } from '@/config/runtimeMode'
-import { POC_LOGIN_ACCOUNTS, type PocLoginAccount } from '@/services/pocExternalLogin'
+import { POC_LOGIN_CHOICES, type PocLoginChoice } from '@/services/pocLoginChoices'
 
 defineProps<{ id: string; modelValue: string; placeholder?: string }>()
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  select: [account: PocLoginAccount]
+  select: [account: PocLoginChoice]
   submit: []
 }>()
-const accounts = allowPreviewAuth ? POC_LOGIN_ACCOUNTS : []
+const accounts = POC_LOGIN_CHOICES
 const root = ref<HTMLElement | null>(null)
 const open = ref(false)
 const activeIndex = ref(-1)
@@ -68,7 +67,7 @@ function onInput(event: Event) {
   activeIndex.value = -1
   showOptions()
 }
-function selectAccount(account: PocLoginAccount) {
+function selectAccount(account: PocLoginChoice) {
   closeOptions()
   emit('update:modelValue', account.username)
   emit('select', account)

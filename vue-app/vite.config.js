@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
+import { localPocAdminPlugin } from './scripts/local-poc-admin-plugin.mjs'
 
 export default defineConfig({
   base: '/admin-vue/',
-  plugins: [vue()],
+  plugins: [vue(), localPocAdminPlugin()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
