@@ -8683,3 +8683,23 @@ html.lx-root-lxfd-prepaint body{overflow:hidden!important;background:#fcfaff}
     body[data-page="personal"]:not(.assistant-fullscreen) .content[data-view="list"] > #p0OriginalSceneBanner { display:block; }
 }
 
+/* Homepage legal notice stays in document flow; short windows can scroll to it. */
+html.lx-root-lxfd-prepaint body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home,
+body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home {
+  height:auto!important;
+  min-height:100vh!important;
+  overflow:visible!important;
+}
+html.lx-root-lxfd-prepaint body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home:not(.is-chatting) .lxfd-legal-line,
+body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home:not(.is-chatting) .lxfd-legal-line {
+  position:static!important;
+  inset:auto!important;
+  transform:none!important;
+  width:min(100%,1180px)!important;
+  max-width:calc(100vw - 48px)!important;
+  margin:clamp(14px,2.2vh,24px) auto 18px!important;
+  padding:0 24px!important;
+  text-align:center!important;
+  white-space:normal!important;
+  z-index:auto!important;
+}
