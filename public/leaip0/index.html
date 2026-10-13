@@ -809,9 +809,9 @@
     window.setTimeout(function () { node.remove(); }, 2800);
   }
   function openFeedback(trigger) {
-    document.querySelectorAll(.lx-p0-modal-mask.show).forEach(function (legacyMask) {
-      var title = legacyMask.querySelector(.lx-p0-modal-title);
-      if (title && title.textContent.trim() === 类目名称) legacyMask.classList.remove(show);
+    document.querySelectorAll(".lx-p0-modal-mask.show").forEach(function (legacyMask) {
+      var title = legacyMask.querySelector(".lx-p0-modal-title");
+      if (title && title.textContent.trim() === "类目名称") legacyMask.classList.remove("show");
     });
     if (activeDialog) return;
     var previousFocus = trigger;
