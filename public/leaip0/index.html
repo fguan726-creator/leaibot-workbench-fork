@@ -770,7 +770,7 @@
     .account-menu .menu-row, .lxfd-account-menu .menu-row { width:100%; border:0; background:transparent; text-decoration:none; text-align:left; cursor:pointer; }
     .account-menu button.menu-row, .lxfd-account-menu button.menu-row { box-sizing:border-box; padding:0 14px; font:inherit; }
     .lx-feedback-mask { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(38,26,41,.62); }
-    .lx-feedback-dialog { position:relative; box-sizing:border-box; width:min(684px, calc(90vw - 36px)); max-height:min(648px, calc(90vh - 36px)); overflow:auto; padding:28px 32px 24px; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(45,18,52,.28),0 4px 14px rgba(45,18,52,.12); color:#17131a; }
+    .lx-feedback-dialog { position:relative; box-sizing:border-box; width:min(616px, calc(81vw - 32px)); max-height:min(583px, calc(81vh - 32px)); overflow:auto; padding:28px 32px 24px; border-radius:18px; background:#fff; box-shadow:0 24px 70px rgba(45,18,52,.28),0 4px 14px rgba(45,18,52,.12); color:#17131a; }
     .lx-feedback-header { margin-bottom:12px; }
     .lx-feedback-title { margin:0; font-size:24px; line-height:1.35; font-weight:700; }
     .lx-feedback-subtitle { margin:4px 0 0; color:#999; font-size:16px; }
@@ -809,6 +809,10 @@
     window.setTimeout(function () { node.remove(); }, 2800);
   }
   function openFeedback(trigger) {
+    document.querySelectorAll(.lx-p0-modal-mask.show).forEach(function (legacyMask) {
+      var title = legacyMask.querySelector(.lx-p0-modal-title);
+      if (title && title.textContent.trim() === 类目名称) legacyMask.classList.remove(show);
+    });
     if (activeDialog) return;
     var previousFocus = trigger;
     var mask = document.createElement("div");
