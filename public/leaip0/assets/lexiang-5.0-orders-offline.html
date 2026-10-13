@@ -5107,13 +5107,6 @@ function openOrderDetail(orderId) {
             </div>`);
         }
 
-        function openCategoryPlaceholder() {
-          openModal("类目名称", `
-            <section class="lx-p0-category-waiting" role="status" aria-live="polite">
-              <p class="lx-p0-category-waiting-title">等待制作</p>
-            </section>`);
-        }
-
         async function sendCode() {
           const phone = $("#lxLoginPhone")?.value.trim();
           if (!phone) return toast("请输入手机号");
@@ -11917,7 +11910,6 @@ async function openEduZone() {
               const action = menuRow.dataset.accountAction || "";
               menuRow.closest(".account-wrap")?.classList.remove("open");
               if (action === "logout" || text.includes("退出")) logout();
-              else openCategoryPlaceholder();
             }
 
             const plainNav = event.target.closest(".main-nav button:not([data-page])");
