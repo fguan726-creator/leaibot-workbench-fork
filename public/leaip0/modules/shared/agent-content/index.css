@@ -8709,3 +8709,19 @@ html.lx-root-lxfd-prepaint body:has(.lxfd-stage.lxfd-gallery-home:not(.is-chatti
   overflow-x:hidden!important;
   overflow-y:auto!important;
 }
+html.lx-root-lxfd-prepaint:has(.lxfd-stage.lxfd-gallery-home:not(.is-chatting)),
+html:has(body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home:not(.is-chatting)) {
+  height:auto!important;
+  min-height:100vh!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
+html.lx-root-lxfd-prepaint .lxfd:has(.lxfd-stage.lxfd-gallery-home:not(.is-chatting)),
+body.assistant-fullscreen .lxfd:has(.lxfd-stage.lxfd-gallery-home:not(.is-chatting)) {
+  position:relative!important;
+  inset:auto!important;
+  height:auto!important;
+  min-height:100vh!important;
+  max-height:none!important;
+  overflow:visible!important;
+}
