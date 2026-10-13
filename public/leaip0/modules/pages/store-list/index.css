@@ -782,11 +782,12 @@
     .lx-store-meta-row{min-height:24px;margin-bottom:5px}
 }
 @media (-p0-part: p2f9a31fe7f6d0e15251f) {
-    .lx-store-benefits-preview{min-width:0;overflow:visible;cursor:default;background:#fcfaff}
+    .lx-store-benefits-preview{min-width:0;overflow:visible;cursor:pointer;background:#fcfaff}
     .lx-store-benefits-preview:hover,.lx-store-benefits-preview:focus-visible{background:#fcfaff;outline:none}
     .lx-store-benefits-label{z-index:1;white-space:nowrap}
     .lx-store-benefit-row{min-width:0}
     .lx-store-benefit-copy{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .lx-store-benefit-row.is-product .lx-store-benefit-copy{flex:1 1 auto;max-width:none;white-space:normal;line-height:1.45}
     .lx-store-product-thumbs{min-width:0;flex:none}
 }
 @media (-p0-part: p64f70cdaf3a87a281d6d) {.lx-store-global-modal,.lx-store-global-modal *{box-sizing:border-box;font-family:"Source Han Sans CN","PingFang SC","Microsoft YaHei",Arial,sans-serif}

@@ -164,6 +164,7 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
         var userCoordinate = { lng: 116.375341, lat: 39.914214 };
         var userLocation = { city: "北京市", district: "西城区", address: "北京市西城区复兴门内大街49号" };
         var productImages = ["/assets/img/stores/23f3749312b46071939f.webp", "/assets/img/stores/00c97a4e69a0f738e56a.webp", "/assets/img/stores/608c4cbf04af6e993e79.webp"];
+        var productPreviewNames = ["ThinkPad X1 Carbon", "小新 Pro 14", "拯救者 Y9000P"];
         function productThumbs(listClass) {
           return '<span class="' + listClass + '">' + productImages.map(function (src) { return '<img src="' + src + '" alt="门店在售商品预览" />'; }).join("") + '</span>';
         }
@@ -180,9 +181,9 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
             '<div class="lx-map-card-meta"><span><b>营业中</b> ' + store.hours + '</span><span>电话 <b>' + store.phone + '</b></span></div>' +
             '<div class="lx-map-card-business"><b>业务</b>' + businessTagsMarkup(store, "lx-business-tag") + '</div>' +
             '<div class="lx-map-card-actions"><span class="lx-map-card-distance">距离 ' + store.distance + '</span></div>' +
-            '<div class="lx-store-benefits-preview" aria-label="门店权益及商品，仅展示"><span class="lx-store-benefits-label">门店权益及商品</span>' +
+            '<div class="lx-store-benefits-preview" aria-label="门店权益及商品，点击查看门店详情"><span class="lx-store-benefits-label">门店权益及商品</span>' +
               '<div class="lx-store-benefit-row"><span class="lx-store-benefit-badge"><b>券</b><span>' + store.coupon + '</span></span><span class="lx-store-benefit-copy">' + store.couponTitle + '</span></div>' +
-              '<div class="lx-store-benefit-row is-product"><span class="lx-store-benefit-badge"><b>商品</b><span>在售</span></span><span class="lx-store-benefit-copy">' + store.productName + '</span>' + productThumbs("lx-store-product-thumbs") + '</div></div>';
+              '<div class="lx-store-benefit-row is-product"><span class="lx-store-benefit-badge"><b>商品</b><span>在售</span></span><span class="lx-store-benefit-copy">' + productPreviewNames.join(" / ") + '</span>' + productThumbs("lx-store-product-thumbs") + '</div></div>';
         }
 
         function storeDetailMarkup(store) {
@@ -928,7 +929,6 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
           }
           content.addEventListener("click", function (event) {
             if (event.target.closest && event.target.closest("[data-close-store-card]")) return;
-            if (event.target.closest && event.target.closest(".lx-store-benefits-preview")) return;
             var detailTrigger = event.target.closest && event.target.closest("[data-open-store-detail]");
             if (!detailTrigger) return;
             event.preventDefault();
@@ -1658,6 +1658,7 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
         var userCoordinate = { lng: 116.375341, lat: 39.914214 };
         var userLocation = { city: "北京市", district: "西城区", address: "北京市西城区复兴门内大街49号" };
         var productImages = ["/assets/img/stores/23f3749312b46071939f.webp", "/assets/img/stores/00c97a4e69a0f738e56a.webp", "/assets/img/stores/608c4cbf04af6e993e79.webp"];
+        var productPreviewNames = ["ThinkPad X1 Carbon", "小新 Pro 14", "拯救者 Y9000P"];
         function productThumbs(listClass) {
           return '<span class="' + listClass + '">' + productImages.map(function (src) { return '<img src="' + src + '" alt="门店在售商品预览" />'; }).join("") + '</span>';
         }
@@ -1674,9 +1675,9 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
             '<div class="lx-map-card-meta"><span><b>营业中</b> ' + store.hours + '</span><span>电话 <b>' + store.phone + '</b></span></div>' +
             '<div class="lx-map-card-business"><b>业务</b>' + businessTagsMarkup(store, "lx-business-tag") + '</div>' +
             '<div class="lx-map-card-actions"><span class="lx-map-card-distance">距离 ' + store.distance + '</span></div>' +
-            '<div class="lx-store-benefits-preview" aria-label="门店权益及商品，仅展示"><span class="lx-store-benefits-label">门店权益及商品</span>' +
+            '<div class="lx-store-benefits-preview" aria-label="门店权益及商品，点击查看门店详情"><span class="lx-store-benefits-label">门店权益及商品</span>' +
               '<div class="lx-store-benefit-row"><span class="lx-store-benefit-badge"><b>券</b><span>' + store.coupon + '</span></span><span class="lx-store-benefit-copy">' + store.couponTitle + '</span></div>' +
-              '<div class="lx-store-benefit-row is-product"><span class="lx-store-benefit-badge"><b>商品</b><span>在售</span></span><span class="lx-store-benefit-copy">' + store.productName + '</span>' + productThumbs("lx-store-product-thumbs") + '</div></div>';
+              '<div class="lx-store-benefit-row is-product"><span class="lx-store-benefit-badge"><b>商品</b><span>在售</span></span><span class="lx-store-benefit-copy">' + productPreviewNames.join(" / ") + '</span>' + productThumbs("lx-store-product-thumbs") + '</div></div>';
         }
 
         function storeDetailMarkup(store) {
@@ -2402,7 +2403,6 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
           }
           content.addEventListener("click", function (event) {
             if (event.target.closest && event.target.closest("[data-close-store-card]")) return;
-            if (event.target.closest && event.target.closest(".lx-store-benefits-preview")) return;
             var detailTrigger = event.target.closest && event.target.closest("[data-open-store-detail]");
             if (!detailTrigger) return;
             event.preventDefault();
