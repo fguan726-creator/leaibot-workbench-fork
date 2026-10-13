@@ -8697,9 +8697,15 @@ body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home:not(.is-chatting) .lxfd-
   transform:none!important;
   width:min(100%,1180px)!important;
   max-width:calc(100vw - 48px)!important;
-  margin:clamp(14px,2.2vh,24px) auto 18px!important;
+  margin: auto auto 18px!important;
   padding:0 24px!important;
   text-align:center!important;
   white-space:normal!important;
   z-index:auto!important;
+}
+html.lx-root-lxfd-prepaint body:has(.lxfd-stage.lxfd-gallery-home:not(.is-chatting)) {
+  height:auto!important;
+  min-height:100vh!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
 }
