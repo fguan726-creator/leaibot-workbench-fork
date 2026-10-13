@@ -247,6 +247,9 @@
           </button>
           <div class="account-menu" role="menu">
             <div class="menu-row" data-account-action="member">会员中心</div>
+            <a class="menu-row" role="menuitem" href="https://www.lenovo.com.cn/statement/privacy.html" target="_blank" rel="noopener noreferrer">隐私政策</a>
+            <a class="menu-row" role="menuitem" href="https://shop.lenovo.com.cn/page/aiuseragreement.html" target="_blank" rel="noopener noreferrer">服务条款</a>
+            <button class="menu-row" type="button" data-account-action="feedback">反馈意见</button>
             <div class="menu-row" data-account-action="logout">退出登录</div>
           </div>
         </div>
@@ -668,6 +671,9 @@
             <button class="lxfd-avatar" type="button" aria-label="个人中心" title="个人中心"><img class="icon" src="../icons/mall-account.svg" alt="" /></button>
             <div class="account-menu lxfd-account-menu" role="menu">
               <div class="menu-row" data-account-action="member">会员中心</div>
+              <a class="menu-row" role="menuitem" href="https://www.lenovo.com.cn/statement/privacy.html" target="_blank" rel="noopener noreferrer">隐私政策</a>
+              <a class="menu-row" role="menuitem" href="https://shop.lenovo.com.cn/page/aiuseragreement.html" target="_blank" rel="noopener noreferrer">服务条款</a>
+              <button class="menu-row" type="button" data-account-action="feedback">反馈意见</button>
               <div class="menu-row" data-account-action="logout">退出登录</div>
             </div>
           </div>
@@ -755,5 +761,119 @@
 <script src="/modules/modals/education-auth/index.js?p0v=payment-success-20260923-1#p0-script=%2Fassets%2Ffrontend%2Fjs%2Fcore%2Feducation-auth-accessibility-v1.js"></script>
 
 <script defer src="/modules/shared/agent-content/index.js?p0v=payment-success-20260923-1#p0-script=%2Fassets%2Ffrontend%2Fjs%2Fcore%2Ftabbar-compression-v1.js"></script>
+<script>
+(function () {
+  if (window.__lxAccountFeedbackInstalled) return;
+  window.__lxAccountFeedbackInstalled = true;
+  var style = document.createElement("style");
+  style.textContent = `
+    .account-menu .menu-row, .lxfd-account-menu .menu-row { width:100%; border:0; background:transparent; text-decoration:none; text-align:left; cursor:pointer; }
+    .lx-feedback-mask { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(38,26,41,.62); }
+    .lx-feedback-dialog { position:relative; width:min(1272px, calc(100vw - 48px)); max-height:calc(100vh - 48px); overflow:auto; padding:48px 56px 40px; border-radius:24px; background:#fff; box-shadow:0 24px 70px rgba(45,18,52,.28),0 4px 14px rgba(45,18,52,.12); color:#17131a; }
+    .lx-feedback-header { margin-bottom:18px; }
+    .lx-feedback-title { margin:0; font-size:32px; line-height:1.35; font-weight:700; }
+    .lx-feedback-subtitle { margin:6px 0 0; color:#999; font-size:22px; }
+    .lx-feedback-close { position:absolute; top:48px; right:56px; width:36px; height:36px; border:0; background:transparent; color:#444; font-size:30px; line-height:1; cursor:pointer; }
+    .lx-feedback-row { display:grid; grid-template-columns:140px minmax(0,1fr); gap:20px; align-items:start; margin-top:28px; }
+    .lx-feedback-label { padding-top:11px; font-size:24px; font-weight:600; }
+    .lx-feedback-field { min-width:0; }
+    .lx-feedback-textarea, .lx-feedback-phone { width:100%; border:1px solid #e7e0ed; border-radius:9px; background:#fcfaff; color:#25212a; font-size:22px; outline:none; }
+    .lx-feedback-textarea { min-height:234px; resize:vertical; padding:18px 22px 42px; }
+    .lx-feedback-phone { max-width:438px; height:76px; padding:0 22px; }
+    .lx-feedback-textarea:focus, .lx-feedback-phone:focus { border-color:#a262d7; box-shadow:0 0 0 2px rgba(162,98,215,.12); }
+    .lx-feedback-textarea::placeholder, .lx-feedback-phone::placeholder { color:#c7c4cb; }
+    .lx-feedback-counter { margin-top:-38px; padding-right:20px; text-align:right; color:#b6b2bb; font-size:20px; pointer-events:none; }
+    .lx-feedback-images { display:flex; flex-wrap:wrap; gap:14px; }
+    .lx-feedback-add { width:174px; height:174px; border:1px solid #eee8f2; border-radius:16px; background:#fcfaff; color:#b7b3bc; font-size:18px; cursor:pointer; }
+    .lx-feedback-add span { display:block; font-size:34px; line-height:1.2; }
+    .lx-feedback-preview { width:174px; height:174px; border-radius:12px; border:1px solid #eee8f2; object-fit:cover; }
+    .lx-feedback-image-wrap { position:relative; }
+    .lx-feedback-remove { position:absolute; top:5px; right:5px; width:26px; height:26px; border:0; border-radius:50%; color:#fff; background:rgba(0,0,0,.58); cursor:pointer; }
+    .lx-feedback-error { min-height:20px; margin:7px 0 0; color:#c52a32; font-size:14px; }
+    .lx-feedback-actions { display:flex; justify-content:flex-end; margin-top:18px; }
+    .lx-feedback-submit { min-width:224px; height:72px; border:0; border-radius:40px; color:#fff; background:linear-gradient(100deg,#541451,#ba202d); font-size:24px; font-weight:600; cursor:pointer; }
+    .lx-feedback-submit:hover { filter:brightness(1.04); }
+    .lx-feedback-notice { position:fixed; z-index:10001; left:50%; bottom:28px; transform:translateX(-50%); padding:12px 20px; border-radius:8px; color:#fff; background:#342638; font-size:15px; }
+    @media(max-width:700px) { .lx-feedback-mask{padding:12px}.lx-feedback-dialog{width:100%;max-height:calc(100vh - 24px);padding:28px 20px 24px;border-radius:18px}.lx-feedback-title{font-size:24px}.lx-feedback-subtitle{font-size:16px}.lx-feedback-close{top:24px;right:18px}.lx-feedback-row{grid-template-columns:1fr;gap:8px;margin-top:18px}.lx-feedback-label{padding-top:0;font-size:17px}.lx-feedback-textarea{min-height:170px;font-size:16px}.lx-feedback-phone{height:54px;font-size:16px}.lx-feedback-add,.lx-feedback-preview{width:112px;height:112px}.lx-feedback-submit{min-width:150px;height:52px;font-size:18px} }
+  `;
+  document.head.appendChild(style);
+  var activeDialog = null;
+  function showNotice(text) {
+    var node = document.createElement("div");
+    node.className = "lx-feedback-notice";
+    node.setAttribute("role", "status");
+    node.textContent = text;
+    document.body.appendChild(node);
+    window.setTimeout(function () { node.remove(); }, 2800);
+  }
+  function openFeedback(trigger) {
+    if (activeDialog) return;
+    var previousFocus = trigger;
+    var mask = document.createElement("div");
+    mask.className = "lx-feedback-mask";
+    mask.innerHTML = '<section class="lx-feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="lxFeedbackTitle"><header class="lx-feedback-header"><h2 class="lx-feedback-title" id="lxFeedbackTitle">意见反馈</h2><p class="lx-feedback-subtitle">您的建议，帮助我们做得更好</p></header><button class="lx-feedback-close" type="button" aria-label="关闭">×</button><form novalidate><div class="lx-feedback-row"><label class="lx-feedback-label" for="lxFeedbackContent">反馈内容</label><div class="lx-feedback-field"><textarea class="lx-feedback-textarea" id="lxFeedbackContent" maxlength="500" placeholder="我们用心倾听来自您的声音（10-500字）" required></textarea><div class="lx-feedback-counter" aria-live="polite">0 / 500</div><p class="lx-feedback-error" data-error="content" role="alert"></p></div></div><div class="lx-feedback-row"><div class="lx-feedback-label">上传图片</div><div class="lx-feedback-field"><div class="lx-feedback-images"><button class="lx-feedback-add" type="button"><span aria-hidden="true">＋</span>添加图片<br>(0/3)</button></div><input class="lx-feedback-file" type="file" accept="image/*" multiple hidden><p class="lx-feedback-error" data-error="images" role="alert"></p></div></div><div class="lx-feedback-row"><label class="lx-feedback-label" for="lxFeedbackPhone"><span style="color:#e44b52">＊</span> 联系方式</label><div class="lx-feedback-field"><input class="lx-feedback-phone" id="lxFeedbackPhone" type="tel" inputmode="numeric" autocomplete="tel" maxlength="11" placeholder="请输入手机号" required><p class="lx-feedback-error" data-error="phone" role="alert"></p></div></div><div class="lx-feedback-actions"><button class="lx-feedback-submit" type="submit">提交</button></div></form></section>';
+    document.body.appendChild(mask);
+    activeDialog = mask;
+    var dialog = mask.querySelector(".lx-feedback-dialog"), form = mask.querySelector("form");
+    var content = mask.querySelector("#lxFeedbackContent"), counter = mask.querySelector(".lx-feedback-counter");
+    var phone = mask.querySelector("#lxFeedbackPhone"), picker = mask.querySelector(".lx-feedback-file");
+    var add = mask.querySelector(".lx-feedback-add"), imageList = mask.querySelector(".lx-feedback-images");
+    var files = [];
+    function cleanup() {
+      if (!activeDialog) return;
+      files.forEach(function (file) { if (file.url) URL.revokeObjectURL(file.url); });
+      mask.remove(); activeDialog = null;
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+    }
+    function clearErrors() { mask.querySelectorAll(".lx-feedback-error").forEach(function (node) { node.textContent = ""; }); }
+    function renderImages() {
+      imageList.querySelectorAll(".lx-feedback-image-wrap").forEach(function (node) { node.remove(); });
+      files.forEach(function (file, index) {
+        var wrap = document.createElement("div"); wrap.className = "lx-feedback-image-wrap";
+        var image = document.createElement("img"); image.className = "lx-feedback-preview"; image.src = file.url; image.alt = "反馈图片";
+        var remove = document.createElement("button"); remove.className = "lx-feedback-remove"; remove.type = "button"; remove.textContent = "×"; remove.setAttribute("aria-label", "移除图片");
+        remove.addEventListener("click", function () { URL.revokeObjectURL(file.url); files.splice(index, 1); renderImages(); });
+        wrap.append(image, remove); imageList.insertBefore(wrap, add);
+      });
+      add.hidden = files.length >= 3;
+      add.innerHTML = "<span aria-hidden=\"true\">＋</span>添加图片<br>(" + files.length + "/3)";
+    }
+    mask.querySelector(".lx-feedback-close").addEventListener("click", cleanup);
+    mask.addEventListener("click", function (event) { if (event.target === mask) cleanup(); });
+    add.addEventListener("click", function () { picker.click(); });
+    picker.addEventListener("change", function () {
+      Array.from(picker.files || []).forEach(function (file) {
+        if (files.length >= 3 || !file.type.startsWith("image/")) return;
+        files.push({ file: file, url: URL.createObjectURL(file) });
+      });
+      picker.value = ""; renderImages();
+    });
+    content.addEventListener("input", function () { counter.textContent = content.value.length + " / 500"; });
+    form.addEventListener("submit", function (event) {
+      event.preventDefault(); clearErrors();
+      if (content.value.trim().length < 10) { mask.querySelector('[data-error="content"]').textContent = "请至少填写10个字"; content.focus(); return; }
+      if (!/^1[3-9]\d{9}$/.test(phone.value.trim())) { mask.querySelector('[data-error="phone"]').textContent = "请输入有效的手机号"; phone.focus(); return; }
+      showNotice("当前反馈提交服务暂不可用，内容尚未发送");
+    });
+    mask.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { event.preventDefault(); cleanup(); }
+      if (event.key !== "Tab") return;
+      var focusable = Array.from(dialog.querySelectorAll("button:not([hidden]), textarea, input:not([hidden])")).filter(function (node) { return node.getClientRects().length && !node.disabled; });
+      if (!focusable.length) return;
+      if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable[focusable.length - 1].focus(); }
+      else if (!event.shiftKey && document.activeElement === focusable[focusable.length - 1]) { event.preventDefault(); focusable[0].focus(); }
+    });
+    content.focus();
+  }
+  document.addEventListener("click", function (event) {
+    var trigger = event.target.closest("[data-account-action=feedback]");
+    if (!trigger) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openFeedback(trigger);
+  }, true);
+})();
+</script>
+
 </body>
 </html>
