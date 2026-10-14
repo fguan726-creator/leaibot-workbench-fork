@@ -3228,7 +3228,7 @@ window.__p0Modules.sources["u642a431b6eaf7aa2"]=function(){
   const status = value => value?.status === 'verified' ? 'verified' : ['pending', 'reviewing'].includes(value?.status) ? 'pending' : 'unverified';
   // One-time reset requested for the P0 education demonstration. Later certifications persist.
   const resetKey = 'lexiang.education.demo-reset.v1';
-  const resetVersion = '2026-09-18-unverified-1';
+  const resetVersion = '2026-10-14-unverified-2';
   if (get(resetKey) !== resetVersion) {
     try {
       localStorage.setItem(legacyKey, JSON.stringify({ status: 'none' }));
