@@ -13,7 +13,7 @@ const actor = scenarioPmActor('creator', catalog)
 function trial({ conditional = false, blocked = false, manual = true, legacy = false } = {}) {
   const steps = catalog.map((skill, index) => createPinnedScenarioStep(skill, { id: `n${index}`, predecessorId: index ? `n${index - 1}` : null, task: skill.name, expectedOutput: `预期：${skill.name}` }))
   if (conditional) Object.assign(steps[1], { kind: 'conditional', required: false, condition: '需要深入分析时' })
-  if (blocked) steps[0].requiresConfirmation = true
+  if (blocked) steps[0].requiresApproval = true
   if (legacy) steps.forEach(step => { delete step.predecessorId })
   const draft = { id: 'node-trial', name: '节点测试', description: '查询认证并生成人群分析与跟进建议', targetAudience: '运营', ownerId: actor.id, steps }
   const testRequest = { input: '检查人群 A', expectedOutput: '', activeOptionalStepIds: [], confirmedStepIds: [], approvedStepIds: [], sampleOutputs: manual ? { n0: '认证结果 A', n1: '分析结果 B', n2: '跟进建议 C' } : {} }
@@ -45,6 +45,7 @@ test('a blocked node cannot report a successful transfer and dependent nodes ret
   const draft = trial({ blocked: true })
   assert.deepEqual(draft.testReport.nodes.map(n => n.status), ['blocked', 'blocked', 'blocked'])
   assert.equal(draft.testReport.nodes[0].outputSource, 'none')
+  assert.match(draft.testReport.nodes[0].errors.join(' '), /审批/)
   assert.equal(draft.testReport.nodes[0].downstream[0].status, 'blocked')
   assert.equal(draft.testReport.nodes[0].downstream[0].receivedValue, '')
   assert.match(draft.testReport.nodes[1].errors.join(' '), /上游/)

@@ -9,7 +9,7 @@ const props = defineProps<{ focused?: boolean; skills: ScenarioSelectableSkill[]
 const emit = defineEmits<{ 'update:modelValue': [steps: ScenarioPinnedStep[]]; 'toggle-focus': [] }>()
 type Point = { x: number; y: number }
 type CanvasStep = ScenarioPinnedStep & { predecessorId?: string | null; position?: Point }
-type StepConfiguration = Pick<ScenarioPinnedStep, 'condition' | 'requiresConfirmation' | 'task' | 'fixedRequirements' | 'expectedOutput'>
+type StepConfiguration = Pick<ScenarioPinnedStep, 'condition' | 'task' | 'fixedRequirements' | 'expectedOutput'>
 type NodeGesture = { id: string; pointerId: number; offset: Point; position: Point; moved: boolean; start: Point }
 type WireGesture = { sourceId: string; pointerId: number; start: Point; moved: boolean }
 const NODE_WIDTH = 264
@@ -524,7 +524,7 @@ function hasVersionChange(step: CanvasStep) { return Boolean(catalog.value.get(s
                   <span v-if="step.kind === 'conditional'" class="composer-node-condition"><strong>◇ 判断条件</strong><span :title="step.condition || '待设置判断条件'">{{ step.condition?.trim() || '待设置判断条件' }}</span></span>
                   <span v-if="isUnavailable(step)" class="composer-node-warning">Skill 已失效，请移除后重新选择</span><span v-else-if="hasVersionChange(step)" class="composer-node-warning composer-version-warning">线上版本已变化，固定版本保持不变</span>
                 </button>
-                <div class="composer-node-footer"><span>{{ step.requiresConfirmation ? '需确认' : (step.kind === 'conditional' ? '不满足条件时跳过，继续下一步' : '连接端口设置前后顺序') }}</span><button type="button" class="composer-text-button composer-remove" :aria-label="`移除 ${step.name}`" @click="removeStep(step.id)">移除</button></div>
+                <div class="composer-node-footer"><span>{{ step.kind === 'conditional' ? '不满足条件时跳过，继续下一步' : '连接端口设置前后顺序' }}</span><button type="button" class="composer-text-button composer-remove" :aria-label="`移除 ${step.name}`" @click="removeStep(step.id)">移除</button></div>
                 <button type="button" class="composer-port composer-port-output" :class="{ 'is-connected': connections.some(edge => edge.source.id === step.id), 'is-armed': pendingSourceId === step.id }" :data-output-port="step.id" :aria-label="`${step.name} 输出端口`" title="输出端口：连接下一步" @pointerdown="startWireMove($event, step.id)" @click.stop="armConnection($event, step.id)"><span></span></button>
               </article>
             </div>
@@ -580,9 +580,6 @@ function hasVersionChange(step: CanvasStep) { return Boolean(catalog.value.get(s
             <label class="composer-field"><span>所属链路</span><select :value="selectedStep.kind" @change="setSelectedKind(($event.target as HTMLSelectElement).value as ScenarioStepKind)"><option value="required">核心链路（必需执行）</option><option value="conditional">条件链路（满足条件执行）</option></select><small>选择示例：每次都要执行选“核心链路”；仅在特定需求下执行选“条件链路”。</small></label>
             <div v-if="selectedStep.kind === 'conditional'" class="composer-condition-editor"><label class="composer-field"><span>判断条件 <b>必填</b></span><textarea :value="selectedStep.condition || ''" rows="3" required :placeholder="`例如：${selectedNodeExamples.condition}`" @input="updateSelectedStep({ condition: ($event.target as HTMLTextAreaElement).value })"></textarea><small>条件满足才执行此步；不满足则继续下一步。</small><small>填写示例：{{ selectedNodeExamples.condition }}</small></label><button type="button" class="composer-condition-example" @click="updateSelectedStep({ condition: selectedNodeExamples.condition })">使用此条件示例</button></div>
             <p v-else class="composer-help">此步骤属于核心链路；依赖过期或不可用时，整个技能包暂停。</p>
-            <fieldset class="composer-evidence-options"><legend>执行要求（选填）</legend><label><input type="checkbox" :checked="selectedStep.requiresConfirmation === true" @change="updateSelectedStep({ requiresConfirmation: ($event.target as HTMLInputElement).checked })"><span>执行前需要确认</span></label></fieldset>
-            <p class="composer-help">不勾选则无需人工确认；执行时仍需校验权限。</p>
-            <p class="composer-help">选择示例：执行前需核对本次范围时勾选“执行前需要确认”；无需核对时不勾选。</p>
           </section>
           <details :key="selectedStep.id" class="composer-node-advanced">
             <summary>高级信息</summary>
@@ -720,10 +717,6 @@ function hasVersionChange(step: CanvasStep) { return Boolean(catalog.value.get(s
 .composer-version-warning { color: var(--color-warning); }
 .composer-condition-editor { display: grid; gap: 8px; min-width: 0; }
 .composer-condition-example { min-width: 0; padding: 8px; border: 1px dashed var(--color-primary-border); border-radius: var(--radius-md); background: var(--color-primary-subtle); color: var(--color-primary); text-align: left; font: inherit; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; cursor: pointer; }
-.composer-evidence-options { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 0; border: 0; }
-.composer-evidence-options legend { padding: 0 0 12px; color: var(--color-text); font-size: 13px; font-weight: 500; }
-.composer-evidence-options label { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--color-text-secondary); font-size: 13px; line-height: 1.6; cursor: pointer; }
-.composer-evidence-options input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; min-height: 16px; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; accent-color: var(--color-primary); }
 .composer-edge-detail { display: grid; gap: 8px; min-width: 0; }
 .composer-edge-detail > span { color: var(--color-text-secondary); font-size: 12px; }
 .composer-edge-detail strong { color: var(--color-text); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }

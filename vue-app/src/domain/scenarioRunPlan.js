@@ -5,8 +5,8 @@ import { getScenarioNodeContract, getScenarioNodeInputs } from './scenarioNodeCo
  * @typedef {import('./scenarioSkillPackages.js').PinnedScenarioStep} PinnedScenarioStep
  * @typedef {import('./scenarioSkillPackages.js').ScenarioActor} ScenarioActor
  * @typedef {import('./scenarioSkillPackages.js').ScenarioAuditEvent} ScenarioAuditEvent
- * @typedef {{ id: string, version: string, status: string, steps: PinnedScenarioStep[], auditEvents?: ScenarioAuditEvent[] }} ScenarioRunPackage
- * @typedef {{ input?: string, activeOptionalStepIds?: string[], evidence?: { confirmedStepIds?: string[], approvedStepIds?: string[] } }} ScenarioRunRequest
+ * @typedef {{ id: string, version: string, status: string, requiresConfirmation?: boolean, steps: PinnedScenarioStep[], auditEvents?: ScenarioAuditEvent[] }} ScenarioRunPackage
+ * @typedef {{ input?: string, activeOptionalStepIds?: string[], evidence?: { workflowConfirmed?: boolean, confirmedStepIds?: string[], approvedStepIds?: string[] } }} ScenarioRunRequest
  * @typedef {{ kind: 'run'|'upstream', nodeId?: string, name: string, description: string, conditional?: boolean, status: 'provided'|'missing'|'pending'|'skipped' }} ScenarioRunInputSource
  * @typedef {{ id: string, skillId: string, name: string, pinnedVersion: string, task: string, fixedRequirements: string, expectedOutput: string, inputSources: ScenarioRunInputSource[] }} ScenarioRunPlanStep
  * @typedef {{ executionPerformed: false, packageId: string, version: string, status: 'ready'|'degraded'|'blocked', explanations: string[], requestInput: string, steps: ScenarioRunPlanStep[] }} ScenarioRunPlan

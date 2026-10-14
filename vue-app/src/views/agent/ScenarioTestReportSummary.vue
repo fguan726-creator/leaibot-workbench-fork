@@ -282,7 +282,7 @@ function skippedConditionNames(report: ScenarioSimulationReport) {
           <div><dt>整体预期输出</dt><dd>{{ report.request.expectedOutput || '未填写' }}</dd></div>
           <div><dt>本次模拟命中</dt><dd>{{ selectedNames(report, report.request.activeOptionalStepIds) }}</dd></div>
           <div><dt>本次模拟不命中</dt><dd>{{ skippedConditionNames(report) }}</dd></div>
-          <div><dt>模拟确认</dt><dd>{{ selectedNames(report, report.request.confirmedStepIds) }}</dd></div>
+          <div><dt>模拟确认</dt><dd>{{ report.request.workflowConfirmed === true ? '已确认整个工作流' : selectedNames(report, report.request.confirmedStepIds) }}</dd></div>
           <div v-if="report.request.approvedStepIds.length"><dt>历史模拟审批</dt><dd>{{ selectedNames(report, report.request.approvedStepIds) }}</dd></div>
         </dl>
         <p>{{ report.summary }}</p>

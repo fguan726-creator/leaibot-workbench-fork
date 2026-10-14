@@ -165,15 +165,23 @@ test('the rendered final step offers an enabled submit action without a checkbox
   assert.doesNotMatch(submitButton[1], /\bdisabled\b/, 'a qualified trial must enable direct submission')
 })
 
-for (const invalid of ['missing report', 'blocked node', 'stale configuration']) {
+for (const invalid of ['missing report', 'blocked node', 'unconfirmed workflow', 'stale configuration']) {
   test(`direct submission still rejects ${invalid}, including a previously visited final tab`, async () => {
     const { create, trial, store, events } = await fixture()
     if (invalid === 'missing report') create.testReport.value = null
     if (invalid === 'blocked node') {
-      create.chain.value[1].requiresConfirmation = true
+      create.chain.value[1].requiresApproval = true
       await nextTick()
       await trial.runTrial()
       assert.equal(create.testReport.value.nodes[1].status, 'blocked')
+      assert.match(create.testReport.value.nodes[1].errors.join(' '), /审批/)
+    }
+    if (invalid === 'unconfirmed workflow') {
+      create.form.value.requiresConfirmation = true
+      await nextTick()
+      await trial.runTrial()
+      assert.ok(create.testReport.value.nodes.every(node => node.status === 'blocked' && node.output === ''))
+      assert.match(create.testReport.value.nodes[0].errors.join(' '), /整个工作流.*确认/)
     }
     if (invalid === 'stale configuration') create.chain.value[0].task += '并区分业务范围。'
     await nextTick()

@@ -13,6 +13,7 @@ const props = defineProps<{
   actor: ScenarioPackageActor
   modelValue: ScenarioSimulationRequest
   report: ScenarioSimulationReport | null
+  requiresConfirmation?: boolean
   disabled?: boolean
   simulate?: (draft: ScenarioSkillPackageDraft, request: ScenarioSimulationRequest, actor: ScenarioPackageActor) => ScenarioSimulationReport
 }>()
@@ -39,6 +40,7 @@ const orderedSteps = computed(() => {
 })
 const stale = computed(() => Boolean(props.report && !isScenarioSimulationCurrent(props.report, props.draft, props.skills, props.modelValue)))
 const trialDecision = computed(() => evaluateScenarioTrialForSubmit({ ...props.draft, testRequest: props.modelValue, testReport: props.report || undefined }, props.skills))
+const needsWorkflowConfirmation = computed(() => Boolean(props.requiresConfirmation && !props.modelValue.workflowConfirmed))
 
 watch([() => props.report?.id, () => orderedSteps.value.map(step => step.id).join('\u0000')], ([reportId], previous) => {
   const nodeIds = new Set(orderedSteps.value.map(step => step.id))
@@ -55,16 +57,13 @@ function copyRequest(): ScenarioSimulationRequest {
   const retry = props.modelValue.mockDataPhase === 'retry' || props.report?.request.mockDataMode === 'mixed-feedback'
   return { ...props.modelValue, mockDataMode: 'mixed-feedback', ...(retry ? { mockDataPhase: 'retry' as const } : {}), activeOptionalStepIds: [...props.modelValue.activeOptionalStepIds], confirmedStepIds: [...props.modelValue.confirmedStepIds], approvedStepIds: [], sampleOutputs: {} }
 }
-function needsConfirmation(nodeId: string) {
-  return Boolean(orderedSteps.value.find(step => step.id === nodeId)?.requiresConfirmation && !props.modelValue.confirmedStepIds.includes(nodeId))
-}
 function isConditionalNode(nodeId: string) {
   return orderedSteps.value.some(step => step.id === nodeId && step.kind === 'conditional')
 }
-async function confirmAndRetry(nodeId: string) {
-  if (locked.value || !needsConfirmation(nodeId)) return
+async function confirmWorkflowAndRetry() {
+  if (locked.value || !needsWorkflowConfirmation.value) return
   const request = copyRequest()
-  request.confirmedStepIds = [...new Set([...request.confirmedStepIds, nodeId])]
+  request.workflowConfirmed = true
   await runTrial(request)
 }
 async function toggleBranchAndRetry(nodeId: string) {
@@ -73,6 +72,7 @@ async function toggleBranchAndRetry(nodeId: string) {
   request.activeOptionalStepIds = request.activeOptionalStepIds.includes(nodeId)
     ? request.activeOptionalStepIds.filter(id => id !== nodeId)
     : [...request.activeOptionalStepIds, nodeId]
+  request.workflowConfirmed = false
   await runTrial(request)
 }
 function returnToChain(nodeId?: string) {
@@ -110,12 +110,14 @@ onBeforeUnmount(() => {
   runSequence += 1
   if (running.value) emit('running', false)
 })
+defineExpose({ runTrial })
 </script>
 
 <template>
   <section class="scenario-trial-panel" aria-label="场景技能包试运行">
     <ScenarioTestReportSummary :header-target="headerTarget" :report="report" :steps="orderedSteps" :stale="stale" :running="running" :active-node-id="activeNodeId" :heading-level="2" results-only @select-node="activeNodeId = $event">
       <template #actions>
+        <button v-if="needsWorkflowConfirmation" class="btn btn-secondary" data-workflow-confirm type="button" :disabled="locked" @click="confirmWorkflowAndRetry()">模拟确认工作流并重试</button>
         <button class="btn btn-secondary" type="button" :disabled="locked" @click="returnToChain()">返回编排</button>
         <button class="btn btn-primary trial-run-button" data-trial-run type="button" :disabled="locked || !draft.steps.length" @click="runTrial()">{{ running ? '正在试运行…' : report ? '重新试运行' : '开始试运行' }}</button>
       </template>
@@ -129,7 +131,6 @@ onBeforeUnmount(() => {
       </template>
       <template #node-actions="{ node }">
         <div class="trial-node-actions">
-          <button v-if="node.status !== 'skipped' && needsConfirmation(node.id)" class="btn btn-secondary" :data-node-confirm="node.id" type="button" :disabled="locked" @click="confirmAndRetry(node.id)">模拟确认并重试</button>
           <button v-if="isConditionalNode(node.id)" class="btn btn-secondary" :data-node-branch="node.id" type="button" :disabled="locked" @click="toggleBranchAndRetry(node.id)">{{ modelValue.activeOptionalStepIds.includes(node.id) ? '跳过此分支重试' : '测试此分支' }}</button>
           <button class="btn btn-secondary" :data-node-edit="node.id" type="button" :disabled="locked" :aria-label="`返回修改节点 ${node.name}`" @click="returnToChain(node.id)">返回修改</button>
         </div>

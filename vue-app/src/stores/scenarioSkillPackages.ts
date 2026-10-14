@@ -93,6 +93,7 @@ export interface ScenarioSkillPackage {
   description: string
   targetAudience: string
   ownerId: string
+  requiresConfirmation?: boolean
   version: string
   status: 'draft' | 'review' | 'rejected' | 'published' | 'disabled'
   onlineStatus?: 'unpublished' | 'published' | 'disabled'
@@ -120,6 +121,7 @@ export interface ScenarioSkillPackageDraft {
   description: string
   targetAudience: string
   ownerId: string
+  requiresConfirmation?: boolean
   version?: string
   status?: ScenarioSkillPackage['status']
   baseUpdatedAt?: string
@@ -441,6 +443,9 @@ function isUnchangedLegacyAuthorSeed(item: ScenarioSkillPackage, defaults: Scena
   const restoreLegacyIdentity = (record: ScenarioSkillPackage) => {
     // Released V1 seeds predate revision-editor tracking; retain their exact historical shape.
     delete record.revisionEditors
+    delete record.requiresConfirmation
+    if (record.testRequest) delete record.testRequest.workflowConfirmed
+    if (record.testReport) delete record.testReport.request.workflowConfirmed
     record.id = item.id
     record.ownerId = item.ownerId
     if (specialReview) record.name = '职场客户协同（待审核）'
@@ -716,7 +721,7 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     caller: ScenarioPackageActor,
     activeOptionalStepIds: string[] = [],
     requestedSkillIds: string[] = [],
-    evidence: { confirmedStepIds?: string[]; approvedStepIds?: string[] } = {}
+    evidence: { workflowConfirmed?: boolean; confirmedStepIds?: string[]; approvedStepIds?: string[] } = {}
   ) {
     const packageItem = findPackage(packageId)
     if (!packageItem) throw new Error(`场景技能包不存在：${packageId}`)
@@ -740,7 +745,7 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
   function prepareRunPlan(
     packageId: string,
     caller: ScenarioPackageActor,
-    request: { input?: string; activeOptionalStepIds?: string[]; evidence?: { confirmedStepIds?: string[]; approvedStepIds?: string[] } } = {}
+    request: { input?: string; activeOptionalStepIds?: string[]; evidence?: { workflowConfirmed?: boolean; confirmedStepIds?: string[]; approvedStepIds?: string[] } } = {}
   ) {
     const packageItem = findPackage(packageId)
     if (!packageItem) throw new Error(`场景技能包不存在：${packageId}`)

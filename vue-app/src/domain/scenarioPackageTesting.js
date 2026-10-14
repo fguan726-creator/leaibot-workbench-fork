@@ -9,7 +9,7 @@ import { getScenarioMockDataFailure } from './scenarioTrialMockData.js'
  * @typedef {import('./scenarioSkillPackages.js').PublishedSkill} ScenarioSkill
  * @typedef {import('./scenarioSkillPackages.js').PinnedScenarioStep} ScenarioStep
  * @typedef {import('./scenarioSkillPackages.js').ScenarioActor} ScenarioActor
- * @typedef {{input:string, expectedOutput:string, activeOptionalStepIds:string[], confirmedStepIds:string[], approvedStepIds:string[], sampleOutputs:Record<string,string>, mockDataMode?:'mixed-feedback', mockDataPhase?:'retry'}} ScenarioSimulationRequest
+ * @typedef {{input:string, expectedOutput:string, activeOptionalStepIds:string[], workflowConfirmed?:boolean, confirmedStepIds:string[], approvedStepIds:string[], sampleOutputs:Record<string,string>, mockDataMode?:'mixed-feedback', mockDataPhase?:'retry'}} ScenarioSimulationRequest
  * @typedef {{nodeId:string,name:string,status:'received'|'blocked'|'skipped',sentValue:string,receivedValue:string,detail:string}} ScenarioSimulationTransfer
  * @typedef {{id:string, name:string, skillId?:string, pinnedVersion?:string, outputSource?:'manual'|'fixture'|'none', downstream?:ScenarioSimulationTransfer[], status:'completed'|'skipped'|'blocked', task:string, fixedRequirements:string, expectedOutput:string, condition:string, inputs:Array<{name:string,value:string,source:'run'|'upstream',nodeId?:string}>, output:string, issues:string[], errors?:string[], suggestions?:string[]}} ScenarioSimulationNode
  * @typedef {{id:string, mode:'simulation', executionPerformed:false, fingerprint:string, createdAt:string, testerId:string, status:'completed'|'attention'|'blocked', request:ScenarioSimulationRequest, nodes:ScenarioSimulationNode[], issues:string[], summary:string}} ScenarioSimulationReport
@@ -32,6 +32,7 @@ const unique = values => [...new Set(values)]
 
 /** Keep the authoritative cause visible while pointing to an available repair path. */
 function gateSuggestion(reason) {
+  if (reason.includes('整个工作流') && reason.includes('确认')) return '请确认本次整个工作流的运行范围，再点击“模拟确认工作流并重试”；此操作仅用于模拟，不代表真实执行授权。'
   if (reason.includes('权限快照')) return `请联系 Skill 管理员补齐提示的权限快照，再返回编排重新选择该 Skill 并试运行。检查项：${reason}`
   if (reason.includes('权限')) return `请联系管理员核实并补齐当前编辑账号的以下权限，再重新试运行：${reason}`
   if (/所有者|主责任人|账号/.test(reason)) return '请由具备编辑权限的创建者或管理员使用自己的账号继续编排和试运行，保留原创建者后再提交审核。'
@@ -92,11 +93,11 @@ export function runScenarioSimulation(draft, skills, request, actor, now = new D
   const health = evaluatePackageHealth(resolved.steps)
   const gateIssues = unique([
     ...rebuilt.reasons, ...policy.reasons,
+    ...(rebuilt.draft.requiresConfirmation && !copiedRequest.workflowConfirmed ? ['整个工作流尚未完成模拟确认。'] : []),
     ...(health.status === 'paused' ? health.explanations : []),
     ...(!copiedRequest.input.trim() ? ['请填写本次模拟测试输入。'] : [])
   ])
   const active = new Set(copiedRequest.activeOptionalStepIds)
-  const confirmed = new Set(copiedRequest.confirmedStepIds)
   const approved = new Set(copiedRequest.approvedStepIds)
   const byId = new Map(resolved.steps.map(step => [step.id, step]))
   const mockFailure = getScenarioMockDataFailure(resolved.steps, copiedRequest)
@@ -127,8 +128,7 @@ export function runScenarioSimulation(draft, skills, request, actor, now = new D
     const block = (reason, suggestion) => { blocked.push(reason); node.suggestions.push(suggestion) }
     if (!contract.task.trim()) block('本节点任务尚未填写，无法确定本节点要处理的对象和动作。', '返回编排填写“本节点任务”，写清处理对象、业务范围和动作，再重新试运行。')
     if (['expired', 'unavailable', 'emergency_disabled'].includes(step.dependencyState)) block('此节点依赖不可用，不能提供模拟输出。', `返回编排，移除不可用节点“${step.name}”并选择已发布且可用的 Skill，重新连接后再试运行。`)
-    if (step.requiresConfirmation && !confirmed.has(step.id)) block('尚未完成本节点的模拟确认。', '请在本节点点击“模拟确认并重试”，或返回编排核实是否需要执行前确认。此操作仅用于模拟，不代表真实执行授权。')
-    if (step.requiresApproval && !approved.has(step.id)) block('本节点历史配置要求模拟审批，但尚未提供对应证据。', '本节点保留了历史审批要求；请返回编排按当前支持的执行要求重新配置后试运行。此操作不代表真实审批通过，也不会授予业务操作权限。')
+    if (step.requiresApproval && !approved.has(step.id)) block('本节点历史配置要求模拟审批，但尚未提供对应证据。', '本节点保留了历史审批要求，需提供对应的模拟审批证据；工作流确认不能替代该证据，也不代表真实审批通过或授予业务操作权限。')
 
     node.inputs.push({ name: '本次运行输入', value: copiedRequest.input, source: 'run' })
     for (const source of getScenarioNodeInputs(resolved.steps, step.id).filter(item => item.kind === 'upstream')) {

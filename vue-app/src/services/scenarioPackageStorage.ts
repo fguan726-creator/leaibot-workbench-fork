@@ -15,6 +15,7 @@ const optionalStrings = (value: Record<string, unknown>, keys: string[]) => keys
 
 function validRequest(value: unknown): boolean {
   return isObject(value) && typeof value.input === 'string' && typeof value.expectedOutput === 'string'
+    && (value.workflowConfirmed === undefined || typeof value.workflowConfirmed === 'boolean')
     && ['activeOptionalStepIds', 'confirmedStepIds', 'approvedStepIds'].every(key => strings(value[key]))
     && isObject(value.sampleOutputs) && Object.values(value.sampleOutputs).every(item => typeof item === 'string')
 }
@@ -37,6 +38,7 @@ function validPackage(value: unknown, depth = 0): value is ScenarioSkillPackage 
   if (!isObject(value) || depth > 1) return false
   if (!['id', 'name', 'ownerId', 'version', 'updatedAt'].every(key => typeof value[key] === 'string' && value[key].trim())) return false
   if (!['description', 'targetAudience'].every(key => typeof value[key] === 'string')) return false
+  if (value.requiresConfirmation !== undefined && typeof value.requiresConfirmation !== 'boolean') return false
   if (!optionalStrings(value, ['baseUpdatedAt', 'approvedAt', 'publishedAt', 'submittedAt', 'submittedBy', 'submitterId', 'reviewedAt', 'reviewedBy', 'reviewNote', 'degradationNote'])) return false
   if (value.revisionEditors !== undefined && (!strings(value.revisionEditors) || value.revisionEditors.some(id => !id.trim()))) return false
   if (!Number.isFinite(Date.parse(value.updatedAt as string))) return false

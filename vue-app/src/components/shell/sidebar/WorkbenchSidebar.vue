@@ -151,6 +151,15 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-10-14',
+    releaseKey: 'workbench-workflow-execution-20261014',
+    title: '场景技能包统一执行要求',
+    changePoint: '执行要求移至第一步，对整个工作流生效；返回编排后进入下一步会重新试运行。',
+    detail: '第二步移除逐节点确认配置，试运行统一模拟确认；修改场景或任务范围后需要重新确认。旧草稿保留原有确认要求，已审核版本继续独立保存。返回编排后的重试使用修正后的演示数据，配置、权限和依赖问题仍会阻断。试运行未调用真实业务接口；发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
     time: '2026-10-10',
     releaseKey: 'workbench-review-management-20261010',
     title: '评价管理 POC 接入',

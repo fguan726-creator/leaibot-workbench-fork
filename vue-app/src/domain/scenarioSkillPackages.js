@@ -9,10 +9,10 @@ import { getScenarioMockDataFailure } from './scenarioTrialMockData.js'
  * @typedef {{ id?: string, permissions?: string[]|Partial<Record<PermissionBucket|'policy', string[]>> }} ScenarioActor
  * @typedef {{ id: string, name?: string, menu: string, version: string, status: string, onlineStatus: string, online: string, description?: string, inputDescription?: string, outputDescription?: string, permissions?: Partial<Record<PermissionBucket, string[]>> }} PublishedSkill
  * @typedef {{ id: string, skillId: string, name: string, menu: string, pinnedVersion: string, currentPublishedVersion: string, hasNewerPublishedVersion?: boolean, kind: ScenarioStepKind, condition?: string, task?: string, fixedRequirements?: string, expectedOutput?: string, inputDescription?: string, required: boolean, requiresConfirmation?: boolean, requiresApproval?: boolean, predecessorId?: string|null, position?: { x: number, y: number }, dependencyState: DependencyState, permissions: Partial<Record<PermissionBucket, string[]>> }} PinnedScenarioStep
- * @typedef {{ id: string, name: string, description: string, targetAudience: string, ownerId: string, steps: PinnedScenarioStep[], status?: string, version?: string, onlineStatus?: 'unpublished'|'published'|'disabled', publishedSnapshot?: ScenarioPackageDraft, updatedAt?: string, baseUpdatedAt?: string, approvedAt?: string, publishedAt?: string, health?: ScenarioPackageHealth, submittedAt?: string, submittedBy?: string, submitterId?: string, revisionEditors?: string[], reviewedAt?: string, reviewedBy?: string, reviewNote?: string, auditEvents?: ScenarioAuditEvent[], testReport?: import('./scenarioPackageTesting.js').ScenarioSimulationReport, testRequest?: import('./scenarioPackageTesting.js').ScenarioSimulationRequest }} ScenarioPackageDraft
+ * @typedef {{ id: string, name: string, description: string, targetAudience: string, ownerId: string, requiresConfirmation?: boolean, steps: PinnedScenarioStep[], status?: string, version?: string, onlineStatus?: 'unpublished'|'published'|'disabled', publishedSnapshot?: ScenarioPackageDraft, updatedAt?: string, baseUpdatedAt?: string, approvedAt?: string, publishedAt?: string, health?: ScenarioPackageHealth, submittedAt?: string, submittedBy?: string, submitterId?: string, revisionEditors?: string[], reviewedAt?: string, reviewedBy?: string, reviewNote?: string, auditEvents?: ScenarioAuditEvent[], testReport?: import('./scenarioPackageTesting.js').ScenarioSimulationReport, testRequest?: import('./scenarioPackageTesting.js').ScenarioSimulationRequest }} ScenarioPackageDraft
  * @typedef {{ status: 'healthy'|'upgrade_required'|'degraded'|'paused', explanations: string[], blockedStepIds: string[], degradedStepIds: string[] }} ScenarioPackageHealth
  * @typedef {{ ok: boolean, canSelfApprove: boolean, reasons: string[] }} ScenarioPolicyResult
- * @typedef {{ status: 'ready'|'degraded'|'blocked', effectiveSteps: PinnedScenarioStep[], skippedSteps: PinnedScenarioStep[], missingPermissions: { stepId: string, bucket: PermissionBucket, permission: string }[], missingEvidence: { stepId: string, type: 'confirmation'|'approval' }[], missingPackagePermission?: string, explanations: string[] }} ScenarioRuntimeResult
+ * @typedef {{ status: 'ready'|'degraded'|'blocked', effectiveSteps: PinnedScenarioStep[], skippedSteps: PinnedScenarioStep[], missingPermissions: { stepId: string, bucket: PermissionBucket, permission: string }[], missingEvidence: { stepId: string, type: 'confirmation'|'approval' }[], missingPackagePermission?: string, missingWorkflowConfirmation?: boolean, explanations: string[] }} ScenarioRuntimeResult
  * @typedef {{ type: 'submitted'|'approved'|'published'|'rejected'|'withdrawn'|'disabled'|'enabled', actorId: string, at: string, note?: string }} ScenarioAuditEvent
  */
 
@@ -100,6 +100,26 @@ const cloneStep = (step) => {
   }
 }
 
+/** Resolve authoring policy, migrating legacy node choices only when no workflow choice exists.
+ * @param {{requiresConfirmation?: boolean, steps?: PinnedScenarioStep[]}} draft
+ */
+export function scenarioRequiresConfirmation(draft) {
+  return typeof draft?.requiresConfirmation === 'boolean'
+    ? draft.requiresConfirmation
+    : (draft?.steps || []).some(step => step.requiresConfirmation === true)
+}
+
+/** Normalize an editable revision without changing its independently published snapshot.
+ * @param {ScenarioPackageDraft} draft
+ */
+export function normalizeScenarioWorkflowConfirmation(draft) {
+  return {
+    ...draft,
+    requiresConfirmation: scenarioRequiresConfirmation(draft),
+    steps: (draft?.steps || []).map(step => cloneStep({ ...step, requiresConfirmation: false }))
+  }
+}
+
 /** Copy the plain, JSON-compatible test request or report without sharing nested snapshots.
  * @template T
  * @param {T} value
@@ -121,6 +141,7 @@ export function normalizeScenarioSimulationRequest(request) {
     ...(request?.mockDataMode === 'mixed-feedback' && request?.mockDataPhase === 'retry' ? { mockDataPhase: 'retry' } : {}),
     expectedOutput: simulationText(request?.expectedOutput),
     activeOptionalStepIds: simulationIds(request?.activeOptionalStepIds),
+    workflowConfirmed: request?.workflowConfirmed === true,
     confirmedStepIds: simulationIds(request?.confirmedStepIds),
     approvedStepIds: simulationIds(request?.approvedStepIds),
     sampleOutputs: Object.fromEntries(Object.entries(request?.sampleOutputs || {})
@@ -161,12 +182,16 @@ function fingerprintOf(value) {
  */
 export function getScenarioTestFingerprint(draft, skills, request) {
   // Match submission's authoritative metadata without reading or copying report snapshots.
-  const sourceSteps = rebuildDraftFromCatalog({ ...draft, testReport: undefined, testRequest: undefined }, skills).draft.steps
+  const rebuiltDraft = rebuildDraftFromCatalog({ ...draft, testReport: undefined, testRequest: undefined }, skills).draft
+  const sourceSteps = rebuiltDraft.steps
+  const { workflowConfirmed, ...legacyRequest } = normalizeScenarioSimulationRequest(request)
   const legacy = sourceSteps.every(step => step.predecessorId === undefined)
   const resolved = resolveScenarioChain(sourceSteps)
   const catalog = new Map((skills || []).map(skill => [skill.id, skill]))
   return fingerprintOf({
     name: draft?.name, description: draft?.description, targetAudience: draft?.targetAudience, ownerId: draft?.ownerId,
+    // Preserve old no-confirmation reports; any workflow requirement or confirmation changes the fingerprint.
+    ...(rebuiltDraft.requiresConfirmation ? { requiresConfirmation: true } : {}),
     chainValid: resolved.ok,
     steps: resolved.steps.map((step, index, steps) => stepSemantics(step, index, steps, legacy)),
     catalog: simulationIds(sourceSteps.map(step => step.skillId)).map(id => {
@@ -178,7 +203,7 @@ export function getScenarioTestFingerprint(draft, skills, request) {
         permissions: permissionSnapshot(skill.permissions)
       } : { id, missing: true }
     }),
-    request: normalizeScenarioSimulationRequest(request)
+    request: workflowConfirmed ? { ...legacyRequest, workflowConfirmed } : legacyRequest
   })
 }
 
@@ -199,6 +224,9 @@ export function evaluateScenarioTrialForSubmit(draft, skills) {
   if (!report) return { ok: false, reasons: ['请先完成当前编排的模拟试运行，再提交审核。'] }
   const request = draft.testRequest || report.request
   const reasons = []
+  if (scenarioRequiresConfirmation(draft) && request?.workflowConfirmed !== true) {
+    reasons.push('整个工作流尚未完成模拟确认，请确认本次运行范围后重新试运行。')
+  }
   if (!request || !report.request
     || !isScenarioSimulationCurrent(report, draft, skills, request)
     || !isScenarioSimulationCurrent(report, draft, skills, report.request)) {
@@ -561,11 +589,11 @@ const blockedRuntimeResult = (steps, explanations, extras = {}) => ({
 
 /**
  * Check declared runtime requests and permission boundaries without executing Skills.
- * @param {{ steps: PinnedScenarioStep[] }} packageItem
+ * @param {{ steps: PinnedScenarioStep[], requiresConfirmation?: boolean }} packageItem
  * @param {ScenarioActor} caller
  * @param {string[]} activeOptionalStepIds
  * @param {string[]} requestedSkillIds
- * @param {{ confirmedStepIds?: string[], approvedStepIds?: string[] }} evidence
+ * @param {{ workflowConfirmed?: boolean, confirmedStepIds?: string[], approvedStepIds?: string[] }} evidence
  * @returns {ScenarioRuntimeResult}
  */
 export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds = [], requestedSkillIds = [], evidence = {}) {
@@ -616,16 +644,20 @@ export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds
   const missingEvidence = missingStepEvidence(runnableSteps, evidence)
   const requiredMissing = missingPermissions.filter(({ stepId }) => steps.find((step) => step.id === stepId)?.required)
   const requiredEvidenceMissing = missingEvidence.filter(({ stepId }) => steps.find((step) => step.id === stepId)?.required)
+  // Published legacy node requirements remain independent; trial tickets are never consulted here.
+  const missingWorkflowConfirmation = packageItem.requiresConfirmation === true && evidence?.workflowConfirmed !== true
 
-  if (requiredMissing.length > 0 || requiredEvidenceMissing.length > 0) {
+  if (requiredMissing.length > 0 || requiredEvidenceMissing.length > 0 || missingWorkflowConfirmation) {
     return {
       status: 'blocked',
       effectiveSteps: [],
       skippedSteps: candidateSteps.map(cloneStep),
       missingPermissions,
       missingEvidence,
+      ...(missingWorkflowConfirmation ? { missingWorkflowConfirmation: true } : {}),
       explanations: [
         ...health.explanations,
+        ...(missingWorkflowConfirmation ? ['整个工作流执行前需要确认本次范围，尚未确认，执行在开始前已阻断。'] : []),
         ...(requiredMissing.length ? ['必需步骤缺少调用权限，执行在开始前已阻断。'] : []),
         ...(requiredEvidenceMissing.length ? ['必需步骤缺少确认或审批证据，执行在开始前已阻断。'] : [])
       ]
@@ -671,6 +703,7 @@ export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds
  * @param {PublishedSkill[]} authoritativeSkills
  */
 export function rebuildDraftFromCatalog(draft, authoritativeSkills) {
+  draft = normalizeScenarioWorkflowConfirmation(draft)
   const catalog = new Map((authoritativeSkills || []).map((skill) => [skill.id, skill]))
   const reasons = []
   const steps = (draft?.steps || []).map((step) => {
@@ -801,14 +834,15 @@ function nextPackageVersion(version) {
 export function editableScenarioPackageDraft(packageItem, actor) {
   if (!scenarioPackageActions(packageItem, actor).includes('edit')) return null
   const isPublishedRevision = ['published', 'disabled'].includes(packageItem.status)
-  return cloneScenarioTestSnapshot({
+  return cloneScenarioTestSnapshot(normalizeScenarioWorkflowConfirmation({
     id: packageItem.id, name: packageItem.name, description: packageItem.description,
     targetAudience: packageItem.targetAudience, ownerId: packageItem.ownerId, steps: packageItem.steps,
+    requiresConfirmation: packageItem.requiresConfirmation,
     status: packageItem.status,
     version: isPublishedRevision ? nextPackageVersion(packageItem.version) : packageItem.version,
     baseUpdatedAt: packageItem.updatedAt,
     ...(!isPublishedRevision ? { testReport: packageItem.testReport, testRequest: packageItem.testRequest } : {})
-  })
+  }))
 }
 
 /**
@@ -835,7 +869,8 @@ export function saveScenarioPackageDraft(draft, actor, now, previous) {
   if (previous && (!draft.baseUpdatedAt || draft.baseUpdatedAt !== previous.updatedAt)) {
     throw new Error('场景技能包已更新或缺少编辑版本，请重新打开编辑后保存')
   }
-  const steps = (Array.isArray(draft.steps) ? draft.steps : []).map(cloneStep)
+  const normalized = normalizeScenarioWorkflowConfirmation(draft)
+  const steps = normalized.steps
   const snapshot = previous ? scenarioPublishedSnapshot(previous) : null
   return {
     ...(previous ? cloneScenarioTestSnapshot(previous) : {}),
@@ -843,6 +878,7 @@ export function saveScenarioPackageDraft(draft, actor, now, previous) {
     name: draft.name.trim(),
     description: typeof draft.description === 'string' ? draft.description : '',
     targetAudience: typeof draft.targetAudience === 'string' ? draft.targetAudience : '',
+    requiresConfirmation: normalized.requiresConfirmation,
     ownerId: previous?.ownerId || actor.id,
     revisionEditors: nextRevisionEditors(previous, actor),
     version: previous ? ['published', 'disabled'].includes(previous.status) ? nextPackageVersion(previous.version) : previous.version : 'v1.0.0',
@@ -913,6 +949,7 @@ export function submitScenarioPackage(draft, actor, now, authoritativeSkills, pr
     name: draft.name,
     description: draft.description,
     targetAudience: draft.targetAudience,
+    requiresConfirmation: rebuilt.draft.requiresConfirmation,
     ownerId: previous?.ownerId || actor.id,
     revisionEditors: nextRevisionEditors(previous, actor),
     version: previous ? ['published', 'disabled'].includes(previous.status) ? nextPackageVersion(previous.version) : previous.version : 'v1.0.0',

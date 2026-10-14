@@ -405,6 +405,11 @@
           <dl class="scenario-package-detail-summary">
             <div><dt>目标人群</dt><dd>{{ packageDetailItem.targetAudience }}</dd></div>
             <div><dt>主责任人</dt><dd>{{ packageDetailItem.ownerId }}</dd></div>
+            <div>
+              <dt>执行要求</dt>
+              <dd v-if="typeof packageDetailItem.requiresConfirmation !== 'boolean' && scenarioRequiresConfirmation(packageDetailItem)">原发布版本含节点确认要求，修订后统一配置</dd>
+              <dd v-else>{{ scenarioRequiresConfirmation(packageDetailItem) ? '整个工作流执行前需要统一确认' : '无需人工确认，执行时仍需校验权限' }}</dd>
+            </div>
             <div><dt>技能包版本</dt><dd><code>{{ packageDetailItem.version }}</code></dd></div>
             <div><dt>状态</dt><dd>{{ packageStatusLabel(packageDetailItem) }}</dd></div>
             <div v-if="packageDetailItem.publishedSnapshot"><dt>已审核版本</dt><dd><code>{{ packageDetailItem.publishedSnapshot.version }}</code> · {{ packageDetailItem.onlineStatus === 'disabled' ? '已禁用' : '已发布' }}</dd></div>
@@ -626,7 +631,7 @@ import ScenarioSkillPackageCreateView from '@/views/agent/ScenarioSkillPackageCr
 import ScenarioNodeContractSummary from '@/views/agent/ScenarioNodeContractSummary.vue'
 import ScenarioTestReportSummary from '@/views/agent/ScenarioTestReportSummary.vue'
 import { isScenarioSimulationCurrent } from '@/domain/scenarioPackageTesting.js'
-import { canAuthorScenarioPackage, scenarioPackageRole } from '@/domain/scenarioSkillPackages.js'
+import { canAuthorScenarioPackage, scenarioPackageRole, scenarioRequiresConfirmation } from '@/domain/scenarioSkillPackages.js'
 import {
   useScenarioSkillPackagesStore,
   type ScenarioPackageAction,

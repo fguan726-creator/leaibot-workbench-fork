@@ -98,7 +98,7 @@ test('changing the phase invalidates the old report until a matching retry repor
 for (const [label, change, expected] of [
   ['missing permissions', () => ({ actor: { ...actor, permissions: [] } }), /权限/],
   ['wrong owner', () => ({ actor: { ...actor, id: 'another-owner' } }), /所有者|主责任人|账号/],
-  ['required confirmation', state => { state.draft.steps[1].requiresConfirmation = true }, /尚未完成本节点的模拟确认/],
+  ['workflow confirmation', state => { state.draft.requiresConfirmation = true }, /整个工作流尚未完成模拟确认/],
   ['missing task', state => { state.draft.steps[0].task = '' }, /本节点任务尚未填写/],
   ['unknown fixed-version sample', state => {
     const skills = catalog.map((skill, index) => index ? { ...skill, version: 'v9.9.9', online: 'v9.9.9' } : skill)

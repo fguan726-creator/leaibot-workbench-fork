@@ -220,15 +220,17 @@ test('an unknown version blocks without manual output and blocks dependent requi
   assert.equal(manual.nodes[0].output, '新版手工样例')
 })
 
-test('confirmation and approval are node-specific simulation tickets, not true audit evidence', () => {
+test('workflow confirmation and node approval remain simulation tickets, not true audit evidence', () => {
   const draft = draftOf()
   draft.steps[0].requiresConfirmation = true
   draft.steps[0].requiresApproval = true
   const wrong = sim.runScenarioSimulation(draft, catalog, requestOf({ confirmedStepIds: ['b'], approvedStepIds: ['b'] }), actor, now)
   assert.equal(wrong.nodes[0].status, 'blocked')
   assert.match(wrong.nodes[0].issues.join(' '), /确认/)
-  assert.match(wrong.nodes[0].issues.join(' '), /审批/)
-  const granted = sim.runScenarioSimulation(draft, catalog, requestOf({ confirmedStepIds: ['a'], approvedStepIds: ['a'] }), actor, now)
+  const missingApproval = sim.runScenarioSimulation(draft, catalog, requestOf({ workflowConfirmed: true, approvedStepIds: ['b'] }), actor, now)
+  assert.equal(missingApproval.nodes[0].status, 'blocked')
+  assert.match(missingApproval.nodes[0].issues.join(' '), /审批/)
+  const granted = sim.runScenarioSimulation(draft, catalog, requestOf({ workflowConfirmed: true, approvedStepIds: ['a'] }), actor, now)
   assert.equal(granted.status, 'completed')
   assert.equal(granted.executionPerformed, false)
   const submitted = domain.submitScenarioPackage({ ...draft, testReport: granted }, actor, now, catalog)
@@ -346,11 +348,12 @@ test('confirmation and legacy approval failures have separate actionable suggest
   const report = sim.runScenarioSimulation(draft, catalog, requestOf(), actor, now)
   assert.match(report.nodes[0].errors.join(' '), /确认/)
   assert.ok(Array.isArray(report.nodes[0].suggestions), 'confirmation errors must include repair suggestions')
-  assert.match(report.nodes[0].suggestions.join(' '), /模拟确认并重试/)
+  assert.match(report.nodes[0].suggestions.join(' '), /模拟确认工作流并重试/)
   assert.doesNotMatch(report.nodes[0].errors.join(' '), /点击/)
-  assert.match(report.nodes[1].errors.join(' '), /审批/)
-  assert.match(report.nodes[1].suggestions.join(' '), /审批.*真实审批/)
-  assert.doesNotMatch(report.nodes[1].suggestions.join(' '), /试运行设置.*勾选/)
+  const confirmed = sim.runScenarioSimulation(draft, catalog, requestOf({ workflowConfirmed: true }), actor, now)
+  assert.match(confirmed.nodes[1].errors.join(' '), /审批/)
+  assert.match(confirmed.nodes[1].suggestions.join(' '), /审批.*真实审批/)
+  assert.doesNotMatch(confirmed.nodes[1].suggestions.join(' '), /试运行设置.*勾选/)
 })
 
 test('unavailable fixtures and global gates offer cause-specific repair paths without inventing outputs', () => {

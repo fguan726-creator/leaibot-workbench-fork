@@ -77,6 +77,14 @@
               <textarea v-model="form.description" rows="7" required aria-describedby="scenario-description-help" placeholder="例如：当运营人员需要分析已认证人群的经营表现并确定跟进对象时使用。请说明适用任务、预期结果及不适用范围。"></textarea>
 
             </label>
+            <fieldset class="scenario-workflow-execution scenario-package-field-wide">
+              <legend>执行要求（选填）</legend>
+              <label>
+                <input v-model="form.requiresConfirmation" type="checkbox" aria-describedby="scenario-workflow-confirmation-help">
+                <span>执行前需要确认</span>
+              </label>
+              <p id="scenario-workflow-confirmation-help">对整个工作流生效。勾选后，每次执行前需统一确认本次范围；不勾选则无需人工确认。执行时仍需校验权限。</p>
+            </fieldset>
           </div>
           <aside class="scenario-definition-aside" aria-label="场景定义说明">
             <section class="scenario-definition-guide">
@@ -119,12 +127,14 @@
         tabindex="-1"
       >
         <ScenarioPackageTrialPanel
+          ref="trialPanel"
           :header-target="trialHeaderTarget"
           v-model="testRequest"
           v-model:report="testReport"
           :draft="currentDraft()"
           :skills="publishedSkills"
           :actor="actor"
+          :requires-confirmation="form.requiresConfirmation"
           :simulate="scenarioStore.simulateDraft"
           :disabled="!canEditDraft"
           @running="trialRunning = $event"
@@ -215,6 +225,7 @@
               <div><dt>场景描述</dt><dd>{{ form.description || '-' }}</dd></div>
               <div><dt>目标人群</dt><dd>{{ form.targetAudience || '-' }}</dd></div>
               <div><dt>主责任人</dt><dd>{{ ownerId }}</dd></div>
+              <div><dt>执行要求</dt><dd>{{ form.requiresConfirmation ? '整个工作流执行前需要统一确认' : '无需人工确认，执行时仍需校验权限' }}</dd></div>
             </dl>
           </article>
           <article>
@@ -282,6 +293,8 @@ import {
 import {
   evaluatePackageForPublish,
   canAuthorScenarioPackage,
+  getScenarioTestFingerprint,
+  scenarioRequiresConfirmation,
   resolveScenarioChain
 } from '@/domain/scenarioSkillPackages.js'
 
@@ -348,7 +361,8 @@ const maxVisitedStep = ref<StepId>(1)
 const form = ref({
   name: props.draft?.name ?? '职场人群认证经营管理',
   description: props.draft?.description ?? '适用于企业运营人员需要了解职场人群认证情况、分析人群经营表现并确定跟进对象的场景。当用户提出认证人群经营分析、运营复盘或客户跟进需求时使用，输出认证分析、经营建议和跟进对象清单。不用于办理认证或直接执行客户触达。',
-  targetAudience: props.draft?.targetAudience ?? '企业运营人员、职场人群运营负责人'
+  targetAudience: props.draft?.targetAudience ?? '企业运营人员、职场人群运营负责人',
+  requiresConfirmation: scenarioRequiresConfirmation(props.draft || {})
 })
 const chain = ref<ScenarioPinnedStep[]>(cloneSteps(props.draft?.steps || []))
 const testReport = ref<ScenarioSimulationReport | null>(props.draft?.testReport ? JSON.parse(JSON.stringify(props.draft.testReport)) : null)
@@ -356,6 +370,8 @@ const testRequest = ref<ScenarioSimulationRequest>(props.draft?.testRequest
   ? JSON.parse(JSON.stringify(props.draft.testRequest))
   : testReport.value ? JSON.parse(JSON.stringify(testReport.value.request)) : createScenarioSimulationRequest({ ...form.value, steps: chain.value }))
 testRequest.value.approvedStepIds = []
+testRequest.value.confirmedStepIds = []
+testRequest.value.workflowConfirmed = false
 const isTestCurrent = computed(() => isScenarioSimulationCurrent(testReport.value, currentDraft(), publishedSkills.value, testRequest.value))
 const trialRunning = ref(false)
 const trialGate = computed(() => evaluateScenarioTrialForSubmit(currentDraft(), publishedSkills.value))
@@ -375,6 +391,7 @@ const definitionSection = ref<HTMLElement | null>(null)
 const compositionSection = ref<HTMLElement | null>(null)
 const testingSection = ref<HTMLElement | null>(null)
 const composer = ref<InstanceType<typeof ScenarioSkillPackageComposer> | null>(null)
+const trialPanel = ref<InstanceType<typeof ScenarioPackageTrialPanel> | null>(null)
 const submissionSection = ref<HTMLElement | null>(null)
 const draftId = props.draft?.id || `scenario-package-${Date.now().toString(36)}`
 const draftBaseUpdatedAt = props.draft?.baseUpdatedAt
@@ -480,7 +497,7 @@ const evaluationCards = computed<EvaluationCard[]>(() => {
 function cloneSteps(stepsToClone: ScenarioPinnedStep[]): ScenarioPinnedStep[] {
   return stepsToClone.map(step => ({
     ...step,
-    requiresApproval: false,
+    requiresConfirmation: false,
     position: step.position ? { ...step.position } : undefined,
     permissions: {
       menu: [...step.permissions.menu],
@@ -509,6 +526,7 @@ function currentDraft(): ScenarioSkillPackageDraft {
     name: form.value.name.trim(),
     description: form.value.description.trim(),
     targetAudience: form.value.targetAudience.trim(),
+    requiresConfirmation: form.value.requiresConfirmation,
     ownerId: ownerId.value,
     testRequest: testRequest.value,
     ...(testReport.value ? { testReport: testReport.value } : {}),
@@ -603,7 +621,7 @@ function validateStep(step: StepId) {
   return true
 }
 
-function goNext() {
+async function goNext() {
   if (submitting.value || savingDraft.value || trialRunning.value) return
   if (activeStep.value === 3) recomputeEvaluation()
   if (!validateStep(activeStep.value)) return
@@ -612,6 +630,7 @@ function goNext() {
   activeStep.value = next
   maxVisitedStep.value = Math.max(maxVisitedStep.value, next) as StepId
   focusSection(next)
+  if (next === 3) await runEnteredTrial()
 }
 
 function goPrevious() {
@@ -622,14 +641,23 @@ function goPrevious() {
   focusSection(previous)
 }
 
-function goToStep(step: StepId) {
+async function goToStep(step: StepId) {
   if (submitting.value || savingDraft.value || trialRunning.value || !canEditDraft.value || step > maxVisitedStep.value) return
   validationErrors.value = []
   if (step >= 3) recomputeEvaluation()
   if (step === 4 && !validateStep(3)) return
+  const enteringTrial = step === 3 && activeStep.value !== 3
   activeStep.value = step
   focusTab(step)
   void nextTick(() => bodySection.value?.scrollTo({ top: 0 }))
+  if (enteringTrial) await runEnteredTrial()
+}
+
+async function runEnteredTrial() {
+  // The trial panel stays mounted between steps. Re-entering must run current
+  // configuration instead of leaving the previous failed report on screen.
+  await nextTick()
+  if (activeStep.value === 3 && canEditDraft.value) await trialPanel.value?.runTrial()
 }
 
 function handleTabKeydown(event: KeyboardEvent, step: StepId) {
@@ -713,6 +741,24 @@ watch([form, chain, canEditDraft, publishedSkills], () => {
     testRequest.value = { ...testRequest.value, input, sampleOutputs: {} }
   }
 }, { deep: true, immediate: true })
+
+const confirmationScope = computed(() => JSON.stringify({
+  configuration: getScenarioTestFingerprint(currentDraft(), publishedSkills.value, {
+    ...testRequest.value,
+    workflowConfirmed: false,
+    confirmedStepIds: [],
+    approvedStepIds: [],
+    mockDataMode: undefined,
+    mockDataPhase: undefined
+  }),
+  actorId: actor.value.id,
+  permissions: [...actor.value.permissions].sort()
+}))
+watch(confirmationScope, () => {
+  if (testRequest.value.workflowConfirmed || testRequest.value.confirmedStepIds.length) {
+    testRequest.value = { ...testRequest.value, workflowConfirmed: false, confirmedStepIds: [] }
+  }
+})
 
 watch([form, chain, actor, testReport, testRequest], () => {
   submitError.value = ''
@@ -920,6 +966,42 @@ watch([form, chain, actor, testReport, testRequest], () => {
 
 .scenario-package-field-wide {
   grid-column: 1 / -1;
+}
+
+.scenario-workflow-execution {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+.scenario-workflow-execution legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-weight: 500;
+}
+.scenario-workflow-execution label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--control-height-md);
+  cursor: pointer;
+}
+.scenario-workflow-execution input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+.scenario-workflow-execution input:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.scenario-workflow-execution p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
 .scenario-package-field b {
