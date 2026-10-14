@@ -1240,9 +1240,12 @@ function packageApplication(packageItem: ScenarioSkillPackage) {
 
 function packageApplicationHint(packageItem: ScenarioSkillPackage) {
   const eligibility = packageApplication(packageItem)
-  return eligibility.ok
-    ? `在 AI 助手中应用已审核固定版本 ${eligibility.version}，进行本地样例测试${eligibility.requiresConfirmation ? '；执行前需确认' : ''}`
-    : eligibility.reasons.join('；') || '当前技能包不可应用。'
+  if (!eligibility.ok) return eligibility.reasons.join('；') || '当前技能包不可应用。'
+  const isCurrentRevision = eligibility.versionSource === 'current_revision'
+  const versionLabel = isCurrentRevision
+    ? `测试当前${eligibility.packageStatus === 'draft' ? '草稿' : '待审核'}版本 ${eligibility.version}`
+    : `应用已审核固定版本 ${eligibility.version}`
+  return `在 AI 助手中${versionLabel}，进行本地样例测试${isCurrentRevision ? '，不会发布' : ''}${eligibility.requiresConfirmation ? '；执行前需确认' : ''}`
 }
 
 function applyPackage(packageItem: ScenarioSkillPackage) {

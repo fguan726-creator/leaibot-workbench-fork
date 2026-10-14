@@ -791,7 +791,7 @@ function applicationButton(markup, id) {
   return match[1]
 }
 
-for (const status of ['draft', 'review', 'rejected', 'disabled']) {
+for (const status of ['rejected', 'disabled']) {
   test(`the ${status} row and detail retain a disabled application entry with an accessible reason`, async () => {
     const current = await fixture({ actor: 'application-admin', permissions: ['*'], mode: 'detail', status: status === 'review' ? undefined : status })
     const row = packageRowHtml(current.html, current.record.id)
@@ -806,6 +806,28 @@ for (const status of ['draft', 'review', 'rejected', 'disabled']) {
     assert.equal(current.ai.messages.length, before)
     assert.equal(current.state.packageDetailId.value, current.record.id)
     assert.ok(current.notices.length > 0)
+  })
+}
+
+for (const { status, label } of [{ status: 'draft', label: '草稿' }, { status: 'review', label: '待审核' }]) {
+  test(`an unpublished ${status} can test its current revision without approving or publishing it`, async () => {
+    const { state, ai, store, record, html, dialog } = await fixture({ actor: 'application-admin', permissions: ['*'], status: status === 'review' ? undefined : status, mode: 'detail' })
+    assert.equal(record.status, status)
+    assert.equal(record.publishedSnapshot, undefined)
+    for (const markup of [packageRowHtml(html, record.id), dialog]) {
+      const button = applicationButton(markup, record.id)
+      assert.doesNotMatch(button, /\bdisabled\b/)
+      assert.ok(button.includes(`当前${label}版本 v1.0.0`))
+      assert.match(button, /不会发布/)
+      assert.doesNotMatch(button, /已审核/)
+    }
+    const before = copy(store.findPackage(record.id))
+    const messageCount = ai.messages.length
+    state.applyPackage(record)
+    assert.equal(ai.open, true)
+    assert.ok(ai.messages.slice(messageCount).some(message => message.text.includes(record.name)))
+    assert.equal(state.packageDetailId.value, '')
+    assert.deepEqual(copy(store.findPackage(record.id)), before)
   })
 }
 
@@ -825,9 +847,13 @@ test('published package application opens the AI assistant with local test messa
   assert.deepEqual(copy(store.findPackage(record.id)), before)
 })
 
-for (const status of ['draft', 'review', 'rejected']) {
-  test(`a ${status} revision applies only its prior approved fixed version`, async () => {
-    const { state, record, html, dialog } = await fixture({ actor: 'application-admin', permissions: ['*'], mode: 'detail', prepare(context) {
+for (const { status, label, version, source } of [
+  { status: 'draft', label: '当前草稿版本', version: 'v1.0.1', source: 'current_revision' },
+  { status: 'review', label: '当前待审核版本', version: 'v1.0.1', source: 'current_revision' },
+  { status: 'rejected', label: '已审核固定版本', version: 'v1.0.0', source: 'approved_release' },
+]) {
+  test(`a ${status} revision applies the ${source} without changing the approved release`, async () => {
+    const { state, ai, store, record, html, dialog } = await fixture({ actor: 'application-admin', permissions: ['*'], mode: 'detail', prepare(context) {
       submitPublishedRevision(context)
       if (status === 'draft') seedDraft(context.store, context.recordId)
       if (status === 'rejected') context.store.rejectPackage(context.recordId, reviewer, '补充本次修订。')
@@ -838,10 +864,20 @@ for (const status of ['draft', 'review', 'rejected']) {
     for (const markup of [packageRowHtml(html, record.id), dialog]) {
       const button = applicationButton(markup, record.id)
       assert.doesNotMatch(button, /\bdisabled\b/)
-      assert.match(button, /title="[^"]*已审核[^"<>]*v1\.0\.0[^"]*"/)
-      assert.doesNotMatch(button, /v1\.0\.1/)
+      assert.ok(button.includes(`${label} ${version}`))
+      assert.ok(!button.includes(source === 'current_revision' ? 'v1.0.0' : 'v1.0.1'))
+      if (source === 'current_revision') {
+        assert.match(button, /不会发布/)
+        assert.doesNotMatch(button, /已审核/)
+      }
     }
-    assert.equal(state.packageApplication(record).version, 'v1.0.0')
+    assert.equal(state.packageApplication(record).version, version)
+    assert.equal(state.packageApplication(record).versionSource, source)
+    const before = copy(store.findPackage(record.id))
+    const messageCount = ai.messages.length
+    state.applyPackage(record)
+    assert.ok(ai.messages.slice(messageCount).some(message => message.text.includes(record.name) && message.text.includes(version)))
+    assert.deepEqual(copy(store.findPackage(record.id)), before)
   })
 }
 

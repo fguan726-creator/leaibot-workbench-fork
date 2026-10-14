@@ -23,7 +23,7 @@ import {
 import { useSkillHubStore, type SkillHubItem } from './skillHub'
 import { useAppStore } from './app'
 import { buildScenarioRunPlan } from '../domain/scenarioRunPlan.js'
-import { evaluateScenarioApplicationEligibility, runScenarioApplicationPreview, type ScenarioApplicationRequest } from '../domain/scenarioPackageApplication.js'
+import { evaluateScenarioApplicationEligibility, getScenarioApplicationPackage, runScenarioApplicationPreview, type ScenarioApplicationRequest, type ScenarioApplicationMetadata } from '../domain/scenarioPackageApplication.js'
 import { getScenarioTestFingerprint, runScenarioSimulation, type ScenarioSimulationReport, type ScenarioSimulationRequest } from '../domain/scenarioPackageTesting.js'
 import { readScenarioPackageState, writeScenarioPackageState, type ScenarioPackageStoredState } from '../services/scenarioPackageStorage'
 
@@ -755,22 +755,26 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     return buildScenarioRunPlan(getScenarioRuntimePackage(packageItem), caller, request)
   }
 
-  function applicationPackage(packageId: string): ScenarioSkillPackage | undefined {
+  function applicationRecord(packageId: string): ScenarioSkillPackage | undefined {
     const latest = readLatestState()
     const saved = latest?.packages.find(item => item.id === packageId)
     if (saved) applicationPersistedIds.add(packageId)
     // Preserve unsaved seeded examples, but never resurrect a deleted/unreadable persisted publication.
     const found = saved || (!persistedIds.has(packageId) && !applicationPersistedIds.has(packageId)
       ? storedPackages.value.find(item => item.id === packageId) : undefined)
-    return found ? getScenarioRuntimePackage(refreshPackage(found)) as ScenarioSkillPackage : undefined
+    return found ? refreshPackage(found) : undefined
+  }
+
+  function applicationPackage(packageId: string): (ScenarioSkillPackage & ScenarioApplicationMetadata) | undefined {
+    return getScenarioApplicationPackage(applicationRecord(packageId)) as (ScenarioSkillPackage & ScenarioApplicationMetadata) | undefined
   }
 
   function applicationEligibility(packageId: string, actor: ScenarioPackageActor) {
-    return evaluateScenarioApplicationEligibility(applicationPackage(packageId), actor)
+    return evaluateScenarioApplicationEligibility(applicationRecord(packageId), actor)
   }
 
   function applicationPreview(packageId: string, actor: ScenarioPackageActor, request: ScenarioApplicationRequest = {}) {
-    return runScenarioApplicationPreview(applicationPackage(packageId), actor, request)
+    return runScenarioApplicationPreview(applicationRecord(packageId), actor, request, new Date().toISOString(), selectableSkills.value)
   }
 
   return {

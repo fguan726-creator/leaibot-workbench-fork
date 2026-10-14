@@ -55,12 +55,80 @@ test('applying a reviewed package opens a local preview without changing the com
   assert.deepEqual(copy(scenario.findPackage(id)), before)
 })
 
-test('unpublished, paused and disabled packages cannot enter application through the store API', () => {
+test('rejected without a publication, paused and disabled packages cannot enter application through the store API', () => {
   const { ai, scenario } = fixture()
-  for (const item of scenario.packages.filter(item => item.status === 'review' && !item.publishedSnapshot || item.status === 'disabled' || item.health.status === 'paused')) {
+  for (const item of scenario.packages.filter(item => item.status === 'rejected' && !item.publishedSnapshot || item.status === 'disabled' || item.health.status === 'paused')) {
     assert.equal(ai.applyScenarioPackage(item.id).ok, false, item.id)
   }
   assert.equal(ai.messages.length, 0)
+})
+
+function revisionFixture(status, confirmation = false, keepPublication = false) {
+  const context = fixture(confirmation)
+  const state = JSON.parse(storage.getItem('leai_scenario_skill_packages_v1'))
+  const item = state.packages.find(item => item.id === context.id)
+  item.status = status
+  item.name = status === 'draft' ? '当前草稿内容' : '当前待审核内容'
+  item.version = 'v2.0.0'
+  item.auditEvents = []
+  if (!keepPublication) {
+    delete item.publishedSnapshot
+    item.onlineStatus = 'unpublished'
+  }
+  storage.setItem('leai_scenario_skill_packages_v1', JSON.stringify(state))
+  return context
+}
+
+for (const status of ['draft', 'review']) {
+  test(`${status} application tests its current unpublished content without changing status or audit records`, () => {
+    const { ai, id } = revisionFixture(status)
+    const before = storage.getItem('leai_scenario_skill_packages_v1')
+    assert.equal(ai.applyScenarioPackage(id).ok, true)
+    const result = ai.messages.at(-1).text
+    assert.match(result, status === 'draft' ? /当前草稿/ : /当前待审核/)
+    assert.match(result, /v2\.0\.0/)
+    assert.match(result, /未发布/)
+    assert.match(result, /POC 应用测试完成/)
+    assert.doesNotMatch(result, /已审核固定版本/)
+    assert.equal(storage.getItem('leai_scenario_skill_packages_v1'), before)
+  })
+
+  test(`${status} with an older approved snapshot still applies the current revision`, () => {
+    const { ai, id } = revisionFixture(status, false, true)
+    assert.equal(ai.applyScenarioPackage(id).ok, true)
+    const result = ai.messages.at(-1).text
+    assert.match(result, status === 'draft' ? /当前草稿内容/ : /当前待审核内容/)
+    assert.match(result, /v2\.0\.0/)
+    assert.match(result, /未发布/)
+    assert.doesNotMatch(result, /技能包应用测试：职场人群认证经营管理/)
+  })
+}
+
+test('a pending draft confirmation expires when its current task changes in another tab', async () => {
+  const { ai, id } = revisionFixture('draft', true, true)
+  ai.applyScenarioPackage(id)
+  const action = confirmationAction(ai)
+  assert.ok(action)
+  assert.match(ai.messages.at(-1).text, /当前草稿/)
+  assert.doesNotMatch(ai.messages.at(-1).text, /已审核固定版本/)
+  const state = JSON.parse(storage.getItem('leai_scenario_skill_packages_v1'))
+  state.packages.find(item => item.id === id).steps[0].task = '变更后的任务范围'
+  storage.setItem('leai_scenario_skill_packages_v1', JSON.stringify(state))
+  await ai.runTaskAction(action, 'agent.skills')
+  assert.match(ai.messages.at(-1).text, /失效/)
+  assert.equal(confirmationAction(ai), undefined)
+})
+
+test('one explicit current-review confirmation completes only the POC and leaves the package pending review', async () => {
+  const { ai, id } = revisionFixture('review', true)
+  const before = storage.getItem('leai_scenario_skill_packages_v1')
+  ai.applyScenarioPackage(id)
+  const action = confirmationAction(ai)
+  assert.ok(action)
+  await ai.runTaskAction(action, 'agent.skills')
+  assert.match(ai.messages.at(-1).text, /当前待审核/)
+  assert.match(ai.messages.at(-1).text, /POC 应用测试完成/)
+  assert.equal(storage.getItem('leai_scenario_skill_packages_v1'), before)
 })
 
 test('one explicit workflow confirmation produces one preview and cannot be replayed', async () => {

@@ -803,14 +803,22 @@ export const useAIStore = defineStore('ai', () => {
     return true
   }
 
+  function _scenarioApplicationVersionLabel(preview: Pick<ScenarioApplicationPreview, 'versionSource' | 'packageStatus'>) {
+    return preview.versionSource === 'current_revision'
+      ? preview.packageStatus === 'draft' ? '当前草稿版本' : '当前待审核版本'
+      : '已审核固定版本'
+  }
+
   function _scenarioApplicationText(preview: ScenarioApplicationPreview) {
+    const versionLabel = _scenarioApplicationVersionLabel(preview)
     const lines = [
       `### 技能包应用测试：${preview.name}（${preview.version}）`,
+      `测试版本：${versionLabel}${preview.versionSource === 'current_revision' ? ' · 未审核、未发布，仅用于应用测试' : ''}。`,
       'POC 样例演示 · 未调用真实 Skill 或业务接口，未读取或修改业务数据。',
       preview.summary
     ]
     if (preview.status === 'confirmation_required') {
-      lines.push('请确认按以下已审核固定版本测试整个工作流；本次不启用未命中的条件分支。',
+      lines.push(`请确认按以下${versionLabel}测试整个工作流；本次不启用未命中的条件分支。`,
         ...preview.nodes.map(node => `- ${node.name} · ${node.pinnedVersion}`))
     } else {
       lines.push(...preview.nodes.map(node => `- ${node.name} · ${node.pinnedVersion}：${node.status === 'completed' ? '样例完成' : node.status === 'skipped' ? '条件未命中，未执行' : '未完成'}${node.output ? `\n  ${node.output}` : ''}`))
@@ -829,7 +837,7 @@ export const useAIStore = defineStore('ai', () => {
     _expireScenarioApplications('已选择新的应用测试，之前的确认已失效。')
     toggleOpen(true)
     const preview = scenario.applicationPreview(packageId, actor, {})
-    _recordMessage('user', `应用场景技能包「${eligibility.name}」${eligibility.version}，进行 POC 样例测试。`)
+    _recordMessage('user', `应用场景技能包「${eligibility.name}」${eligibility.version}（${_scenarioApplicationVersionLabel(eligibility)}），进行 POC 样例测试。`)
     const key = _newMessageId('assistant')
     const confirmation = preview.status === 'confirmation_required'
     const message = _recordMessage('assistant', _scenarioApplicationText(preview), {

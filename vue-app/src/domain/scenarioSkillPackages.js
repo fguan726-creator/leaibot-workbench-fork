@@ -619,6 +619,40 @@ export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds
   if (!hasAuditEvent(packageItem, 'published')) {
     return blockedRuntimeResult(candidateSteps, ['技能包缺少独立的发布审计证据，不能运行。'])
   }
+  return evaluateScenarioNodeAccess(packageItem, caller, steps, candidateSteps, evidence)
+}
+
+/**
+ * Gate an unpublished local POC revision without granting publication/runtime authority.
+ * @param {ScenarioPackageDraft} packageItem
+ * @param {ScenarioActor} caller
+ * @param {string[]} activeOptionalStepIds
+ * @param {{workflowConfirmed?:boolean,confirmedStepIds?:string[],approvedStepIds?:string[]}} evidence
+ * @returns {ScenarioRuntimeResult}
+ */
+export function evaluateScenarioRevisionPreviewAccess(packageItem, caller, activeOptionalStepIds = [], evidence = {}) {
+  const chain = resolveScenarioChain(packageItem?.steps || [])
+  const steps = chain.steps
+  if (!['draft', 'review'].includes(packageItem?.status)) {
+    return blockedRuntimeResult(steps, ['仅草稿或待审核版本可进行未发布 POC 应用测试。'])
+  }
+  if (!chain.ok) return blockedRuntimeResult(steps, chain.reasons)
+  const reasons = []
+  if (!steps.some(step => step.required === true)) reasons.push('应用测试至少需要一个必需步骤。')
+  if (steps.some(step => !step.skillId?.trim() || !step.pinnedVersion?.trim() || !step.currentPublishedVersion?.trim())) reasons.push('每个步骤必须声明 Skill 和完整固定版本。')
+  if (steps.some(step => !hasCompletePermissionSnapshot(step.permissions))) reasons.push('每个步骤必须包含 menu、skill、data、action 四类非空权限快照。')
+  if (steps.some(step => !['required', 'conditional'].includes(step.kind) || step.required !== (step.kind === 'required'))) reasons.push('步骤类型与必需属性不一致。')
+  if (steps.some(step => step.kind === 'conditional' && !step.condition?.trim())) reasons.push('条件分支必须配置条件。')
+  if (reasons.length) return blockedRuntimeResult(steps, reasons)
+  const activeOptional = new Set(activeOptionalStepIds)
+  const candidates = steps.filter(step => step.required || activeOptional.has(step.id))
+  const unconfigured = candidates.filter(step => !getScenarioNodeContract(step).task.trim())
+  if (unconfigured.length) return blockedRuntimeResult(candidates, unconfigured.map(step => `节点“${stepLabel(step)}”的任务尚未填写，无法进行应用测试。`))
+  return evaluateScenarioNodeAccess(packageItem, caller, steps, candidates, evidence)
+}
+
+// Runtime and unpublished POC share the same permission, dependency and evidence boundaries.
+function evaluateScenarioNodeAccess(packageItem, caller, steps, candidateSteps, evidence) {
   const packageUsePermission = `scenario-package:${packageItem.id}:use`
   if (!packageItem?.id || !hasPolicyPermission(caller, packageUsePermission)) {
     return blockedRuntimeResult(candidateSteps, ['最终调用方缺少精确的技能包使用权限。'], {

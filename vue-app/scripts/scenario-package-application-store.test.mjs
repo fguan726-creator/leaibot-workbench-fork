@@ -68,7 +68,7 @@ test('application entry and preview reread other-page disabling without overwrit
   assert.equal(JSON.parse(data.get(key)).packages[0].onlineStatus, 'disabled')
 })
 
-test('application scope reads current approved publication while a newer draft remains unreviewed', () => {
+test('application scope reads the fresh current draft instead of its prior published snapshot', () => {
   const { store, item, caller } = fixture()
   const saved = copy(item)
   saved.status = 'draft'
@@ -78,11 +78,30 @@ test('application scope reads current approved publication while a newer draft r
   saved.publishedSnapshot.version = 'v2.0.0'
   save([saved])
   const current = store.applicationPackage(item.id)
-  assert.equal(current.name, '已审核的新发布标题')
-  assert.equal(current.version, 'v2.0.0')
-  assert.equal(store.applicationPreview(item.id, caller).version, 'v2.0.0')
+  assert.equal(current.name, '尚未审核的草稿标题')
+  assert.equal(current.version, 'v9.0.0')
+  assert.equal(current.versionSource, 'current_revision')
+  assert.equal(current.packageStatus, 'draft')
+  assert.equal(store.applicationPreview(item.id, caller).version, 'v9.0.0')
   assert.equal(store.findPackage(item.id).version, item.version)
 })
+
+for (const status of ['draft', 'review']) {
+  test(`fresh ${status} seed can apply without becoming published or acquiring audit events`, () => {
+    const { store } = fixture()
+    const item = store.packages.find(item => item.status === status && !item.publishedSnapshot)
+    assert.ok(item)
+    const before = copy(item)
+    const caller = callerFor(item)
+    assert.equal(store.applicationEligibility(item.id, caller).ok, true)
+    const result = store.applicationPreview(item.id, caller)
+    assert.equal(result.status, 'completed', result.issues.join('；'))
+    assert.equal(result.versionSource, 'current_revision')
+    assert.equal(result.packageStatus, status)
+    assert.equal(store.prepareRunPlan(item.id, caller).status, 'blocked')
+    assert.deepEqual(copy(store.findPackage(item.id)), before)
+  })
+}
 
 test('removed or unreadable previously persisted packages cannot fall back to stale in-memory authority', () => {
   const initial = fixture()
