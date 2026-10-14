@@ -60,7 +60,7 @@ function withTrial(draft, store, current) {
 
 test('initial data demonstrates every existing package state without changing the Skill catalog', () => {
   const { store, hub, beforeSkills } = fixture()
-  for (const state of ['draft', 'review', 'rejected', 'published', 'upgrade_required', 'degraded', 'paused', 'disabled']) {
+  for (const state of ['draft', 'review', 'rejected', 'published', 'upgrade_required', 'paused', 'disabled']) {
     findState(store, state)
   }
   assert.deepEqual(copy(hub.items), beforeSkills)
@@ -128,27 +128,67 @@ test('published and disabled examples have distinct approval evidence and use th
   assert.ok(store.actionsFor(disabled.id, reviewer).includes('enable'))
 })
 
-test('degraded and paused examples reference existing disabled Skills and remain stable through health refreshes', () => {
+test('optional and required dependency examples both pause and remain stable through health refreshes', () => {
   const { store, hub, beforeSkills, current } = fixture()
   const disabledIds = new Set(hub.items.filter(item => item.onlineStatus === 'disabled').map(item => item.name))
-  const degraded = findState(store, 'degraded')
-  const paused = findState(store, 'paused')
-  const optionalUnavailable = degraded.steps.filter(step => !step.required && disabledIds.has(step.skillId))
+  const optionalExample = store.findPackage('seed-scenario-degraded')
+  const paused = store.findPackage('seed-scenario-paused')
+  const optionalUnavailable = optionalExample.steps.filter(step => !step.required && disabledIds.has(step.skillId))
   const requiredUnavailable = paused.steps.filter(step => step.required && disabledIds.has(step.skillId))
-  assert.ok(optionalUnavailable.length > 0, 'degraded example needs an actually disabled optional dependency')
+  assert.ok(optionalUnavailable.length > 0, 'optional example needs an actually disabled optional dependency')
   assert.ok(requiredUnavailable.length > 0, 'paused example needs an actually disabled required dependency')
   assert.ok(optionalUnavailable.every(step => step.dependencyState === 'emergency_disabled'))
   assert.ok(requiredUnavailable.every(step => step.dependencyState === 'emergency_disabled'))
   const activeOptional = optionalUnavailable.map(step => step.id)
-  assert.equal(store.evaluateRuntimeAccess(degraded.id, current, activeOptional).status, 'degraded')
+  const access = store.evaluateRuntimeAccess(optionalExample.id, current, activeOptional)
+  assert.equal(access.status, 'blocked')
+  assert.deepEqual(access.effectiveSteps, [])
   assert.equal(store.prepareRunPlan(paused.id, current).status, 'blocked')
   for (let read = 0; read < 3; read += 1) {
-    assert.equal(store.findPackage(degraded.id).publishedSnapshot.health.status, 'degraded')
+    assert.equal(store.findPackage(optionalExample.id).publishedSnapshot.health.status, 'paused')
     assert.equal(store.findPackage(paused.id).publishedSnapshot.health.status, 'paused')
   }
   assert.deepEqual(copy(hub.items), beforeSkills)
   assert.ok(store.selectableSkills.every(skill => !disabledIds.has(skill.id)))
 })
+
+for (const schemaVersion of [1, 2]) {
+  test(`legacy schema ${schemaVersion} degraded records remain stored while runtime recalculates a pause`, () => {
+    const initial = fixture()
+    const legacy = copy(initial.store.findPackage('seed-scenario-degraded'))
+    legacy.id = 'user-edited-legacy-optional'
+    legacy.name = '用户保留的活动分析'
+    legacy.description = '用户自己的范围说明'
+    legacy.health = { status: 'degraded', explanations: ['旧版本允许缺失分支后继续'], blockedStepIds: [], degradedStepIds: ['activity-weather'] }
+    legacy.publishedSnapshot.id = legacy.id
+    legacy.publishedSnapshot.health = copy(legacy.health)
+    const other = copy(initial.store.findPackage('seed-workplace-certification-operations'))
+    const key = 'leai_scenario_skill_packages_v1'
+    const data = new Map([[key, JSON.stringify({ schemaVersion, packages: [legacy, other], seededOwners: ['seed-test-user'] })]])
+    const savedStorage = globalThis.localStorage
+    globalThis.localStorage = { getItem: name => data.get(name) ?? null, setItem: (name, value) => data.set(name, value) }
+    try {
+      const { store, current } = fixture()
+      const restored = store.findPackage(legacy.id)
+      assert.ok(restored)
+      assert.equal(restored.name, legacy.name)
+      assert.equal(restored.description, legacy.description)
+      assert.equal(restored.health.status, 'paused')
+      assert.equal(restored.publishedSnapshot.health.status, 'paused')
+      assert.deepEqual(copy(restored.steps), legacy.steps)
+      assert.deepEqual(restored.auditEvents, legacy.auditEvents)
+      assert.deepEqual(copy(restored.publishedSnapshot.steps), legacy.publishedSnapshot.steps)
+      assert.equal(restored.publishedSnapshot.version, legacy.publishedSnapshot.version)
+      assert.equal(store.prepareRunPlan(legacy.id, current).status, 'blocked')
+      assert.deepEqual(store.prepareRunPlan(legacy.id, current).steps, [])
+      assert.ok(store.findPackage(other.id), 'an old degraded record must not discard other stored packages')
+      const persisted = JSON.parse(data.get(key)).packages.find(item => item.id === legacy.id)
+      assert.deepEqual(persisted, legacy, 'reading health must not overwrite user data or publication evidence')
+    } finally {
+      globalThis.localStorage = savedStorage
+    }
+  })
+}
 
 test('late login and switching accounts add the correct own examples without overwriting prior real submissions or edited examples', async () => {
   const { account, store } = fixture(null)
@@ -186,7 +226,7 @@ test('reset restores all initial states for the current account after switching 
   account.user = 'reset-seed-account'
   await nextTick()
   store.resetToInitialMock()
-  for (const state of ['draft', 'review', 'rejected', 'published', 'upgrade_required', 'degraded', 'paused', 'disabled']) findState(store, state)
+  for (const state of ['draft', 'review', 'rejected', 'published', 'upgrade_required', 'paused', 'disabled']) findState(store, state)
   for (const state of ['draft', 'review', 'rejected', 'published', 'disabled']) findState(store, state, account.user)
   const countAfterReset = store.packages.length
   account.user = null

@@ -3,8 +3,9 @@
  * 由封板工作台 AI 运行时迁移到 Pinia 的面板状态与核心函数
  */
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { getGroupLabel, getPageLabel, pageIdToPath, type SkillApplicationReportData } from '@/stores/app'
+import { ref, computed, watch } from 'vue'
+import { getGroupLabel, getPageLabel, pageIdToPath, useAppStore, type SkillApplicationReportData } from '@/stores/app'
+import { useScenarioSkillPackagesStore } from '@/stores/scenarioSkillPackages'
 import { STORAGE_KEYS, writeBooleanStorage } from '@/constants/storageKeys'
 import { createEmployeeCertificationReport } from '@/services/skillApplicationReport'
 import { applyTaskDecision, expireTask, updateTaskRequest, type AiTaskBlock, type TaskDecision, type TaskRequest } from '@/stores/aiTaskAuthorization'
@@ -24,7 +25,7 @@ interface AttachedFile {
 }
 
 interface TaskAction {
-  type: 'report' | 'navigate' | 'skill' | 'prompt' | 'auth_approve' | 'auth_batch_approve' | 'auth_reject' | 'auth_task_decide' | 'skill_tune_confirm'
+  type: 'report' | 'navigate' | 'skill' | 'prompt' | 'auth_approve' | 'auth_batch_approve' | 'auth_reject' | 'auth_task_decide' | 'skill_tune_confirm' | 'scenario_application_confirm' | 'scenario_application_cancel'
   label: string
   value?: string
   decision?: TaskDecision
@@ -179,6 +180,16 @@ interface PendingQueryableSkillAuth {
   context: AiRuntimeContext
 }
 
+interface PendingScenarioApplication {
+  packageId: string
+  conversationId: string
+  scope: string
+  messageId: string
+  expiresAt: number
+}
+
+type ScenarioApplicationPreview = ReturnType<ReturnType<typeof useScenarioSkillPackagesStore>['applicationPreview']>
+
 export const AI_PANEL_DEFAULT_WIDTH             = 380
 export const AI_PANEL_COLLAPSED_NAV_EXTRA_WIDTH = 112
 const AI_CONVERSATION_STORAGE_KEY        = 'leai_ai_conversations'
@@ -316,6 +327,12 @@ export const useAIStore = defineStore('ai', () => {
   const skillTuneConfirmation = ref({ key: '', confirmedAt: 0 })
   const pendingQueryableSkillAuth = new Map<string, PendingQueryableSkillAuth>()
   const previewAuthorizationTasks = new Set<string>()
+  // Confirmation tickets live only in this store instance, never in conversation history.
+  const pendingScenarioApplications = new Map<string, PendingScenarioApplication>()
+  const applicationAccount = useAppStore()
+  watch(() => JSON.stringify([applicationAccount.user, applicationAccount.permissions]), () => {
+    if (_expireScenarioApplications('账号或权限已变化，请重新应用技能包。')) _persistConversation()
+  }, { flush: 'sync' })
   // ---- 面板宽度（内联 style 用）----
   const panelWidth  = ref(AI_PANEL_DEFAULT_WIDTH) // 0 表示用 CSS 默认
   // ---- 是否因 AI 面板展开而自动折叠了侧栏 ----
@@ -409,6 +426,7 @@ export const useAIStore = defineStore('ai', () => {
   // ===== 发送消息（对应 aiSend：发送 / 排队 / 停止三态）=====
   async function send(pageId: string, context: AiRuntimeContext = {}) {
     const payload = _createComposerPayload(pageId)
+    if (payload && _expireScenarioApplications('已开始新的提问，请重新应用技能包以确认本次范围。')) _persistConversation()
 
     if (loading.value) {
       if (payload) {
@@ -584,6 +602,10 @@ export const useAIStore = defineStore('ai', () => {
 
   async function runTaskAction(action: TaskAction, pageId = '', context: AiRuntimeContext = {}) {
     if (!action) return
+    if (action.type === 'scenario_application_confirm' || action.type === 'scenario_application_cancel') {
+      _resolveScenarioApplication(action)
+      return
+    }
     if (action.type === 'report') {
       const report = _createActionReport(pageId, action.value || action.label)
       AI_REPORT_ARTIFACTS[report.id] = report
@@ -680,7 +702,7 @@ export const useAIStore = defineStore('ai', () => {
     convId.value      = item.remoteConvId || null
     messages.value    = (item.messages || []).map(message => message.task
       ? { ...message, task: expireTask(message.task) }
-      : message)
+      : message).map(message => _expireHistoricalScenarioActions(message))
     ;(item.reports || []).forEach(report => {
       AI_REPORT_ARTIFACTS[report.id] = report
     })
@@ -742,11 +764,108 @@ export const useAIStore = defineStore('ai', () => {
   }
 
   function _expireCurrentAuthorizationTasks() {
+    _expireScenarioApplications('会话已切换，请重新应用技能包。')
     messages.value = messages.value.map(message => message.task
       ? { ...message, task: expireTask(message.task) }
       : message)
     pendingQueryableSkillAuth.clear()
     previewAuthorizationTasks.clear()
+  }
+
+  function _scenarioApplicationActor() {
+    return { id: applicationAccount.user || '', permissions: applicationAccount.permissions }
+  }
+
+  function _scenarioApplicationScope(packageId: string) {
+    return JSON.stringify({
+      actor: _scenarioApplicationActor(),
+      package: useScenarioSkillPackagesStore().applicationPackage(packageId)
+    })
+  }
+
+  function _isScenarioAction(action: TaskAction) {
+    return action.type === 'scenario_application_confirm' || action.type === 'scenario_application_cancel'
+  }
+
+  function _expireHistoricalScenarioActions(message: AiMessage): AiMessage {
+    if (!message.actionItems?.some(_isScenarioAction)) return message
+    return { ...message, actionItems: message.actionItems.filter(action => !_isScenarioAction(action)),
+      text: `${message.text}\n\n这条历史确认已失效，请从 Skill Hub 重新应用技能包。` }
+  }
+
+  function _expireScenarioApplications(reason: string) {
+    if (!pendingScenarioApplications.size) return false
+    const messageIds = new Set([...pendingScenarioApplications.values()].map(item => item.messageId))
+    pendingScenarioApplications.clear()
+    messages.value = messages.value.map(message => messageIds.has(message.id || '')
+      ? { ...message, actionItems: message.actionItems?.filter(action => !_isScenarioAction(action)), text: `${message.text}\n\n${reason}` }
+      : message)
+    return true
+  }
+
+  function _scenarioApplicationText(preview: ScenarioApplicationPreview) {
+    const lines = [
+      `### 技能包应用测试：${preview.name}（${preview.version}）`,
+      'POC 样例演示 · 未调用真实 Skill 或业务接口，未读取或修改业务数据。',
+      preview.summary
+    ]
+    if (preview.status === 'confirmation_required') {
+      lines.push('请确认按以下已审核固定版本测试整个工作流；本次不启用未命中的条件分支。',
+        ...preview.nodes.map(node => `- ${node.name} · ${node.pinnedVersion}`))
+    } else {
+      lines.push(...preview.nodes.map(node => `- ${node.name} · ${node.pinnedVersion}：${node.status === 'completed' ? '样例完成' : node.status === 'skipped' ? '条件未命中，未执行' : '未完成'}${node.output ? `\n  ${node.output}` : ''}`))
+    }
+    if (preview.issues.length) lines.push(...preview.issues.map(issue => `- ${issue}`))
+    return lines.filter(Boolean).join('\n\n')
+  }
+
+  /** Explicitly local application rehearsal; ordinary AI chat and draft trials stay independent. */
+  function applyScenarioPackage(packageId: string): { ok: boolean, reason?: string } {
+    if (loading.value) return { ok: false, reason: 'AI 助手正在处理上一条消息，请完成后再应用技能包。' }
+    const scenario = useScenarioSkillPackagesStore()
+    const actor = _scenarioApplicationActor()
+    const eligibility = scenario.applicationEligibility(packageId, actor)
+    if (!eligibility.ok) return { ok: false, reason: eligibility.reasons.join('；') }
+    _expireScenarioApplications('已选择新的应用测试，之前的确认已失效。')
+    toggleOpen(true)
+    const preview = scenario.applicationPreview(packageId, actor, {})
+    _recordMessage('user', `应用场景技能包「${eligibility.name}」${eligibility.version}，进行 POC 样例测试。`)
+    const key = _newMessageId('assistant')
+    const confirmation = preview.status === 'confirmation_required'
+    const message = _recordMessage('assistant', _scenarioApplicationText(preview), {
+      ...(confirmation ? { actionItems: [
+        { type: 'scenario_application_confirm', label: '确认并应用测试', value: key },
+        { type: 'scenario_application_cancel', label: '取消测试', value: key }
+      ] as TaskAction[] } : {})
+    })
+    if (confirmation && message?.id) {
+      pendingScenarioApplications.set(key, { packageId, conversationId: localConvId.value,
+        scope: _scenarioApplicationScope(packageId), messageId: message.id, expiresAt: Date.now() + 15 * 60 * 1000 })
+    }
+    return { ok: true }
+  }
+
+  function _resolveScenarioApplication(action: TaskAction) {
+    const key = action.value || '', pending = pendingScenarioApplications.get(key)
+    if (!pending || pending.conversationId !== localConvId.value) return
+    const message = messages.value.find(item => item.id === pending.messageId)
+    if (!message?.actionItems?.some(item => item.type === action.type && item.value === key)) return
+    pendingScenarioApplications.delete(key)
+    message.actionItems = message.actionItems.filter(item => !_isScenarioAction(item))
+    if (action.type === 'scenario_application_cancel') {
+      message.text += '\n\n已取消本次应用测试，未执行任何节点。'
+      _persistConversation()
+      return
+    }
+    if (Date.now() >= pending.expiresAt || pending.scope !== _scenarioApplicationScope(pending.packageId)) {
+      message.text += '\n\n本次确认已失效，技能包版本、状态或权限可能已变化，请重新应用后核对。'
+      _persistConversation()
+      return
+    }
+    // Recheck current published state and permissions; this ticket only supplies workflow confirmation.
+    const preview = useScenarioSkillPackagesStore().applicationPreview(pending.packageId, _scenarioApplicationActor(), { workflowConfirmed: true })
+    message.text += '\n\n已确认本次工作流的 POC 测试范围。'
+    _recordMessage('assistant', _scenarioApplicationText(preview))
   }
 
   async function _decideAuthorizationTask(decision: TaskDecision, pageId: string, context: AiRuntimeContext) {
@@ -1928,7 +2047,7 @@ ${reply || _reportIntentReply(payload)}
     panelWidth, autoCollapsedSidebar,
     inputText, attachedFile, attachedFiles, activeShortcut, shortcuts, inputPlaceholder,
     toggleOpen, restoreState, maxPanelWidth, setPanelWidth,
-    newConversation, send, stopCurrentResponse, quickSend, sendShortcut, runTaskAction,
+    newConversation, send, stopCurrentResponse, quickSend, sendShortcut, runTaskAction, applyScenarioPackage,
     setShortcut, shortcutQuery, attachFile, clearFile,
     seedDemoReportCards, openReportArtifact,
     loadConversations, saveConversations, restoreConversation, deleteConversation

@@ -115,14 +115,13 @@ test('keeps activated conditional upstreams pending because this function never 
   assert.equal(plan.executionPerformed, false)
 })
 
-test('marks activated optional nodes skipped after the runtime gate rejects their evidence', () => {
+test('returns no executable nodes when an activated optional node lacks evidence', () => {
   const item = packageOf([node('a'), node('b', {
     kind: 'conditional', required: false, condition: '需要补充材料', requiresApproval: true
   }), node('c')])
   const plan = buildPlan(item, caller, { activeOptionalStepIds: ['b'] })
-  assert.equal(plan.status, 'degraded')
-  assert.deepEqual(stepIds(plan), ['a', 'c'])
-  assert.equal(upstream(plan.steps[1]).find(source => source.nodeId === 'b')?.status, 'skipped')
+  assert.equal(plan.status, 'blocked')
+  assert.deepEqual(stepIds(plan), [])
   assert.ok(plan.explanations.length)
 })
 

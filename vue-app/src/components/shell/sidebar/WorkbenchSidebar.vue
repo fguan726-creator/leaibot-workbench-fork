@@ -152,6 +152,15 @@ const pocReleaseLedger = ref({ records: {} })
 const basePocLogRecords = [
   {
     time: '2026-10-14',
+    releaseKey: 'workbench-skillhub-status-20261014',
+    title: 'Skill Hub 状态与技能包应用测试',
+    changePoint: '场景技能包取消降级运行，并增加按状态判断的应用入口，可在 AI 助手中进行固定版本的 POC 样例测试。',
+    detail: '依赖不可用时统一暂停，实际节点缺少权限、确认或审批时整次阻断；正常条件分支仍可不执行。应用使用已审核固定版本；未发布、已禁用或已暂停时不可应用，有已审核旧版的修订继续使用旧版。整体确认仅对本次会话与范围有效，版本、状态或权限变化后需重新发起。结果标明已审核样例或本地精确版本样例，不调用真实业务接口。保留既有内容与审核记录；发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
+    time: '2026-10-14',
     releaseKey: 'workbench-workflow-execution-20261014',
     title: '场景技能包统一执行要求',
     changePoint: '执行要求移至第一步，对整个工作流生效；返回编排后进入下一步会重新试运行。',

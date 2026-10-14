@@ -9,7 +9,7 @@ import { getScenarioNodeContract, getScenarioNodeInputs } from './scenarioNodeCo
  * @typedef {{ input?: string, activeOptionalStepIds?: string[], evidence?: { workflowConfirmed?: boolean, confirmedStepIds?: string[], approvedStepIds?: string[] } }} ScenarioRunRequest
  * @typedef {{ kind: 'run'|'upstream', nodeId?: string, name: string, description: string, conditional?: boolean, status: 'provided'|'missing'|'pending'|'skipped' }} ScenarioRunInputSource
  * @typedef {{ id: string, skillId: string, name: string, pinnedVersion: string, task: string, fixedRequirements: string, expectedOutput: string, inputSources: ScenarioRunInputSource[] }} ScenarioRunPlanStep
- * @typedef {{ executionPerformed: false, packageId: string, version: string, status: 'ready'|'degraded'|'blocked', explanations: string[], requestInput: string, steps: ScenarioRunPlanStep[] }} ScenarioRunPlan
+ * @typedef {{ executionPerformed: false, packageId: string, version: string, status: 'ready'|'blocked', explanations: string[], requestInput: string, steps: ScenarioRunPlanStep[] }} ScenarioRunPlan
  */
 
 /**

@@ -218,7 +218,6 @@
             <option value="rejected">已驳回</option>
             <option value="published">已发布</option>
             <option value="upgrade_required">待升级</option>
-            <option value="degraded">降级运行</option>
             <option value="paused">已暂停</option>
             <option value="disabled">已禁用</option>
           </select>
@@ -272,6 +271,14 @@
                   <td>
                     <div class="scenario-package-actions">
                       <button class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event)">详情</button>
+                      <span
+                        class="scenario-package-application-hint"
+                        :title="packageApplicationHint(packageItem)"
+                        :tabindex="packageApplication(packageItem).ok ? undefined : 0"
+                        :aria-label="packageApplication(packageItem).ok ? undefined : `应用不可用：${packageApplicationHint(packageItem)}`"
+                      >
+                        <button class="skill-hub-action" type="button" :data-package-apply="packageItem.id" :disabled="!packageApplication(packageItem).ok || packageReviewBusy" :title="packageApplicationHint(packageItem)" @click="applyPackage(packageItem)">应用</button>
+                      </span>
                       <button v-if="hasPackageAction(packageItem, 'edit')" class="skill-hub-action" type="button" @click="editPackage(packageItem)">编辑</button>
                       <button v-if="hasPackageAction(packageItem, 'withdraw')" class="skill-hub-action" type="button" @click="openPackageDetail(packageItem, $event, 'withdraw')">撤回</button>
                       <template v-if="canReviewPackage(packageItem)">
@@ -466,12 +473,12 @@
 
           <aside class="scenario-package-governance">
             <strong>权限治理声明</strong>
-            <p>技能包永不提权。最终调用方必须对实际激活的菜单、Skill、数据和操作重新通过服务端权限校验；必需步骤缺权时在产生副作用前阻断。</p>
+            <p>技能包永不提权。最终调用方必须对实际激活的菜单、Skill、数据和操作重新通过服务端权限校验；任一激活步骤缺权时，在产生副作用前阻断整个工作流。</p>
           </aside>
 
           <section class="scenario-package-detail-section">
-            <h4>降级说明</h4>
-            <p>{{ packageDetailItem.degradationNote || packageDetailItem.health.explanations.join('；') || '当前固定依赖均可用，无降级分支。' }}</p>
+            <h4>依赖状态说明</h4>
+            <p>{{ packageDependencyExplanation(packageDetailItem) }}</p>
           </section>
 
           <section class="scenario-package-detail-section">
@@ -506,6 +513,15 @@
         </div>
         <div class="skill-hub-detail-foot">
           <button class="btn btn-secondary" type="button" @click="closePackageDetail">关闭</button>
+          <span
+            v-if="packageReviewMode === 'detail'"
+            class="scenario-package-application-hint"
+            :title="packageApplicationHint(packageDetailItem)"
+            :tabindex="packageApplication(packageDetailItem).ok ? undefined : 0"
+            :aria-label="packageApplication(packageDetailItem).ok ? undefined : `应用不可用：${packageApplicationHint(packageDetailItem)}`"
+          >
+            <button class="btn btn-secondary" type="button" :data-package-apply="packageDetailItem.id" :disabled="!packageApplication(packageDetailItem).ok || packageReviewBusy" :title="packageApplicationHint(packageDetailItem)" @click="applyPackage(packageDetailItem)">应用</button>
+          </span>
           <button v-if="packageReviewMode === 'detail' && hasPackageAction(packageDetailItem, 'edit')" class="btn btn-primary" type="button" @click="editPackage(packageDetailItem)">编辑</button>
           <button v-if="packageReviewMode === 'detail' && hasPackageAction(packageDetailItem, 'withdraw')" class="btn btn-primary" type="button" @click="openPackageDetail(packageDetailItem, $event, 'withdraw')">撤回审核</button>
           <template v-if="!packageActionStale && packageReviewDecision.ok && (packageReviewMode === 'approve' || packageReviewMode === 'reject')">
@@ -645,7 +661,7 @@ import {
 } from '@/services/skillCapabilityChanges'
 
 type HubTabId = 'skills' | 'packages'
-type PackageListFilter = 'all' | 'draft' | 'review' | 'rejected' | 'published' | 'upgrade_required' | 'degraded' | 'paused' | 'disabled'
+type PackageListFilter = 'all' | 'draft' | 'review' | 'rejected' | 'published' | 'upgrade_required' | 'paused' | 'disabled'
 type PackageManagementMode = 'disable' | 'enable' | 'withdraw'
 type PackageDetailMode = 'detail' | 'approve' | 'reject' | PackageManagementMode
 
@@ -747,6 +763,9 @@ const packageDetailItem = computed(() => packageDetailId.value
 const packageActionStale = computed(() => packageReviewMode.value !== 'detail'
   && packageDetailItem.value?.updatedAt !== packageOpenedUpdatedAt.value)
 const packageActor = computed(() => ({ id: user.value || '', permissions: permissions.value }))
+const packageApplications = computed(() => new Map(packages.value.map(item => [
+  item.id, scenarioStore.applicationEligibility(item.id, packageActor.value)
+])))
 const packageTestIsStale = computed(() => {
   const item = packageDetailItem.value
   return !!item?.testReport && !isScenarioSimulationCurrent(
@@ -847,11 +866,16 @@ const summaryItems = computed(() => {
   ]
 })
 
+function packageHealthStatus(status: ScenarioSkillPackage['health']['status']) {
+  return status === 'degraded' ? 'paused' : status
+}
+
 function packageStatusKey(packageItem: ScenarioSkillPackage): Exclude<PackageListFilter, 'all'> | 'draft' {
   if (packageItem.status === 'review' || packageItem.status === 'rejected') return packageItem.status
   if (packageItem.status === 'draft') return 'draft'
   if (packageItem.status === 'disabled') return 'disabled'
-  return packageItem.health.status === 'healthy' ? 'published' : packageItem.health.status
+  const healthStatus = packageHealthStatus(packageItem.health.status)
+  return healthStatus === 'healthy' ? 'published' : healthStatus
 }
 
 function packageStatusLabel(packageItem: ScenarioSkillPackage) {
@@ -861,7 +885,6 @@ function packageStatusLabel(packageItem: ScenarioSkillPackage) {
     rejected: '已驳回',
     published: '已发布',
     upgrade_required: '待升级',
-    degraded: '降级运行',
     paused: '已暂停',
     disabled: '已禁用'
   } as const
@@ -872,12 +895,18 @@ function packageMenus(packageItem: ScenarioSkillPackage) {
   return [...new Set(packageItem.steps.map(step => step.menu))]
 }
 
+function packageDependencyExplanation(packageItem: ScenarioSkillPackage) {
+  if (packageItem.health.status === 'degraded') return '存在不可用依赖，整个技能包已暂停。请恢复依赖后再运行。'
+  return packageItem.health.explanations.join('；') || (packageItem.health.status === 'paused'
+    ? '存在不可用依赖，整个技能包已暂停。请恢复依赖后再运行。'
+    : '当前固定依赖均可用。任一依赖不可用时暂停整个技能包；正常未满足条件的步骤仍可跳过。')
+}
+
 function packageHealthHint(packageItem: ScenarioSkillPackage) {
   const onlineHealth = packageItem.publishedSnapshot?.health || packageItem.health
   const onlineState = packageItem.onlineStatus === 'disabled' ? '保持禁用'
-    : onlineHealth.status === 'paused' ? '因依赖异常暂停'
-      : onlineHealth.status === 'degraded' ? '部分分支降级'
-        : '保持已发布'
+    : packageHealthStatus(onlineHealth.status) === 'paused' ? '因依赖异常暂停'
+      : '保持已发布'
   const onlineHint = packageItem.publishedSnapshot
     ? `；已审核版本 ${packageItem.publishedSnapshot.version} ${onlineState}`
     : ''
@@ -888,8 +917,8 @@ function packageHealthHint(packageItem: ScenarioSkillPackage) {
   if (packageItem.health.status === 'upgrade_required') {
     return packageItem.health.explanations[0] || '存在新版 Skill，继续使用当前固定版本'
   }
-  if (packageItem.health.status === 'degraded') return packageItem.degradationNote || packageItem.health.explanations[0] || '部分条件分支已关闭'
-  if (packageItem.health.status === 'paused') return packageItem.health.explanations[0] || '必需步骤不可用'
+  if (packageItem.health.status === 'degraded') return '存在不可用依赖，技能包已暂停'
+  if (packageItem.health.status === 'paused') return packageItem.health.explanations[0] || '存在不可用依赖，技能包已暂停'
   return '固定版本依赖均可用'
 }
 
@@ -900,7 +929,7 @@ function matchesPackageStatus(packageItem: ScenarioSkillPackage, filter: Package
   if (['draft', 'review', 'rejected'].includes(filter)) return packageItem.status === filter
   const onlineStatus = packageItem.onlineStatus || packageItem.status
   if (filter === 'published' || filter === 'disabled') return onlineStatus === filter
-  return onlineStatus === 'published' && (packageItem.publishedSnapshot?.health || packageItem.health).status === filter
+  return onlineStatus === 'published' && packageHealthStatus((packageItem.publishedSnapshot?.health || packageItem.health).status) === filter
 }
 
 const filteredScenarioPackages = computed(() => {
@@ -928,8 +957,7 @@ const packageSummaryItems = computed(() => {
     { key: 'review', label: '待审核', code: 'TODO', value: count('review'), desc: '等待管理员审核', tone: 'stat--warning', filter: 'review' as const },
     { key: 'published', label: '已发布', code: 'LIVE', value: count('published'), desc: '已有已审核发布版本', tone: 'stat--success', filter: 'published' as const },
     { key: 'upgrade', label: '待升级', code: 'NEW', value: count('upgrade_required'), desc: '有新版，仍使用固定版本', tone: 'stat--primary', filter: 'upgrade_required' as const },
-    { key: 'degraded', label: '降级运行', code: 'PART', value: count('degraded'), desc: '条件分支部分关闭', tone: 'stat--warning', filter: 'degraded' as const },
-    { key: 'paused', label: '已暂停', code: 'STOP', value: count('paused'), desc: '必需步骤当前不可用', tone: 'stat--muted', filter: 'paused' as const }
+    { key: 'paused', label: '已暂停', code: 'STOP', value: count('paused'), desc: '存在不可用依赖', tone: 'stat--muted', filter: 'paused' as const }
   ]
 })
 
@@ -1203,6 +1231,33 @@ function canReviewPackage(packageItem: ScenarioSkillPackage) {
 
 function hasPackageAction(packageItem: ScenarioSkillPackage, action: ScenarioPackageAction) {
   return scenarioStore.actionsFor(packageItem.id, packageActor.value).includes(action)
+}
+
+function packageApplication(packageItem: ScenarioSkillPackage) {
+  return packageApplications.value.get(packageItem.id)
+    || scenarioStore.applicationEligibility(packageItem.id, packageActor.value)
+}
+
+function packageApplicationHint(packageItem: ScenarioSkillPackage) {
+  const eligibility = packageApplication(packageItem)
+  return eligibility.ok
+    ? `在 AI 助手中应用已审核固定版本 ${eligibility.version}，进行本地样例测试${eligibility.requiresConfirmation ? '；执行前需确认' : ''}`
+    : eligibility.reasons.join('；') || '当前技能包不可应用。'
+}
+
+function applyPackage(packageItem: ScenarioSkillPackage) {
+  if (packageReviewBusy.value) return
+  const eligibility = scenarioStore.applicationEligibility(packageItem.id, packageActor.value)
+  if (!eligibility.ok) {
+    toast(eligibility.reasons.join('；') || '当前技能包不可应用。')
+    return
+  }
+  const result = aiStore.applyScenarioPackage(packageItem.id)
+  if (!result.ok) {
+    toast(result.reason || '应用测试未开始，请检查当前状态后重试。')
+    return
+  }
+  clearPackageDetailWithoutFocus()
 }
 
 function packageEditGuidance(packageItem: ScenarioSkillPackage) {
@@ -1686,9 +1741,9 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.scenario-package-summary {
+.skill-hub-page .scenario-package-summary {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--scenario-package-summary-gap);
 }
 
@@ -1757,6 +1812,9 @@ onBeforeUnmount(() => {
 .scenario-package-table th:nth-child(7) { width: 10%; }
 .scenario-package-table th:last-child { width: 216px; }
 .scenario-package-actions { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.scenario-package-application-hint { display: inline-flex; border-radius: var(--radius-md); }
+.scenario-package-application-hint:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.scenario-package-application-hint > button:disabled { opacity: .5; cursor: not-allowed; }
 
 .scenario-package-edit-hint {
   margin: 4px 0 0;
@@ -1855,7 +1913,6 @@ onBeforeUnmount(() => {
 .scenario-package-status.is-review { color: var(--color-warning); }
 .scenario-package-status.is-rejected { color: var(--color-danger); }
 .scenario-package-status.is-upgrade_required { color: var(--color-warning); }
-.scenario-package-status.is-degraded { color: var(--color-warning); }
 .scenario-package-status.is-paused,
 .scenario-package-status.is-disabled { color: var(--color-danger); }
 
@@ -2027,7 +2084,17 @@ onBeforeUnmount(() => {
   color: var(--color-text-tertiary);
 }
 
+@media (max-width: 1400px) {
+  .skill-hub-page .scenario-package-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @container (max-width: 1199px) {
+  .skill-hub-page .scenario-package-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .skill-hub-page .skill-hub-toolbar:not(.scenario-package-toolbar) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -2039,7 +2106,7 @@ onBeforeUnmount(() => {
 
 @container (max-width: 1039px) {
   .skill-hub-page .skill-hub-toolbar:not(.scenario-package-toolbar),
-  .scenario-package-summary {
+  .skill-hub-page .scenario-package-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2050,7 +2117,7 @@ onBeforeUnmount(() => {
   }
 
   .skill-hub-page .skill-hub-toolbar,
-  .scenario-package-summary,
+  .skill-hub-page .scenario-package-summary,
   .skill-hub-page .scenario-package-toolbar,
   .scenario-package-detail-summary {
     grid-template-columns: minmax(0, 1fr);

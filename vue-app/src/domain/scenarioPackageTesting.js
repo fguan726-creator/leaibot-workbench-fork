@@ -27,6 +27,25 @@ const VERSION_SAMPLES = {
   'weather-query': { version: 'v1.0.0', input: '模拟查询活动地点 A 的天气与降水风险。', output: '模拟样例：活动地点 A 天气多云，气温 22℃，降水概率 20%；建议保留室内活动备选安排。未查询真实天气或调整活动计划。' }
 }
 
+// Application POC may inspect an approved historical pin; authoring trials still use VERSION_SAMPLES only.
+const HISTORICAL_VERSION_SAMPLES = {
+  'workplace-segment-operations@v1.1.0': {
+    version: 'v1.1.0', input: '模拟汇总职场 A 已认证人群的基础经营情况。',
+    output: '历史固定版本 v1.1.0 模拟样例：职场 A 已认证 2 人，其中 1 人完成购买、1 人尚未购买；仅展示基础分组汇总，未读取真实员工或订单数据。'
+  }
+}
+
+/** Return a detached fixture for this exact Skill version, never substitute a newer version.
+ * @param {string} skillId
+ * @param {string} pinnedVersion
+ * @returns {{version:string,input:string,output:string}|undefined}
+ */
+export function getScenarioVersionSample(skillId, pinnedVersion) {
+  const current = VERSION_SAMPLES[skillId]
+  const sample = current?.version === pinnedVersion ? current : HISTORICAL_VERSION_SAMPLES[`${skillId}@${pinnedVersion}`]
+  return sample ? { ...sample } : undefined
+}
+
 const text = value => typeof value === 'string' ? value : ''
 const unique = values => [...new Set(values)]
 

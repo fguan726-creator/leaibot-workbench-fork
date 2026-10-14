@@ -10,9 +10,9 @@ import { getScenarioMockDataFailure } from './scenarioTrialMockData.js'
  * @typedef {{ id: string, name?: string, menu: string, version: string, status: string, onlineStatus: string, online: string, description?: string, inputDescription?: string, outputDescription?: string, permissions?: Partial<Record<PermissionBucket, string[]>> }} PublishedSkill
  * @typedef {{ id: string, skillId: string, name: string, menu: string, pinnedVersion: string, currentPublishedVersion: string, hasNewerPublishedVersion?: boolean, kind: ScenarioStepKind, condition?: string, task?: string, fixedRequirements?: string, expectedOutput?: string, inputDescription?: string, required: boolean, requiresConfirmation?: boolean, requiresApproval?: boolean, predecessorId?: string|null, position?: { x: number, y: number }, dependencyState: DependencyState, permissions: Partial<Record<PermissionBucket, string[]>> }} PinnedScenarioStep
  * @typedef {{ id: string, name: string, description: string, targetAudience: string, ownerId: string, requiresConfirmation?: boolean, steps: PinnedScenarioStep[], status?: string, version?: string, onlineStatus?: 'unpublished'|'published'|'disabled', publishedSnapshot?: ScenarioPackageDraft, updatedAt?: string, baseUpdatedAt?: string, approvedAt?: string, publishedAt?: string, health?: ScenarioPackageHealth, submittedAt?: string, submittedBy?: string, submitterId?: string, revisionEditors?: string[], reviewedAt?: string, reviewedBy?: string, reviewNote?: string, auditEvents?: ScenarioAuditEvent[], testReport?: import('./scenarioPackageTesting.js').ScenarioSimulationReport, testRequest?: import('./scenarioPackageTesting.js').ScenarioSimulationRequest }} ScenarioPackageDraft
- * @typedef {{ status: 'healthy'|'upgrade_required'|'degraded'|'paused', explanations: string[], blockedStepIds: string[], degradedStepIds: string[] }} ScenarioPackageHealth
+ * @typedef {{ status: 'healthy'|'upgrade_required'|'degraded'|'paused', explanations: string[], blockedStepIds: string[], degradedStepIds: string[] }} ScenarioPackageHealth Legacy degraded values remain readable; current evaluation only emits healthy, upgrade_required or paused.
  * @typedef {{ ok: boolean, canSelfApprove: boolean, reasons: string[] }} ScenarioPolicyResult
- * @typedef {{ status: 'ready'|'degraded'|'blocked', effectiveSteps: PinnedScenarioStep[], skippedSteps: PinnedScenarioStep[], missingPermissions: { stepId: string, bucket: PermissionBucket, permission: string }[], missingEvidence: { stepId: string, type: 'confirmation'|'approval' }[], missingPackagePermission?: string, missingWorkflowConfirmation?: boolean, explanations: string[] }} ScenarioRuntimeResult
+ * @typedef {{ status: 'ready'|'blocked', effectiveSteps: PinnedScenarioStep[], skippedSteps: PinnedScenarioStep[], missingPermissions: { stepId: string, bucket: PermissionBucket, permission: string }[], missingEvidence: { stepId: string, type: 'confirmation'|'approval' }[], missingPackagePermission?: string, missingWorkflowConfirmation?: boolean, explanations: string[] }} ScenarioRuntimeResult
  * @typedef {{ type: 'submitted'|'approved'|'published'|'rejected'|'withdrawn'|'disabled'|'enabled', actorId: string, at: string, note?: string }} ScenarioAuditEvent
  */
 
@@ -520,18 +520,14 @@ export function evaluatePackageForPublish(draft, actor, previous) {
 export function evaluatePackageHealth(steps) {
   const explanations = []
   const blockedStepIds = []
+  // Retained empty for older stored package shapes; new evaluations never degrade.
   const degradedStepIds = []
   let hasUpgrade = false
 
   for (const step of steps) {
     if (isUnavailable(step)) {
-      if (step.required) {
-        blockedStepIds.push(step.id)
-        explanations.push(`必需步骤“${stepLabel(step)}”的依赖已过期或不可用，场景包已暂停。`)
-      } else {
-        degradedStepIds.push(step.id)
-        explanations.push(`可选分支“${stepLabel(step)}”的依赖已过期或不可用，已降级跳过。`)
-      }
+      blockedStepIds.push(step.id)
+      explanations.push(`${step.required ? '必需步骤' : '可选分支'}“${stepLabel(step)}”的依赖已过期或不可用，场景包已暂停。`)
     }
     if (step.dependencyState === 'update_available' || step.hasNewerPublishedVersion === true) {
       hasUpgrade = true
@@ -541,11 +537,9 @@ export function evaluatePackageHealth(steps) {
 
   const status = blockedStepIds.length > 0
     ? 'paused'
-    : degradedStepIds.length > 0
-      ? 'degraded'
-      : hasUpgrade
-        ? 'upgrade_required'
-        : 'healthy'
+    : hasUpgrade
+      ? 'upgrade_required'
+      : 'healthy'
 
   return { status, explanations, blockedStepIds, degradedStepIds }
 }
@@ -636,18 +630,12 @@ export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds
     return blockedRuntimeResult(candidateSteps, health.explanations)
   }
 
-  const unavailableOptionalIds = new Set(
-    candidateSteps.filter((step) => !step.required && isUnavailable(step)).map((step) => step.id)
-  )
-  const runnableSteps = candidateSteps.filter((step) => !unavailableOptionalIds.has(step.id))
-  const missingPermissions = runnableSteps.flatMap((step) => requiredPermissions(step, caller))
-  const missingEvidence = missingStepEvidence(runnableSteps, evidence)
-  const requiredMissing = missingPermissions.filter(({ stepId }) => steps.find((step) => step.id === stepId)?.required)
-  const requiredEvidenceMissing = missingEvidence.filter(({ stepId }) => steps.find((step) => step.id === stepId)?.required)
+  const missingPermissions = candidateSteps.flatMap((step) => requiredPermissions(step, caller))
+  const missingEvidence = missingStepEvidence(candidateSteps, evidence)
   // Published legacy node requirements remain independent; trial tickets are never consulted here.
   const missingWorkflowConfirmation = packageItem.requiresConfirmation === true && evidence?.workflowConfirmed !== true
 
-  if (requiredMissing.length > 0 || requiredEvidenceMissing.length > 0 || missingWorkflowConfirmation) {
+  if (missingPermissions.length > 0 || missingEvidence.length > 0 || missingWorkflowConfirmation) {
     return {
       status: 'blocked',
       effectiveSteps: [],
@@ -658,42 +646,24 @@ export function evaluateRuntimeAccess(packageItem, caller, activeOptionalStepIds
       explanations: [
         ...health.explanations,
         ...(missingWorkflowConfirmation ? ['整个工作流执行前需要确认本次范围，尚未确认，执行在开始前已阻断。'] : []),
-        ...(requiredMissing.length ? ['必需步骤缺少调用权限，执行在开始前已阻断。'] : []),
-        ...(requiredEvidenceMissing.length ? ['必需步骤缺少确认或审批证据，执行在开始前已阻断。'] : [])
+        ...candidateSteps.filter(step => missingPermissions.some(item => item.stepId === step.id))
+          .map(step => `${step.required ? '必需步骤' : '可选分支'}“${stepLabel(step)}”缺少调用权限，执行在开始前已阻断。`),
+        ...candidateSteps.filter(step => missingEvidence.some(item => item.stepId === step.id)).map(step => {
+          const evidenceTypes = missingEvidence.filter(item => item.stepId === step.id)
+            .map(item => item.type === 'confirmation' ? '确认证据' : '审批证据')
+          return `${step.required ? '必需步骤' : '可选分支'}“${stepLabel(step)}”缺少${evidenceTypes.join('或')}，执行在开始前已阻断。`
+        })
       ]
     }
   }
 
-  const optionalFailedIds = new Set([
-    ...unavailableOptionalIds,
-    ...missingPermissions.map(({ stepId }) => stepId),
-    ...missingEvidence.map(({ stepId }) => stepId)
-  ])
-  const effectiveSteps = candidateSteps.filter((step) => !optionalFailedIds.has(step.id)).map(cloneStep)
-  const skippedSteps = candidateSteps.filter((step) => optionalFailedIds.has(step.id)).map(cloneStep)
-  const degraded = skippedSteps.length > 0
-
   return {
-    status: degraded ? 'degraded' : 'ready',
-    effectiveSteps,
-    skippedSteps,
+    status: 'ready',
+    effectiveSteps: candidateSteps.map(cloneStep),
+    skippedSteps: [],
     missingPermissions,
     missingEvidence,
-    explanations: degraded
-      ? [
-          ...health.explanations,
-          ...skippedSteps
-            .filter((step) => !unavailableOptionalIds.has(step.id))
-            .map((step) => {
-              const evidenceTypes = missingEvidence
-                .filter((item) => item.stepId === step.id)
-                .map((item) => item.type === 'confirmation' ? '确认证据' : '审批证据')
-              return evidenceTypes.length
-                ? `可选分支“${stepLabel(step)}”缺少${evidenceTypes.join('或')}，已降级跳过。`
-                : `可选分支“${stepLabel(step)}”缺少权限，已降级跳过。`
-            })
-        ]
-      : health.explanations
+    explanations: health.explanations
   }
 }
 

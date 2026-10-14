@@ -33,7 +33,7 @@
       <SectionHeader
         class="scenario-review-section-heading"
         title="提交审核"
-        description="核对适用场景、固定版本链路、执行配置和降级规则，提交后由其他管理员审核，审核通过后发布。"
+        description="核对适用场景、固定版本链路、执行配置和暂停规则，提交后由其他管理员审核，审核通过后发布。"
       >
         <template #meta><span>技能包版本 {{ draft?.version || 'v1.0.0' }}</span></template>
       </SectionHeader>
@@ -200,7 +200,7 @@
               </table>
             </div>
             <p class="scenario-package-version-note">
-              已审核版本继续使用原固定版本。升级需返回编排，移除旧节点并重新加入当前已发布 Skill，重新连线和核对配置，通过试运行与独立审核后切换。必需依赖过期或不可用时暂停，可选步骤则降级跳过。
+              已审核版本继续使用原固定版本。升级需返回编排，移除旧节点并重新加入当前已发布 Skill，重新连线和核对配置，通过试运行与独立审核后切换。任一依赖过期或不可用时暂停整个技能包；正常未满足条件的步骤仍可跳过。
             </p>
           </div>
         </details>
@@ -233,8 +233,8 @@
             <dl>
               <div><dt>涉及菜单</dt><dd>{{ selectedMenus.join('、') || '-' }}</dd></div>
               <div><dt>固定链路</dt><dd>{{ resolvedChain.ok ? resolvedChain.steps.map(step => `${step.name} ${step.pinnedVersion}${step.kind === 'conditional' ? `（条件：${step.condition}）` : '（核心步骤）'}`).join(' → ') || '-' : '链路尚未连接完整，请返回编排页检查。' }}</dd></div>
-              <div><dt>自动评估</dt><dd>{{ submissionEvaluation.ok && dependencyHealth.status !== 'paused' ? '允许提交审核' : '存在阻断项' }}</dd></div>
-              <div><dt>降级规则</dt><dd>必需步骤不可用时暂停；可选步骤不可用时跳过并说明原因。</dd></div>
+              <div><dt>自动评估</dt><dd>{{ submissionEvaluation.ok && !dependencyBlocked ? '允许提交审核' : '存在阻断项' }}</dd></div>
+              <div><dt>暂停规则</dt><dd>任一依赖不可用时暂停整个技能包；任一激活步骤缺权或未完成所需确认时阻断整个工作流。正常未满足条件的步骤仍可跳过。</dd></div>
             </dl>
           </article>
         </div>
@@ -262,7 +262,7 @@
           v-else
           class="btn btn-primary"
           type="button"
-          :disabled="submitting || savingDraft || trialRunning || !trialGate.ok || !canEditDraft || !submissionEvaluation.ok || dependencyHealth.status === 'paused'"
+          :disabled="submitting || savingDraft || trialRunning || !trialGate.ok || !canEditDraft || !submissionEvaluation.ok || dependencyBlocked"
           @click="submitPackage"
         >{{ submitting ? '正在提交…' : draft ? '重新提交审核' : '提交审核' }}</button>
       </div>
@@ -408,6 +408,7 @@ const submissionEvaluation = ref<PolicyEvaluation>(emptyPolicyEvaluation())
 const policyEvaluation = ref<PolicyEvaluation>(emptyPolicyEvaluation())
 const chainEvaluation = ref<PolicyEvaluation>(emptyPolicyEvaluation())
 const dependencyHealth = ref<ScenarioPackageHealth>(emptyHealthEvaluation())
+const dependencyBlocked = computed(() => dependencyHealth.value.status === 'paused' || dependencyHealth.value.status === 'degraded')
 const evaluatedDraft = ref<ScenarioSkillPackageDraft | null>(null)
 const liveEligibilityReasons = ref<string[]>([])
 
@@ -451,7 +452,7 @@ const compositionReasons = computed(() => (
 
 const evaluationCards = computed<EvaluationCard[]>(() => {
   const compositionOk = compositionReasons.value.length === 0
-  const dependencyTone: EvaluationTone = liveEligibilityReasons.value.length || dependencyHealth.value.status === 'paused'
+  const dependencyTone: EvaluationTone = liveEligibilityReasons.value.length || dependencyBlocked.value
     ? 'block'
     : dependencyHealth.value.status === 'healthy'
       ? 'pass'

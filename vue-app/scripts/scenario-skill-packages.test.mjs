@@ -490,7 +490,7 @@ test('pauses a package when a required dependency expires', () => {
   assert.equal(health.status, 'paused')
 })
 
-test('degrades an optional expired branch with a readable explanation', () => {
+test('pauses for an optional expired dependency with a readable explanation', () => {
   const health = evaluatePackageHealth([
     createPinnedScenarioStep(publishedSkill(), { required: true }),
     createPinnedScenarioStep(secondPublishedSkill(), {
@@ -500,7 +500,8 @@ test('degrades an optional expired branch with a readable explanation', () => {
     })
   ])
 
-  assert.equal(health.status, 'degraded')
+  assert.equal(health.status, 'paused')
+  assert.deepEqual(health.blockedStepIds, ['optional-export'])
   assert.match(health.explanations.join(' '), /可选分支.*订单导出.*过期/)
 })
 
@@ -518,7 +519,7 @@ test('blocks before execution when a caller misses a required permission', () =>
   assert.ok(runtime.missingPermissions.length > 0)
 })
 
-test('skips only an active optional branch when its permission is missing', () => {
+test('blocks the whole run when an active optional branch lacks permission', () => {
   const packageItem = runtimePackage()
   const runtime = evaluateRuntimeAccess(
     packageItem,
@@ -535,9 +536,9 @@ test('skips only an active optional branch when its permission is missing', () =
     ['skill-customer-query', 'skill-order-export']
   )
 
-  assert.equal(runtime.status, 'degraded')
-  assert.deepEqual(runtime.effectiveSteps.map((step) => step.id), ['customer'])
-  assert.deepEqual(runtime.skippedSteps.map((step) => step.id), ['export'])
+  assert.equal(runtime.status, 'blocked')
+  assert.deepEqual(runtime.effectiveSteps, [])
+  assert.deepEqual(runtime.skippedSteps.map((step) => step.id), ['customer', 'export'])
   assert.match(runtime.explanations.join(' '), /可选分支.*订单导出.*权限/)
 })
 
@@ -640,7 +641,7 @@ test('runtime blocks a required step until its confirmation and approval evidenc
   assert.equal(complete.status, 'ready')
 })
 
-test('runtime degrades an active optional step missing evidence but ignores an inactive branch', () => {
+test('runtime blocks an active optional step missing evidence but ignores an inactive branch', () => {
   const required = createPinnedScenarioStep(publishedSkill(), { id: 'customer', required: true })
   const optional = createPinnedScenarioStep(secondPublishedSkill(), {
     id: 'export',
@@ -665,10 +666,11 @@ test('runtime degrades an active optional step missing evidence but ignores an i
 
   assert.equal(inactive.status, 'ready')
   assert.deepEqual(inactive.missingEvidence, [])
-  assert.equal(active.status, 'degraded')
-  assert.deepEqual(active.skippedSteps.map(step => step.id), ['export'])
+  assert.equal(active.status, 'blocked')
+  assert.deepEqual(active.effectiveSteps, [])
+  assert.deepEqual(active.skippedSteps.map(step => step.id), ['customer', 'export'])
   assert.deepEqual(active.missingEvidence, [{ stepId: 'export', type: 'approval' }])
-  assert.match(active.explanations.join(' '), /可选分支.*审批证据.*降级/)
+  assert.match(active.explanations.join(' '), /可选分支.*审批证据.*阻断/)
 })
 
 test('does not let map permissions satisfy a different permission bucket', () => {
@@ -764,7 +766,7 @@ test('blocks runtime before execution when a required dependency has expired', (
   assert.match(runtime.explanations.join(' '), /暂停/)
 })
 
-test('skips an unavailable optional dependency at runtime with a degradation explanation', () => {
+test('blocks an unavailable optional dependency at runtime with a pause explanation', () => {
   const runtime = evaluateRuntimeAccess(runtimePackage({
     steps: [
       createPinnedScenarioStep(publishedSkill(), { id: 'customer', required: true }),
@@ -774,9 +776,9 @@ test('skips an unavailable optional dependency at runtime with a degradation exp
     ]
   }), { permissions: ['*'] }, ['export'], ['skill-customer-query', 'skill-order-export'])
 
-  assert.equal(runtime.status, 'degraded')
-  assert.deepEqual(runtime.effectiveSteps.map((step) => step.id), ['customer'])
-  assert.deepEqual(runtime.skippedSteps.map((step) => step.id), ['export'])
+  assert.equal(runtime.status, 'blocked')
+  assert.deepEqual(runtime.effectiveSteps, [])
+  assert.deepEqual(runtime.skippedSteps.map((step) => step.id), ['customer', 'export'])
   assert.match(runtime.explanations.join(' '), /可选分支.*订单导出.*过期/)
 })
 
@@ -791,7 +793,7 @@ test('pauses and blocks a required emergency-disabled dependency', () => {
   assert.equal(runtime.status, 'blocked')
 })
 
-test('degrades and skips an optional emergency-disabled dependency', () => {
+test('pauses and blocks an optional emergency-disabled dependency', () => {
   const required = createPinnedScenarioStep(publishedSkill(), { required: true })
   const optional = createPinnedScenarioStep(secondPublishedSkill(), {
     id: 'export', dependencyState: 'emergency_disabled', required: false
@@ -804,9 +806,10 @@ test('degrades and skips an optional emergency-disabled dependency', () => {
     [required.skillId, optional.skillId]
   )
 
-  assert.equal(health.status, 'degraded')
-  assert.equal(runtime.status, 'degraded')
-  assert.deepEqual(runtime.skippedSteps.map((step) => step.id), ['export'])
+  assert.equal(health.status, 'paused')
+  assert.equal(runtime.status, 'blocked')
+  assert.deepEqual(runtime.effectiveSteps, [])
+  assert.deepEqual(runtime.skippedSteps.map((step) => step.id), [required.id, 'export'])
 })
 
 test('catalog offers only Skills that are actually published online', async () => {
@@ -1092,7 +1095,7 @@ test('published package health and store runtime refresh from current Skill Hub 
   assert.match(runtime.explanations.join(' '), /暂停/)
 })
 
-test('published package degrades for an unavailable optional branch and only flags online upgrades', async () => {
+test('published package pauses for an unavailable optional dependency and only flags online upgrades', async () => {
   const { scenario, skillHub } = await createScenarioStores()
   const optionalSkill = skillHub.items.find(item => item.name === 'enterprise-customer-followup')
   const upgradedSkill = skillHub.items.find(item => item.name === 'employee-certification-insight')
@@ -1101,7 +1104,7 @@ test('published package degrades for an unavailable optional branch and only fla
 
   skillHub.updateStatus(optionalSkill, 'disabled')
   let refreshed = scenario.findPackage('seed-workplace-certification-operations')
-  assert.equal(refreshed?.health.status, 'degraded')
+  assert.equal(refreshed?.health.status, 'paused')
 
   skillHub.resetToInitialMock()
   const liveUpgrade = skillHub.items.find(item => item.name === 'employee-certification-insight')

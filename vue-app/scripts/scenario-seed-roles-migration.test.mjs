@@ -58,9 +58,9 @@ function matches(item, state) {
   return item.status === 'published' && item.health.status === (state === 'published' ? 'healthy' : state)
 }
 
-test('default examples cover all eight states with PM authors and independent admin review', () => {
+test('default examples cover current states with PM authors and independent admin review', () => {
   const { store } = fixture()
-  for (const state of ['draft', 'review', 'rejected', 'published', 'upgrade_required', 'degraded', 'paused', 'disabled']) {
+  for (const state of ['draft', 'review', 'rejected', 'published', 'upgrade_required', 'paused', 'disabled']) {
     assert.ok(store.packages.some(item => matches(item, state) && item.ownerId === 'pm-li'), state)
   }
   assert.ok(store.packages.every(item => item.ownerId === 'pm-li'))

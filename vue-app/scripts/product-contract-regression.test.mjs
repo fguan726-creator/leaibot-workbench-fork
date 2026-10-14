@@ -254,13 +254,13 @@ test('Skill Hub package view has independent filters, compact rows, details, and
   assert.match(view, /packageKeyword/)
   assert.match(view, /packageStatusFilter/)
   assert.match(view, /filteredScenarioPackages/)
-  for (const label of ['全部技能包', '已发布', '待升级', '降级运行', '已暂停']) {
+  for (const label of ['全部技能包', '已发布', '待升级', '已暂停']) {
     assert.match(view, new RegExp(label))
   }
   for (const heading of ['名称 / 场景描述', '主责任人', '涉及菜单', 'Skill 链路', '技能包版本', '状态', '更新时间', '操作']) {
     assert.match(view, new RegExp(`<th>${heading.replace('/', '\\/')}</th>`))
   }
-  for (const status of ['待审核', '已驳回', '已发布', '待升级', '降级运行', '已暂停', '已禁用']) {
+  for (const status of ['待审核', '已驳回', '已发布', '待升级', '已暂停', '已禁用']) {
     assert.match(view, new RegExp(status))
   }
   assert.match(view, /packageItem\.version/)
@@ -270,7 +270,7 @@ test('Skill Hub package view has independent filters, compact rows, details, and
   assert.match(view, /条件文本/)
   assert.match(view, /来源菜单/)
   assert.match(view, /技能包永不提权/)
-  assert.match(view, /packageDetailItem\.degradationNote/)
+  assert.match(view, /packageDependencyExplanation\(packageDetailItem\)/)
   assert.match(view, /packageDetailItem\.auditEvents/)
   assert.match(view, /const packageDetailId = ref\(''\)/)
   assert.match(view, /const packageDetailItem = computed\(\(\) =>[\s\S]{0,180}scenarioStore\.findPackage\(packageDetailId\.value\)/)
@@ -635,7 +635,7 @@ test('scenario Skill packages use the four-step submission workspace with a requ
   assert.doesNotMatch(view, /packages\.value\.(?:push|unshift|splice)\(/)
   assert.equal(view.match(/@click="submitPackage"/g)?.length, 1)
   assert.match(view, /submitting \? '正在提交…' : draft \? '重新提交审核' : '提交审核'/)
-  assert.match(view, /:disabled="submitting \|\| savingDraft \|\| trialRunning \|\| !trialGate\.ok \|\| !canEditDraft \|\| !submissionEvaluation\.ok \|\| dependencyHealth\.status === 'paused'"/)
+  assert.match(view, /:disabled="submitting \|\| savingDraft \|\| trialRunning \|\| !trialGate\.ok \|\| !canEditDraft \|\| !submissionEvaluation\.ok \|\| dependencyBlocked"/)
   assert.match(view, /submitted: \[item: ScenarioSkillPackage\]/)
   assert.match(view, /emit\('submitted', submitted\)/)
   assert.match(view, /提交后由其他管理员审核，审核通过后发布/)

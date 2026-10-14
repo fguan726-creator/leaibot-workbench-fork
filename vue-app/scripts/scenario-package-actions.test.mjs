@@ -11,7 +11,12 @@ import { runScenarioSimulation } from '../src/domain/scenarioPackageTesting.js'
 import { scenarioPmActor, scenarioPmPermissions } from './helpers/scenarioActors.mjs'
 
 const previousStorage = globalThis.localStorage
-globalThis.localStorage = { getItem() { return null }, setItem() {}, removeItem() {} }
+const storageEntries = new Map()
+globalThis.localStorage = {
+  getItem: key => storageEntries.get(key) ?? null,
+  setItem: (key, value) => storageEntries.set(key, String(value)),
+  removeItem: key => storageEntries.delete(key),
+}
 const root = fileURLToPath(new URL('../', import.meta.url))
 const httpHost = createHttpServer()
 const seedPlugin = {
@@ -29,11 +34,12 @@ ${source.replaceAll('createSeedScenarioPackages(selectableSkills.value, skillHub
   },
 }
 const server = await createServer({ root, plugins: [seedPlugin], logLevel: 'error', server: { middlewareMode: true, hmr: { server: httpHost } }, appType: 'custom' })
-const [{ default: View }, { useAppStore }, { useScenarioSkillPackagesStore, seedScenarioPackagesForTest }, { useSkillHubStore }] = await Promise.all([
+const [{ default: View }, { useAppStore }, { useScenarioSkillPackagesStore, seedScenarioPackagesForTest }, { useSkillHubStore }, { useAIStore }] = await Promise.all([
   server.ssrLoadModule('/src/views/agent/AgentSkillsView.vue'),
   server.ssrLoadModule('/src/stores/app.ts'),
   server.ssrLoadModule('/src/stores/scenarioSkillPackages.ts'),
   server.ssrLoadModule('/src/stores/skillHub.ts'),
+  server.ssrLoadModule('/src/stores/ai.ts'),
 ])
 const copy = value => JSON.parse(JSON.stringify(value))
 const creationPermissions = scenarioPmPermissions([])
@@ -53,6 +59,9 @@ after(async () => {
 })
 
 async function fixture({ actor = reviewer.id, permissions = reviewer.permissions, role = '工作台用户', mode, status, recordId = 'seed-scenario-pending-review', prepare, query = {} } = {}) {
+  // Application reads persisted publications afresh, just as another tab would.
+  // Keep each fixture isolated while allowing real store writes to be read back.
+  storageEntries.clear()
   const pinia = createPinia()
   setActivePinia(pinia)
   const account = useAppStore()
@@ -63,6 +72,7 @@ async function fixture({ actor = reviewer.id, permissions = reviewer.permissions
   account.notify = message => notices.push(message)
   const store = useScenarioSkillPackagesStore()
   const hub = useSkillHubStore()
+  const ai = useAIStore()
   const owner = scenarioPmActor(store.findPackage(recordId).ownerId, store.selectableSkills)
   if (status === 'rejected') store.rejectPackage(recordId, reviewer, '补充本次场景边界。')
   if (status === 'draft') seedDraft(store, recordId)
@@ -94,7 +104,7 @@ async function fixture({ actor = reviewer.id, permissions = reviewer.permissions
     const currentHtml = await renderToString(current, currentContext)
     return { html: currentHtml, dialog: currentContext.teleports?.body || '' }
   }
-  return { state, store, hub, account, record, owner, notices, router, renderCurrent, html, dialog: context.teleports?.body || '' }
+  return { state, store, hub, ai, account, record, owner, notices, router, renderCurrent, html, dialog: context.teleports?.body || '' }
 }
 
 function packageRowHtml(html, id) {
@@ -121,9 +131,12 @@ test('saved drafts return to the package list and highlight an editable draft wi
   assert.doesNotMatch(row, /审批|驳回|撤回/)
 })
 
-function rowActions(html, id) {
+function rowManagementActions(html, id) {
   const row = packageRowHtml(html, id)
-  return [...row.matchAll(/<button\b[^>]*>(.*?)<\/button>/g)].map(match => match[1].trim())
+  // Application has its own runtime eligibility tests; these assertions preserve management permissions.
+  return [...row.matchAll(/<button\b([^>]*)>(.*?)<\/button>/g)]
+    .filter(match => !match[1].includes('data-package-apply'))
+    .map(match => match[2].trim())
 }
 
 test('package editing rules are discoverable while each unavailable edit has a visible reason', async () => {
@@ -133,7 +146,7 @@ test('package editing rules are discoverable while each unavailable edit has a v
   for (const text of ['未发布的草稿、驳回内容', '已发布、已禁用及其草稿或驳回修订', '本轮提交人可先撤回', '本轮编辑者均不能自审']) assert.ok(html.includes(text))
   const row = packageRowHtml(html, record.id)
   assert.match(row, /<p class="scenario-package-edit-hint"[^>]*>未发布内容，仅创建者可编辑<\/p>/)
-  assert.deepEqual(rowActions(html, record.id), ['详情'])
+  assert.deepEqual(rowManagementActions(html, record.id), ['详情'])
   assert.match(dialog, /当前账号编辑说明/)
   assert.match(dialog, /此技能包尚未发布/)
 })
@@ -169,7 +182,7 @@ test('pending guidance distinguishes withdrawal, independent review, contributor
   assert.match(creator.dialog, /你是创建者，可先撤回审核/)
   const reviewOnlyCreator = await fixture({ actor: 'pm-li', permissions: reviewer.permissions, mode: 'detail' })
   assert.match(reviewOnlyCreator.dialog, /继续编辑和提审仍需具备该内容的编辑权限/)
-  assert.deepEqual(rowActions(reviewOnlyCreator.html, reviewOnlyCreator.record.id), ['详情', '撤回'])
+  assert.deepEqual(rowManagementActions(reviewOnlyCreator.html, reviewOnlyCreator.record.id), ['详情', '撤回'])
   assert.equal(reviewOnlyCreator.store.withdrawPackage(reviewOnlyCreator.record.id, { id: 'pm-li', permissions: reviewer.permissions }, reviewOnlyCreator.record.updatedAt).ok, true)
   assert.deepEqual(reviewOnlyCreator.store.actionsFor(reviewOnlyCreator.record.id, { id: 'pm-li', permissions: reviewer.permissions }), ['view'])
   const reviewerView = await fixture({ mode: 'detail' })
@@ -191,7 +204,7 @@ test('pending guidance distinguishes withdrawal, independent review, contributor
     const updated = await current.renderCurrent()
     assert.match(updated.dialog, /当前账号没有撤回或审核权限/)
     assert.doesNotMatch(updated.dialog, /当前账号可审批或驳回|你是本轮提交人，可先撤回审核/)
-    assert.deepEqual(rowActions(updated.html, current.record.id), ['详情'])
+    assert.deepEqual(rowManagementActions(updated.html, current.record.id), ['详情'])
   }
 })
 
@@ -218,7 +231,7 @@ test('an administrator can open another creator published revision from its dire
 
 test('an independent administrator sees separate detail, approve and reject actions for a pending package', async () => {
   const { html, record, store } = await fixture()
-  assert.deepEqual(rowActions(html, record.id), ['详情', '审批', '驳回'])
+  assert.deepEqual(rowManagementActions(html, record.id), ['详情', '审批', '驳回'])
   assert.equal(store.findPackage(record.id).status, 'review')
 })
 
@@ -229,7 +242,7 @@ for (const audience of [
 ]) {
   test(`${audience.label} retains detail without approve or reject row actions`, async () => {
     const { state, html, record } = await fixture(audience)
-    assert.deepEqual(rowActions(html, record.id), audience.actions)
+    assert.deepEqual(rowManagementActions(html, record.id), audience.actions)
     assert.equal(state.canReviewPackage(record), false)
     for (const mode of ['approve', 'reject']) {
       state.openPackageDetail(record, undefined, mode)
@@ -372,14 +385,14 @@ for (const action of ['approve', 'reject']) {
 for (const status of ['draft', 'review', 'rejected', 'published', 'disabled']) {
   test(`an owner with creation permissions sees the appropriate ${status} row actions`, async () => {
     const { html, record } = await fixture({ actor: 'pm-li', permissions: creationPermissions, status })
-    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '撤回'] : ['详情', '编辑'])
+    assert.deepEqual(rowManagementActions(html, record.id), status === 'review' ? ['详情', '撤回'] : ['详情', '编辑'])
   })
 
   test(`an administrator can edit their own ${status} package only outside pending review`, async () => {
     const { html, record, state, store } = await fixture({ actor: 'pm-li', permissions: ['*'], status })
     const before = copy(store.findPackage(record.id))
     const actions = { published: ['禁用'], disabled: ['启用'] }[status] || []
-    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '撤回'] : ['详情', '编辑', ...actions])
+    assert.deepEqual(rowManagementActions(html, record.id), status === 'review' ? ['详情', '撤回'] : ['详情', '编辑', ...actions])
     await editWithNoDom(state, record)
     assert.equal(state.isPackageCreate.value, status !== 'review')
     if (status === 'review') {
@@ -394,26 +407,26 @@ for (const status of ['draft', 'review', 'rejected', 'published', 'disabled']) {
 
   test(`an unrelated account cannot manage a ${status} package through an administrator role label alone`, async () => {
     const { html, record } = await fixture({ permissions: [], role: '平台管理员', status })
-    assert.deepEqual(rowActions(html, record.id), ['详情'])
+    assert.deepEqual(rowManagementActions(html, record.id), ['详情'])
   })
 
   test(`review permission grants only the applicable ${status} actions regardless of role label`, async () => {
     const { html, record } = await fixture({ permissions: reviewer.permissions, role: '运营', status })
     const actions = { review: ['审批', '驳回'], published: ['编辑', '禁用'], disabled: ['编辑', '启用'] }[status] || []
-    assert.deepEqual(rowActions(html, record.id), ['详情', ...actions])
+    assert.deepEqual(rowManagementActions(html, record.id), ['详情', ...actions])
   })
 }
 
 for (const permissions of [[], ['scenario-package:create'], ['scenario-package:compose:cross-menu']]) {
   test(`owner editing requires both creation and cross-menu composition permissions (${permissions.join(',') || 'none'})`, async () => {
     const { html, record } = await fixture({ actor: 'pm-li', permissions, role: '平台管理员', status: 'published' })
-    assert.deepEqual(rowActions(html, record.id), ['详情'])
+    assert.deepEqual(rowManagementActions(html, record.id), ['详情'])
   })
 }
 
 test('an owner without creation permission has only read-only detail for a pending package', async () => {
   const { html, record, state } = await fixture({ actor: 'pm-li', permissions: [] })
-  assert.deepEqual(rowActions(html, record.id), ['详情'])
+  assert.deepEqual(rowManagementActions(html, record.id), ['详情'])
   await state.editPackage(record)
   assert.equal(state.isPackageCreate.value, false)
 })
@@ -552,7 +565,7 @@ test('a pending owner must withdraw before editing even with administrator permi
   assert.equal(record.status, 'review')
   assert.equal(record.onlineStatus, 'published')
   assert.ok(record.publishedSnapshot)
-  assert.deepEqual(rowActions(html, record.id), ['详情', '撤回'])
+  assert.deepEqual(rowManagementActions(html, record.id), ['详情', '撤回'])
   const before = copy(store.findPackage(record.id))
   await state.editPackage(record)
   assert.equal(state.isPackageCreate.value, false)
@@ -573,7 +586,7 @@ for (const status of ['review', 'draft']) {
       if (status === 'draft') seedDraft(context.store, context.recordId)
     } })
     assert.equal(record.status, status)
-    assert.deepEqual(rowActions(html, record.id), status === 'review' ? ['详情', '审批', '驳回', '禁用'] : ['详情', '编辑', '禁用'])
+    assert.deepEqual(rowManagementActions(html, record.id), status === 'review' ? ['详情', '审批', '驳回', '禁用'] : ['详情', '编辑', '禁用'])
     state.openPackageDetail(record, undefined, 'disable')
     assert.equal(state.packageReviewMode.value, 'disable')
     await state.managePackage('disable')
@@ -677,7 +690,7 @@ test('a pending revision is counted and filtered independently from its publishe
   state.packageStatusFilter.value = 'disabled'
   await nextTick()
   assert.equal(isListed(), true)
-  assert.deepEqual(rowActions((await renderCurrent()).html, record.id), ['详情', '审批', '驳回', '启用'])
+  assert.deepEqual(rowManagementActions((await renderCurrent()).html, record.id), ['详情', '审批', '驳回', '启用'])
 })
 
 test('a healthy pending revision reports its old online snapshot as paused when a required dependency is disabled', async () => {
@@ -708,9 +721,41 @@ test('a healthy pending revision reports its old online snapshot as paused when 
   assert.match(state.packageHealthHint(store.findPackage(record.id)), /已审核版本.*保持禁用/)
 })
 
-test('initial examples render all eight state filters while administrators review PM-owned records', async () => {
+test('unavailable conditional dependencies appear under paused without a partial-run card, filter, or outdated detail note', async () => {
+  const { state, record, html, dialog } = await fixture({ recordId: 'seed-scenario-degraded', mode: 'detail', prepare({ store, recordId }) {
+    seedScenarioPackagesForTest(store, copy(store.packages).map(item => item.id === recordId
+      ? { ...item, degradationNote: '历史说明：可选分支跳过后继续运行。' }
+      : item))
+  } })
+  assert.equal(state.packageStatusKey(record), 'paused')
+  assert.equal(state.packageStatusLabel(record), '已暂停')
+  assert.equal(state.packageSummaryItems.value.length, 5)
+  assert.equal(state.packageSummaryItems.value.some(item => item.filter === 'degraded'), false)
+  assert.doesNotMatch(html, /<option[^>]*value="degraded"|降级运行/)
+  state.setPackageSummaryFilter('paused')
+  await nextTick()
+  assert.ok(state.filteredScenarioPackages.value.some(item => item.id === record.id))
+  assert.match(dialog, /依赖状态说明/)
+  assert.doesNotMatch(dialog, /历史说明：可选分支跳过后继续运行/)
+})
+
+test('legacy health snapshots are presented and filtered as paused while pending review remains distinct', async () => {
+  const { state, record } = await fixture({ status: 'published' })
+  const legacy = { ...copy(record), publishedSnapshot: undefined, degradationNote: '历史说明：继续运行', health: { ...copy(record.health), status: 'degraded', explanations: ['历史说明：继续运行'] } }
+  assert.equal(state.packageStatusKey(legacy), 'paused')
+  assert.equal(state.packageStatusLabel(legacy), '已暂停')
+  assert.equal(state.matchesPackageStatus(legacy, 'paused'), true)
+  assert.match(state.packageHealthHint(legacy), /暂停/)
+  assert.doesNotMatch(state.packageHealthHint(legacy), /继续运行/)
+  const pending = { ...legacy, status: 'review', publishedSnapshot: { ...legacy, version: 'v1.0.0' } }
+  assert.equal(state.packageStatusKey(pending), 'review')
+  assert.equal(state.matchesPackageStatus(pending, 'paused'), true)
+  assert.match(state.packageHealthHint(pending), /已审核版本.*因依赖异常暂停/)
+})
+
+test('initial examples render all seven state filters while administrators review PM-owned records', async () => {
   const { state, store, account, html, renderCurrent } = await fixture({ actor: 'initial-state-reviewer' })
-  for (const filter of ['draft', 'review', 'rejected', 'published', 'disabled', 'upgrade_required', 'degraded', 'paused']) {
+  for (const filter of ['draft', 'review', 'rejected', 'published', 'disabled', 'upgrade_required', 'paused']) {
     state.resetPackageFilters()
     state.packageStatusFilter.value = filter
     await nextTick()
@@ -724,8 +769,8 @@ test('initial examples render all eight state filters while administrators revie
   const published = store.packages.find(item => item.ownerId === 'pm-li' && item.status === 'published')
   assert.ok(review)
   assert.ok(published)
-  assert.deepEqual(rowActions(html, review.id), ['详情', '审批', '驳回'])
-  assert.deepEqual(rowActions(html, published.id), ['详情', '编辑', '禁用'])
+  assert.deepEqual(rowManagementActions(html, review.id), ['详情', '审批', '驳回'])
+  assert.deepEqual(rowManagementActions(html, published.id), ['详情', '编辑', '禁用'])
 })
 
 test('initial PM examples permit author editing without review or management actions', async () => {
@@ -734,6 +779,90 @@ test('initial PM examples permit author editing without review or management act
   const ownPublished = store.packages.find(item => item.ownerId === account.user && item.status === 'published')
   assert.ok(ownReview)
   assert.ok(ownPublished)
-  assert.deepEqual(rowActions(html, ownReview.id), ['详情', '撤回'])
-  assert.deepEqual(rowActions(html, ownPublished.id), ['详情', '编辑'])
+  assert.deepEqual(rowManagementActions(html, ownReview.id), ['详情', '撤回'])
+  assert.deepEqual(rowManagementActions(html, ownPublished.id), ['详情', '编辑'])
+})
+
+function applicationButton(markup, id) {
+  const match = [...markup.matchAll(/<button\b([^>]*)>(.*?)<\/button>/g)]
+    .find(item => item[1].includes(`data-package-apply="${id}"`))
+  assert.ok(match, `the application entry must be present for ${id}`)
+  assert.equal(match[2].trim(), '应用')
+  return match[1]
+}
+
+for (const status of ['draft', 'review', 'rejected', 'disabled']) {
+  test(`the ${status} row and detail retain a disabled application entry with an accessible reason`, async () => {
+    const current = await fixture({ actor: 'application-admin', permissions: ['*'], mode: 'detail', status: status === 'review' ? undefined : status })
+    const row = packageRowHtml(current.html, current.record.id)
+    for (const markup of [row, current.dialog]) {
+      const button = applicationButton(markup, current.record.id)
+      assert.match(button, /\bdisabled\b/)
+      assert.match(button, /title="[^"]*(?:发布|审核|禁用)[^"]*"/)
+      assert.match(markup, /<span[^>]*class="[^"]*scenario-package-application-hint[^>]*tabindex="0"[^>]*aria-label="[^"]+"/)
+    }
+    const before = current.ai.messages.length
+    current.state.applyPackage(current.record)
+    assert.equal(current.ai.messages.length, before)
+    assert.equal(current.state.packageDetailId.value, current.record.id)
+    assert.ok(current.notices.length > 0)
+  })
+}
+
+test('published package application opens the AI assistant with local test messages and closes detail without mutating the package', async () => {
+  const { state, ai, store, record, html, dialog } = await fixture({ actor: 'application-admin', permissions: ['*'], status: 'published', mode: 'detail' })
+  assert.doesNotMatch(applicationButton(packageRowHtml(html, record.id), record.id), /\bdisabled\b/)
+  assert.doesNotMatch(applicationButton(dialog, record.id), /\bdisabled\b/)
+  assert.match(applicationButton(dialog, record.id), /title="[^"]*v1\.0\.0[^"]*"/)
+  const before = copy(store.findPackage(record.id))
+  const messageCount = ai.messages.length
+  ai.open = false
+  state.applyPackage(record)
+  assert.equal(ai.open, true)
+  assert.ok(ai.messages.length > messageCount)
+  assert.ok(ai.messages.slice(messageCount).some(message => message.text.includes(record.name)))
+  assert.equal(state.packageDetailId.value, '')
+  assert.deepEqual(copy(store.findPackage(record.id)), before)
+})
+
+for (const status of ['draft', 'review', 'rejected']) {
+  test(`a ${status} revision applies only its prior approved fixed version`, async () => {
+    const { state, record, html, dialog } = await fixture({ actor: 'application-admin', permissions: ['*'], mode: 'detail', prepare(context) {
+      submitPublishedRevision(context)
+      if (status === 'draft') seedDraft(context.store, context.recordId)
+      if (status === 'rejected') context.store.rejectPackage(context.recordId, reviewer, '补充本次修订。')
+    } })
+    assert.equal(record.status, status)
+    assert.equal(record.version, 'v1.0.1')
+    assert.equal(record.publishedSnapshot.version, 'v1.0.0')
+    for (const markup of [packageRowHtml(html, record.id), dialog]) {
+      const button = applicationButton(markup, record.id)
+      assert.doesNotMatch(button, /\bdisabled\b/)
+      assert.match(button, /title="[^"]*已审核[^"<>]*v1\.0\.0[^"]*"/)
+      assert.doesNotMatch(button, /v1\.0\.1/)
+    }
+    assert.equal(state.packageApplication(record).version, 'v1.0.0')
+  })
+}
+
+test('application eligibility is rechecked after a rendered published row loses permissions', async () => {
+  const { state, ai, account, record, html, renderCurrent, notices } = await fixture({ actor: 'application-admin', permissions: ['*'], status: 'published' })
+  assert.doesNotMatch(applicationButton(packageRowHtml(html, record.id), record.id), /\bdisabled\b/)
+  const before = ai.messages.length
+  account.permissions = []
+  await nextTick()
+  const updated = (await renderCurrent()).html
+  assert.match(applicationButton(packageRowHtml(updated, record.id), record.id), /\bdisabled\b/)
+  state.applyPackage(record)
+  assert.equal(ai.messages.length, before)
+  assert.match(notices.at(-1), /权限/)
+})
+
+test('paused packages cannot be applied and opening a management confirmation does not add an application action', async () => {
+  const paused = await fixture({ actor: 'application-admin', permissions: ['*'], recordId: 'seed-scenario-degraded', mode: 'detail' })
+  const button = applicationButton(packageRowHtml(paused.html, paused.record.id), paused.record.id)
+  assert.match(button, /\bdisabled\b/)
+  assert.match(button, /title="[^"]*(?:依赖|暂停|不可用)[^"]*"/)
+  const management = await fixture({ actor: 'application-admin', permissions: ['*'], status: 'published', mode: 'disable' })
+  assert.doesNotMatch(management.dialog, /data-package-apply/)
 })

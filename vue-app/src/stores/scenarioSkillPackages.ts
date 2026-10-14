@@ -23,6 +23,7 @@ import {
 import { useSkillHubStore, type SkillHubItem } from './skillHub'
 import { useAppStore } from './app'
 import { buildScenarioRunPlan } from '../domain/scenarioRunPlan.js'
+import { evaluateScenarioApplicationEligibility, runScenarioApplicationPreview, type ScenarioApplicationRequest } from '../domain/scenarioPackageApplication.js'
 import { getScenarioTestFingerprint, runScenarioSimulation, type ScenarioSimulationReport, type ScenarioSimulationRequest } from '../domain/scenarioPackageTesting.js'
 import { readScenarioPackageState, writeScenarioPackageState, type ScenarioPackageStoredState } from '../services/scenarioPackageStorage'
 
@@ -74,6 +75,7 @@ export interface ScenarioPinnedStep {
 }
 
 export interface ScenarioPackageHealth {
+  // Accept legacy stored records; refreshPackage recalculates them under the current pause policy.
   status: 'healthy' | 'upgrade_required' | 'degraded' | 'paused'
   explanations: string[]
   blockedStepIds: string[]
@@ -380,19 +382,19 @@ function createSeedScenarioPackages(selectableSkills: ScenarioSelectableSkill[],
   const historicalWeather = createHistoricalSkill('weather-query')
   const historicalInventory = createHistoricalSkill('legacy-inventory-alert')
   const historicalCatalog = [...selectableSkills, historicalWeather, historicalInventory]
-  const degradedDraft = createDraftExample('seed-scenario-degraded', '职场活动运营分析', 'pm-li', [
+  const optionalDependencyDraft = createDraftExample('seed-scenario-degraded', '职场活动运营分析', 'pm-li', [
     ...reviewSteps.slice(0, 2),
     createPinnedScenarioStep(historicalWeather, {
       id: 'activity-weather', kind: 'conditional', condition: '需要安排线下职场活动时', required: false
     }) as ScenarioPinnedStep
   ])
-  degradedDraft.description = '当需要分析职场认证人群与经营表现、制定线下运营活动计划时使用；天气查询为可选分支，不可用时仍可输出核心人群分析。'
+  optionalDependencyDraft.description = '当需要分析职场认证人群与经营表现、制定线下运营活动计划时使用；天气查询为条件分支，依赖不可用时暂停整个技能包，恢复可用后再执行。'
   const pausedDraft = createDraftExample('seed-scenario-paused', '企业客户库存预警协同', 'pm-li', [
     createPinnedScenarioStep(findSelectableSkill('enterprise-customer-followup'), { id: 'customer-followup', required: true }) as ScenarioPinnedStep,
     createPinnedScenarioStep(historicalInventory, { id: 'inventory-alert', required: true }) as ScenarioPinnedStep
   ])
   pausedDraft.description = '当需要结合企业客户跟进目标与库存预警制定供货建议时使用；库存预警属于核心链路，依赖不可用时暂停整个技能包。'
-  const dependencyExamples = [degradedDraft, pausedDraft].map(draft => {
+  const dependencyExamples = [optionalDependencyDraft, pausedDraft].map(draft => {
     const published = createPublishedExample(draft, historicalCatalog)
     const currentSteps = published.steps.map(step => ({
       ...step,
@@ -490,6 +492,7 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     catch { /* Preserve the original state if upgrading storage fails; explicit writes still report failure. */ }
   }
   let persistedIds = new Set(persisted?.packages.map(item => item.id) || [])
+  const applicationPersistedIds = new Set<string>()
   if (persisted) {
     const restoredIds = new Set(persisted.packages.map(item => item.id))
     storedPackages.value = [...persisted.packages, ...storedPackages.value.filter(item => !restoredIds.has(item.id))]
@@ -752,6 +755,24 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     return buildScenarioRunPlan(getScenarioRuntimePackage(packageItem), caller, request)
   }
 
+  function applicationPackage(packageId: string): ScenarioSkillPackage | undefined {
+    const latest = readLatestState()
+    const saved = latest?.packages.find(item => item.id === packageId)
+    if (saved) applicationPersistedIds.add(packageId)
+    // Preserve unsaved seeded examples, but never resurrect a deleted/unreadable persisted publication.
+    const found = saved || (!persistedIds.has(packageId) && !applicationPersistedIds.has(packageId)
+      ? storedPackages.value.find(item => item.id === packageId) : undefined)
+    return found ? getScenarioRuntimePackage(refreshPackage(found)) as ScenarioSkillPackage : undefined
+  }
+
+  function applicationEligibility(packageId: string, actor: ScenarioPackageActor) {
+    return evaluateScenarioApplicationEligibility(applicationPackage(packageId), actor)
+  }
+
+  function applicationPreview(packageId: string, actor: ScenarioPackageActor, request: ScenarioApplicationRequest = {}) {
+    return runScenarioApplicationPreview(applicationPackage(packageId), actor, request)
+  }
+
   return {
     packages,
     selectableSkills,
@@ -770,6 +791,9 @@ export const useScenarioSkillPackagesStore = defineStore('scenarioSkillPackages'
     resubmitDraft,
     evaluateRuntimeAccess,
     prepareRunPlan,
+    applicationPackage,
+    applicationEligibility,
+    applicationPreview,
     findPackage,
     resetToInitialMock
   }

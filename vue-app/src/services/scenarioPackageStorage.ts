@@ -51,6 +51,7 @@ function validPackage(value: unknown, depth = 0): value is ScenarioSkillPackage 
     && ['available', 'expired', 'unavailable', 'emergency_disabled', 'update_available'].includes(String(step.dependencyState))
     && typeof step.required === 'boolean' && isObject(step.permissions)
     && ['menu', 'skill', 'data', 'action'].every(bucket => strings((step.permissions as Record<string, unknown>)[bucket])))) return false
+  // Read old degraded snapshots without discarding user data; the store recomputes current health.
   if (!isObject(value.health) || !['healthy', 'upgrade_required', 'degraded', 'paused'].includes(String(value.health.status))
     || !['explanations', 'blockedStepIds', 'degradedStepIds'].every(key => strings((value.health as Record<string, unknown>)[key]))) return false
   if (value.auditEvents !== undefined && (!Array.isArray(value.auditEvents) || !value.auditEvents.every(event => isObject(event)
