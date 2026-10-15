@@ -17,6 +17,7 @@ import { getScenarioMockDataFailure } from './scenarioTrialMockData.js'
 
 // These are labelled fixtures for exactly the published versions below, never live Skill results.
 const VERSION_SAMPLES = {
+  'capability-update-failure-demo': { version: 'v1.0.0', input: '模拟查询职场 A 的运营概况，供后续认证状态查询参考。', output: '模拟样例：职场 A 的运营查询覆盖 3 名员工，样例期内有 2 次访问、1 次业务办理；可继续查询对应职场的认证状态。未查询真实数据、重试能力更新或改变线上版本。' },
   'product-knowledge': { version: 'v1.0.7', input: '模拟比较机型 A 与机型 B 的办公适用性。', output: '模拟样例：机型 A 重视便携，机型 B 重视扩展；实际配置与价格需另行查询。' },
   'voucher-recommend': { version: 'v0.1.3', input: '模拟为用户 A 推荐适用的会员权益券包。', output: '模拟样例：券包 A 包含会员权益，券包 B 包含充值权益；未发券或扣费。' },
   'gmv-daily-summary': { version: 'v1.2.0', input: '模拟汇总指定日期的订单量、GMV 与渠道贡献。', output: '模拟样例：样例日期共有 3 笔订单、GMV 900 元，其中渠道 A 贡献 600 元。' },

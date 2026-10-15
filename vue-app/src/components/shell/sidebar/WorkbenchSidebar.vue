@@ -152,6 +152,15 @@ const pocReleaseLedger = ref({ records: {} })
 const basePocLogRecords = [
   {
     time: '2026-10-15',
+    releaseKey: 'workbench-scenario-retry-20261015',
+    title: '场景技能包试运行重试修复',
+    changePoint: '补齐运营查询演示技能的固定版本样例，支持重新试运行及返回编排后继续。',
+    detail: '修复“运营查询（更新失败示例）”可选入编排但缺少试运行样例的问题；与职场认证状态查询连接后，重试可生成完整模拟反馈并传给下游。保留整体工作流确认、权限、依赖和版本校验，以及草稿与待审核应用等已有功能；不调用真实业务接口，不改变当前界面样式。发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
+    time: '2026-10-15',
     releaseKey: 'workbench-ui1015-style-20261015',
     title: '1015 界面样式兼容更新',
     changePoint: '调整评价管理筛选与表格、账号启用表单布局，以及 AI 助手的过程卡和回答排版。',
