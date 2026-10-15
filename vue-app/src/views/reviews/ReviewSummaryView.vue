@@ -14,7 +14,7 @@
       <section class="rs-panel rs-filter-panel" aria-label="筛选条件">
         <SectionHeader id="review-summary-filter-title" title="筛选条件" />
         <form class="rs-filter-form" @submit.prevent="applyFilters">
-          <FilterField class="rs-filter-item" label="商品名称" layout="inset">
+          <FilterField class="rs-filter-item" label="商品名称">
             <input
               v-model="draft.productName"
               type="search"
@@ -22,7 +22,7 @@
               autocomplete="off"
             />
           </FilterField>
-          <FilterField class="rs-filter-item" label="商品编号" layout="inset">
+          <FilterField class="rs-filter-item" label="商品编号">
             <input
               v-model="draft.productCode"
               type="search"
@@ -30,23 +30,23 @@
               autocomplete="off"
             />
           </FilterField>
-          <FilterField class="rs-filter-item" label="生成状态" layout="inset">
+          <FilterField class="rs-filter-item" label="生成状态">
             <select v-model="draft.status" aria-label="生成状态">
-              <option value="all">生成状态：全部</option>
-              <option value="generated">生成状态：已生成</option>
-              <option value="insufficient">生成状态：样本不足</option>
+              <option value="all">全部</option>
+              <option value="generated">已生成</option>
+              <option value="insufficient">样本不足</option>
             </select>
           </FilterField>
-          <FilterField class="rs-filter-item" label="产品组" layout="inset">
+          <FilterField class="rs-filter-item" label="产品组">
             <select v-model="draft.productGroup" aria-label="产品组">
-              <option value="all">产品组：请选择</option>
-              <option value="thinkbook">产品组：ThinkBook</option>
-              <option value="yoga">产品组：YOGA</option>
-              <option value="legion">产品组：拯救者</option>
+              <option value="all">请选择</option>
+              <option value="thinkbook">ThinkBook</option>
+              <option value="yoga">YOGA</option>
+              <option value="legion">拯救者</option>
             </select>
           </FilterField>
-          <FilterField class="rs-filter-item rs-filter-item--range" label="时间段" layout="inset">
-            <div class="rs-range-input" aria-label="时间段"><span class="rs-range-label">时间段</span>
+          <FilterField class="rs-filter-item rs-filter-item--range" label="时间段" group>
+            <div class="rs-range-input" aria-label="时间段">
               <input v-model="draft.startDate" type="date" aria-label="开始日期" :aria-invalid="Boolean(filterError)" :aria-describedby="filterError ? 'rs-date-error' : undefined" />
               <em>~</em>
               <input v-model="draft.endDate" type="date" aria-label="结束日期" :aria-invalid="Boolean(filterError)" :aria-describedby="filterError ? 'rs-date-error' : undefined" />
@@ -477,7 +477,7 @@ useDialogFocusManager(
 
 .review-summary-page .rs-range-input {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 20px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   border: 0;
@@ -534,7 +534,7 @@ useDialogFocusManager(
   background: var(--color-surface);
   color: var(--color-text-tertiary);
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -574,7 +574,7 @@ useDialogFocusManager(
   color: var(--color-primary);
   font: inherit;
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -602,7 +602,7 @@ useDialogFocusManager(
   color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .review-summary-page .rs-pagination button {
@@ -666,7 +666,7 @@ useDialogFocusManager(
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--text-md, 16px);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .rs-detail-header button {
@@ -692,7 +692,7 @@ useDialogFocusManager(
   margin: 0;
   color: var(--color-text);
   font-size: var(--text-base, 14px);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.6;
 }
 
@@ -813,26 +813,27 @@ useDialogFocusManager(
   min-height: 36px;
   font-size: var(--text-sm, 13px);
 }
-.rs-table th {
+.review-summary-page .rs-table th {
   height: 40px;
   font-size: var(--text-xs, 12px);
-  font-weight: 500;
+  /* Override only the inherited global th weight lock for this new table. */
+  font-weight: var(--font-weight-medium, 500) !important;
   background: var(--color-bg-subtle);
 }
-.rs-table td {
+.review-summary-page .rs-table td {
   box-sizing: border-box;
   height: 48px;
   font-variant-numeric: tabular-nums;
 }
 .rs-table th,
-.rs-table td {
+.review-summary-page .rs-table td {
   border-right: 0;
 }
-.rs-table tr:hover td {
+.review-summary-page .rs-table tr:hover td {
   background: var(--color-bg-subtle);
 }
 .rs-table th:last-child,
-.rs-table td:last-child {
+.review-summary-page .rs-table td:last-child {
   position: sticky;
   right: 0;
   text-align: right;
@@ -863,7 +864,4 @@ useDialogFocusManager(
   .review-summary-page .rs-filter-actions { grid-column: auto; justify-content: flex-start; }
 }
 
-.rs-range-label { padding-left: 12px; color: var(--color-text-tertiary); white-space: nowrap; font-size: var(--text-xs, 12px); }
-.review-summary-page .rs-range-input { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
-.review-summary-page .rs-range-input input { border: 0; padding-inline: 4px; box-shadow: none; }
 </style>

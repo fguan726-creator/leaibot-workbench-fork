@@ -151,6 +151,15 @@ const pocReleaseLedger = ref({ records: {} })
 
 const basePocLogRecords = [
   {
+    time: '2026-10-15',
+    releaseKey: 'workbench-ui1015-style-20261015',
+    title: '1015 界面样式兼容更新',
+    changePoint: '调整评价管理筛选与表格、账号启用表单布局，以及 AI 助手的过程卡和回答排版。',
+    detail: '从 1015 UI 附件提取样式并合入当前版本；保留整体工作流执行要求、草稿及待审核技能包应用、个人赞踩反馈和现有审批流程。AI 助手调整仅作用于展示，原消息、任务操作和反馈记录保持。未改变菜单、权限、数据处理或业务接口；发布环境、人员、时间和版本分别以实际记录为准。',
+    deployTargets: [],
+    status: '发布状态以环境记录为准'
+  },
+  {
     time: '2026-10-14',
     releaseKey: 'workbench-skillhub-status-20261014',
     title: 'Skill Hub 状态与技能包应用测试',

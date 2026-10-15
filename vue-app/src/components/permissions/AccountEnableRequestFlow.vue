@@ -145,12 +145,12 @@ async function submit() {
 </script>
 
 <style scoped>
-.account-enable-flow { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; color: var(--color-text); --form-control-radius: var(--radius-md); }
+.account-enable-flow { container-type: inline-size; container-name: enable-request-flow; display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; color: var(--color-text); --form-control-radius: var(--radius-md); }
 .enable-stages { display: flex; flex-shrink: 0; gap: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 4px; margin-bottom: 16px; }
-.enable-stages button { border: 0; border-radius: var(--radius-md); padding: 8px 16px; background: transparent; color: var(--color-text-secondary); font-size: 13px; font-weight: 700; cursor: pointer; }
+.enable-stages button { white-space: nowrap; border: 0; border-radius: var(--radius-md); padding: 8px 16px; background: transparent; color: var(--color-text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; }
 .enable-stages button.active { background: var(--color-primary); color: var(--color-on-primary); }
 .enable-stages button:disabled:not(.active) { color: var(--color-text-tertiary); cursor: not-allowed; }
-.enable-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px; }
+.enable-body { scroll-padding-block: 16px; flex: 1; min-height: 0; overflow-y: auto; padding: 4px; }
 .enable-body h3 { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.45; }
 .enable-body p { margin: 8px 0 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .enable-type-card { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-primary-subtle); }
@@ -160,7 +160,7 @@ async function submit() {
 .enable-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
 .enable-fields label, .enable-field { display: grid; gap: 8px; align-content: start; min-width: 0; }
 .full { grid-column: 1 / -1; }
-.field-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--color-text-secondary); }
+.field-label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-text-secondary); }
 .field-label.required::before { content: '*'; color: var(--color-danger); }
 .field-label em { border-radius: 9999px; padding: 0 8px; background: var(--color-danger-subtle); color: var(--color-danger); font-size: 12px; font-style: normal; }
 .field-label em.autofill { color: var(--color-text-secondary); background: var(--color-bg-subtle); }
@@ -187,10 +187,10 @@ async function submit() {
 .enable-summary { margin-top: 20px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-subtle); font-size: 13px; }
 .enable-actions { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; border-top: 1px solid var(--color-border-subtle); padding-top: 12px; }
 .enable-feedback { flex-basis: 100%; margin: 0; }
-.primary-btn, .ghost-btn { min-height: var(--control-height-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 16px; background: var(--color-surface); color: var(--color-text-secondary); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.primary-btn, .ghost-btn { min-height: var(--control-height-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 16px; background: var(--color-surface); color: var(--color-text-secondary); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
 .primary-btn { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-on-primary); }
 .primary-btn:hover:not(:disabled) { background: var(--color-primary-hover); }
 button:disabled { cursor: not-allowed; }
 button:focus-visible, input:focus-visible, textarea:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-@media (max-width: 560px) { .enable-fields, .enable-person-types, .enable-approval-route { grid-template-columns: 1fr; } .enable-stages button { flex: 1; padding: 8px; } }
+@container enable-request-flow (max-width: 719px) { .enable-fields, .enable-person-types, .enable-approval-route { grid-template-columns: 1fr; } .enable-stages button { flex: 1; padding: 8px; } }
 </style>

@@ -1,12 +1,18 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ label: string; layout?: 'stacked' | 'inset' }>(), { layout: 'stacked' })
+withDefaults(defineProps<{ label: string; layout?: 'stacked' | 'inset'; group?: boolean }>(), { layout: 'stacked', group: false })
 </script>
 
 <template>
-  <label class="cs-filter-field" :data-field-layout="layout">
+  <component
+    :is="group ? 'div' : 'label'"
+    class="cs-filter-field"
+    :data-field-layout="layout"
+    :role="group ? 'group' : undefined"
+    :aria-label="group ? label : undefined"
+  >
     <span class="cs-filter-field__label">{{ label }}</span>
     <slot />
-  </label>
+  </component>
 </template>
 
 <style scoped>
@@ -23,8 +29,8 @@ withDefaults(defineProps<{ label: string; layout?: 'stacked' | 'inset' }>(), { l
   font-weight: 500;
   line-height: var(--line-height-filter-label, 20px);
 }
-label.cs-filter-field[data-field-layout] :deep(input),
-label.cs-filter-field[data-field-layout] :deep(select) {
+:is(label, div).cs-filter-field[data-field-layout] :deep(input),
+:is(label, div).cs-filter-field[data-field-layout] :deep(select) {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -58,7 +64,7 @@ label.cs-filter-field[data-field-layout] :deep(select) {
 }
 
 /* Date inputs are contained by one shared range surface. */
-label.cs-filter-field[data-field-layout='inset'] :deep(input[type='date']) {
+:is(label, div).cs-filter-field[data-field-layout='inset'] :deep(input[type='date']) {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;

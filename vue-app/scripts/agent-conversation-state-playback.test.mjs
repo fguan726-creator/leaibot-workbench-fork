@@ -20,14 +20,15 @@ function step(id, status, kind = 'tool_call') {
 function open(input) {
   const props = reactive(input)
   let state
+  const events = []
   const app = renderer.createApp({ setup() {
-    state = Component.setup(props, { expose() {} })
+    state = Component.setup(props, { expose() {}, emit: (...event) => events.push(event) })
     return () => h('div')
   } })
   app.provide(ssrContextKey, {})
   app.mount({})
   mounted.push(app)
-  return { props, state, html: () => renderToString(createSSRApp({ ...Component, setup: () => state }, props)) }
+  return { props, state, events, html: () => renderToString(createSSRApp({ ...Component, setup: () => state }, props)) }
 }
 
 for (const flag of [undefined, false]) {
@@ -138,4 +139,42 @@ test('opted-in completed history and confirmation-only input do not auto-open', 
   assert.match(await completed.html(), /aria-expanded="false"/)
   const confirmation = open({ autoExpandRunning: true, items: [step('authorization', 'blocked', 'confirm')] })
   assert.doesNotMatch(await confirmation.html(), /AI 会话状态|说明 authorization/)
+})
+
+test('Agent cards show up to three current records and respect the reader expansion across progress', async () => {
+  const items = [step('past', 'done'), step('first', 'running'), step('second', 'pending'), step('third', 'pending'), step('fourth', 'pending')]
+  const view = open({ presentation: 'cards', items: structuredClone(items) })
+  assert.equal((await view.html()).match(/class="state-card-toggle"/g)?.length, 3)
+  assert.match(await view.html(), /说明 first/)
+  assert.doesNotMatch(await view.html(), /说明 past/)
+  view.state.toggleExpanded()
+  assert.equal((await view.html()).match(/class="state-card-toggle"/g)?.length, 5)
+  view.props.items[1].status = 'done'
+  await nextTick()
+  assert.equal((await view.html()).match(/class="state-card-toggle"/g)?.length, 5)
+  view.state.toggleCard('past')
+  assert.match(await view.html(), /class="[^"\n]*is-expanded[^"\n]*state-card-detail/)
+  assert.deepEqual(JSON.parse(JSON.stringify(view.props.items)), items.map(item => item.id === 'first' ? { ...item, status: 'done' } : item))
+})
+
+test('Agent cards hide duplicated confirmation and optional follow-up records without asserting empty completion', async () => {
+  const view = open({ presentation: 'cards', items: [step('skipped', 'skipped'), step('auth', 'blocked', 'confirm'), step('optional', 'pending', 'follow_up')] })
+  const html = await view.html()
+  assert.match(html, /已记录/)
+  assert.doesNotMatch(html, />已完成|完成 0 项|说明 auth|说明 optional/)
+})
+
+
+test('controlled Agent cards emit the exact expansion event used during live-to-saved transitions', async () => {
+  const view = open({ presentation: 'cards', cardsExpanded: false, cardExpanded: {}, items: [step('run', 'running')] })
+  view.state.toggleExpanded()
+  assert.deepEqual(view.events[0], ['update:cards-expanded', true])
+  view.props.cardsExpanded = true
+  view.state.toggleCard('run')
+  assert.deepEqual(view.events[1], ['update:card-expanded', { run: true }])
+  view.props.cardExpanded = { run: true }
+  view.props.items[0].status = 'done'
+  await nextTick()
+  assert.match(await view.html(), /aria-expanded="true"/)
+  assert.match(await view.html(), /class="[^"\n]*is-expanded[^"\n]*state-card-detail/)
 })

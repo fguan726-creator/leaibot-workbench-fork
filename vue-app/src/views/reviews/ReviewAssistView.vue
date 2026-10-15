@@ -26,7 +26,7 @@
           >
             <SectionHeader id="assist-generation-filter-title" title="筛选条件" />
             <form class="ag-filter-form" @submit.prevent="applyFilters">
-              <FilterField class="ag-filter-item" label="商品名称" layout="inset">
+              <FilterField class="ag-filter-item" label="商品名称">
                 <input
                   v-model="draft.productName"
                   type="search"
@@ -34,7 +34,7 @@
                   autocomplete="off"
                 />
               </FilterField>
-              <FilterField class="ag-filter-item" label="商品编号" layout="inset">
+              <FilterField class="ag-filter-item" label="商品编号">
                 <input
                   v-model="draft.productCode"
                   type="search"
@@ -42,7 +42,7 @@
                   autocomplete="off"
                 />
               </FilterField>
-              <FilterField class="ag-filter-item" label="账户" layout="inset">
+              <FilterField class="ag-filter-item" label="账户">
                 <input
                   v-model="draft.account"
                   type="search"
@@ -50,7 +50,7 @@
                   autocomplete="off"
                 />
               </FilterField>
-              <FilterField class="ag-filter-item" label="LenovoID" layout="inset">
+              <FilterField class="ag-filter-item" label="LenovoID">
                 <input
                   v-model="draft.lenovoId"
                   type="search"
@@ -65,33 +65,33 @@
                 role="group"
                 aria-label="更多筛选条件"
               >
-                <FilterField class="ag-filter-item" label="来源" layout="inset">
+                <FilterField class="ag-filter-item" label="来源">
                   <select v-model="draft.source" aria-label="来源">
-                    <option value="all">来源：全部</option>
-                    <option value="乐享">来源：乐享</option>
-                    <option value="商城">来源：商城</option>
+                    <option value="all">全部</option>
+                    <option value="乐享">乐享</option>
+                    <option value="商城">商城</option>
                   </select>
                 </FilterField>
-                <FilterField class="ag-filter-item" label="生成方式" layout="inset">
+                <FilterField class="ag-filter-item" label="生成方式">
                   <select v-model="draft.way" aria-label="生成方式">
-                    <option value="all">生成方式：全部</option>
-                    <option value="标签生成">生成方式：标签生成</option>
-                    <option value="提示词生成">生成方式：提示词生成</option>
-                    <option value="标签+提示词">生成方式：标签+提示词</option>
-                    <option value="换一版">生成方式：换一版</option>
+                    <option value="all">全部</option>
+                    <option value="标签生成">标签生成</option>
+                    <option value="提示词生成">提示词生成</option>
+                    <option value="标签+提示词">标签+提示词</option>
+                    <option value="换一版">换一版</option>
                   </select>
                 </FilterField>
-                <FilterField class="ag-filter-item" label="结果状态" layout="inset">
+                <FilterField class="ag-filter-item" label="结果状态">
                   <select v-model="draft.result" aria-label="结果状态">
-                    <option value="all">结果状态：全部</option>
-                    <option value="已采纳">结果状态：已采纳</option>
-                    <option value="未采纳">结果状态：未采纳</option>
-                    <option value="生成前拦截">结果状态：生成前拦截</option>
-                    <option value="生成后拦截">结果状态：生成后拦截</option>
+                    <option value="all">全部</option>
+                    <option value="已采纳">已采纳</option>
+                    <option value="未采纳">未采纳</option>
+                    <option value="生成前拦截">生成前拦截</option>
+                    <option value="生成后拦截">生成后拦截</option>
                   </select>
                 </FilterField>
-                <FilterField class="ag-filter-item ag-filter-item--range" label="时间段" layout="inset">
-                  <div class="ag-range-input" aria-label="时间段"><span class="ag-range-label">时间段</span>
+                <FilterField class="ag-filter-item ag-filter-item--range" label="时间段" group>
+                  <div class="ag-range-input" aria-label="时间段">
                     <input v-model="draft.startDate" type="date" aria-label="开始日期" :aria-invalid="Boolean(filterError)" :aria-describedby="filterError ? 'ag-date-error' : undefined" />
                     <em>~</em>
                     <input v-model="draft.endDate" type="date" aria-label="结束日期" :aria-invalid="Boolean(filterError)" :aria-describedby="filterError ? 'ag-date-error' : undefined" />
@@ -584,7 +584,7 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
 
 .ag-range-input {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 20px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   border: 0;
@@ -622,7 +622,7 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
 }
 
 .ag-table th,
-.ag-table td {
+.assist-generation-page .ag-table td {
   border-right: 1px solid var(--color-border-subtle);
   border-bottom: 1px solid var(--color-border-subtle);
   overflow: hidden;
@@ -634,15 +634,15 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
   white-space: nowrap;
 }
 
-.ag-table td {
+.assist-generation-page .ag-table td {
   height: 48px;
 }
 
-.ag-table th {
+.assist-generation-page .ag-table th {
   background: var(--color-surface);
   color: var(--color-text-tertiary);
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -726,14 +726,14 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
   color: var(--color-danger);
 }
 
-.ag-link-action {
+.assist-generation-page .ag-link-action {
   border: 0;
   padding: 0;
   background: transparent;
   color: var(--color-primary);
   font: inherit;
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -756,7 +756,7 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
   color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .ag-pagination button {
@@ -863,7 +863,7 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
   margin: 0 0 8px;
   color: var(--color-text);
   font-size: var(--text-sm, 13px);
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.5;
 }
 
@@ -968,26 +968,27 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
   min-height: 36px;
   font-size: var(--text-sm, 13px);
 }
-.ag-table th {
+.assist-generation-page .ag-table th {
   height: 40px;
   font-size: var(--text-xs, 12px);
-  font-weight: 500;
+  /* Override only the inherited global th weight lock for this new table. */
+  font-weight: var(--font-weight-medium, 500) !important;
   background: var(--color-bg-subtle);
 }
-.ag-table td {
+.assist-generation-page .ag-table td {
   box-sizing: border-box;
   height: 48px;
   font-variant-numeric: tabular-nums;
 }
 .ag-table th,
-.ag-table td {
+.assist-generation-page .ag-table td {
   border-right: 0;
 }
-.ag-table tr:hover td {
+.assist-generation-page .ag-table tr:hover td {
   background: var(--color-bg-subtle);
 }
 .ag-table th:last-child,
-.ag-table td:last-child {
+.assist-generation-page .ag-table td:last-child {
   position: sticky;
   right: 0;
   text-align: right;
@@ -1085,8 +1086,8 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
 .ag-modal-footer .btn {
   height: 36px;
 }
-.ag-table td {
-  height: 56px;
+.assist-generation-page .ag-table td {
+  height: 48px;
 }
 .ag-table-panel > :deep(.cs-list-surface__toolbar) {
   padding-block: 16px;
@@ -1108,7 +1109,4 @@ useDialogFocusManager(ref<HTMLElement | null>(document.body), '.ag-modal-layer',
   }
 }
 
-.ag-range-label { padding-left: 12px; color: var(--color-text-tertiary); white-space: nowrap; font-size: var(--text-xs, 12px); }
-.ag-range-input { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
-.ag-range-input input { border: 0; padding-inline: 4px; box-shadow: none; }
 </style>

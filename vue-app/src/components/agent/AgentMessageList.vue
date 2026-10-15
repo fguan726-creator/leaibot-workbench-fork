@@ -1,5 +1,5 @@
 <template>
-  <div class="ai-messages" id="ai-messages" ref="messagesEl">
+  <div class="ai-messages" id="ai-messages" ref="messagesEl" @scroll.passive="onMessagesScroll">
     <template v-if="showWelcome">
       <div class="ai-msg assistant ai-welcome-msg">
         <div class="bubble ai-message-bubble">
@@ -30,106 +30,114 @@
       </div>
     </template>
 
-    <template v-if="messages.length">
-      <div
-        v-for="(msg, idx) in messages"
-        :key="msg.id || `${msg.role}-${msg.at}-${idx}`"
-        :data-agent-message-index="idx"
-        class="ai-msg"
-        :class="[msg.role, {
-          'ai-structured-msg': isStructuredMessage(msg),
-          'ai-has-external-state': hasExternalState(msg),
-          'ai-typewriter-msg': isTypewriterMessage(msg),
-          'ai-typewriter-done': isTypewriterDone(msg, idx)
-        }]"
-      >
-        <AgentConversationStates v-if="hasExternalState(msg)" :items="msg.activityItems || []" />
+    <template v-for="group in messageGroups" :key="group.key">
+      <div v-if="groupProcessItems(group).length" class="ai-msg assistant ai-state-row">
+        <AgentConversationStates
+          presentation="cards" :items="groupProcessItems(group)"
+          :cards-expanded="processExpanded[processKey(group)] ?? false" :card-expanded="processCardsExpanded[processKey(group)] || {}"
+          @update:cards-expanded="processExpanded[processKey(group)] = $event" @update:card-expanded="processCardsExpanded[processKey(group)] = $event"
+        />
+      </div>
+      <div class="ai-msg" :class="[group.role, { 'ai-merged-reply': group.role === 'assistant', 'ai-structured-msg': group.parts.some(part => isStructuredMessage(part.msg)) }]">
         <div class="bubble ai-message-bubble">
-          <div v-html="renderMsg(msg, idx)"></div>
-          <AgentTaskCard
-            v-if="msg.task && canShowStructuredContent(msg, idx)"
-            :task="msg.task"
-            @decision="forwardTaskDecision"
-          />
-          <details v-else-if="msg.authRequest && canShowStructuredContent(msg, idx)" class="ai-legacy-authorization">
-            <summary>
-              <b>{{ msg.authRequest.title }}</b>
-              <span>{{ msg.authResult ? (msg.authResult.status === 'approved' ? '历史已授权' : '历史已拒绝') : '请求已过期' }}</span>
-            </summary>
-            <p v-if="!msg.authResult">这是历史请求，已失效；如需继续，请重新发起任务。</p>
-            <p v-else>历史授权记录仅供查看，不会重新执行。</p>
-            <p v-if="msg.authResult?.detail">{{ msg.authResult.detail }}</p>
-            <dl>
-              <div><dt>授权内容</dt><dd>{{ msg.authRequest.summary || msg.authRequest.detail }}</dd></div>
-              <div><dt>授权范围</dt><dd>{{ msg.authRequest.scope || '原任务范围' }}</dd></div>
-              <div><dt>影响说明</dt><dd>{{ msg.authRequest.impact || msg.authRequest.detail }}</dd></div>
-            </dl>
-          </details>
-          <div v-if="msg.artifacts?.length && canShowStructuredContent(msg, idx)" class="ai-report-artifact-list">
-            <div v-for="reportId in msg.artifacts" :key="reportId" class="ai-result-card">
-              <div class="ai-result-card-head">
-                <span class="ai-result-icon" aria-hidden="true">
-                  <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h5l3 3v11H6z"/><path d="M11 3v3h3M8 10h4M8 13h5"/></svg>
-                </span>
-                <div>
-                  <b>{{ reportDisplayTitle(reportId) }}</b>
-                  <em>可展开为临时页签，多开对比</em>
+          <div
+            v-for="{ msg, idx } in group.parts" :key="msg.id || `${msg.role}-${msg.at}-${idx}`" :data-agent-message-index="idx" class="ai-answer-part"
+            :class="{ 'ai-structured-msg': isStructuredMessage(msg), 'ai-typewriter-msg': isTypewriterMessage(msg), 'ai-typewriter-done': isTypewriterDone(msg, idx) }"
+          >
+            <div class="ai-answer-body" v-html="renderMsg(msg, idx)"></div>
+            <AgentTaskCard
+              v-if="msg.task && canShowStructuredContent(msg, idx)"
+              :task="msg.task"
+              @decision="forwardTaskDecision"
+            />
+            <details v-else-if="msg.authRequest && canShowStructuredContent(msg, idx)" class="ai-legacy-authorization">
+              <summary>
+                <b>{{ msg.authRequest.title }}</b>
+                <span>{{ msg.authResult ? (msg.authResult.status === 'approved' ? '历史已授权' : '历史已拒绝') : '请求已过期' }}</span>
+              </summary>
+              <p v-if="!msg.authResult">这是历史请求，已失效；如需继续，请重新发起任务。</p>
+              <p v-else>历史授权记录仅供查看，不会重新执行。</p>
+              <p v-if="msg.authResult?.detail">{{ msg.authResult.detail }}</p>
+              <dl>
+                <div><dt>授权内容</dt><dd>{{ msg.authRequest.summary || msg.authRequest.detail }}</dd></div>
+                <div><dt>授权范围</dt><dd>{{ msg.authRequest.scope || '原任务范围' }}</dd></div>
+                <div><dt>影响说明</dt><dd>{{ msg.authRequest.impact || msg.authRequest.detail }}</dd></div>
+              </dl>
+            </details>
+            <div v-if="msg.artifacts?.length && canShowStructuredContent(msg, idx)" class="ai-report-artifact-list">
+              <div v-for="reportId in msg.artifacts" :key="reportId" class="ai-result-card">
+                <div class="ai-result-card-head">
+                  <span class="ai-result-icon" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h5l3 3v11H6z"/><path d="M11 3v3h3M8 10h4M8 13h5"/></svg>
+                  </span>
+                  <div>
+                    <b>{{ reportDisplayTitle(reportId) }}</b>
+                    <em>可展开为临时页签，多开对比</em>
+                  </div>
+                </div>
+                <p>{{ reportArtifact(reportId)?.summary }}</p>
+                <div class="ai-result-card-foot">
+                  <span class="ai-result-tags">
+                    <span v-for="chip in reportChips(reportId)" :key="chip">{{ chip }}</span>
+                  </span>
+                  <button type="button" class="secondary" @click="$emit('download-report', reportId)">下载</button>
+                  <button type="button" @click="$emit('open-report', reportId)">展开报告</button>
                 </div>
               </div>
-              <p>{{ reportArtifact(reportId)?.summary }}</p>
-              <div class="ai-result-card-foot">
-                <span class="ai-result-tags">
-                  <span v-for="chip in reportChips(reportId)" :key="chip">{{ chip }}</span>
-                </span>
-                <button type="button" class="secondary" @click="$emit('download-report', reportId)">下载</button>
-                <button type="button" @click="$emit('open-report', reportId)">展开报告</button>
+            </div>
+            <div v-if="msg.actionItems?.length && canShowStructuredContent(msg, idx)" class="ai-task-actions">
+              <div class="ai-task-actions-title">可继续执行</div>
+              <div class="ai-task-actions-row">
+                <button
+                  v-for="item in msg.actionItems"
+                  :key="`${item.type}-${item.label}`"
+                  type="button"
+                  class="ai-task-btn"
+                  @click="$emit('run-action', item)"
+                >
+                  {{ item.label }}
+                </button>
               </div>
             </div>
-          </div>
-          <div v-if="msg.actionItems?.length && canShowStructuredContent(msg, idx)" class="ai-task-actions">
-            <div class="ai-task-actions-title">可继续执行</div>
-            <div class="ai-task-actions-row">
+            <div v-if="shouldShowFeedback(msg, idx)" class="ai-reply-feedback" aria-label="回答反馈">
               <button
-                v-for="item in msg.actionItems"
-                :key="`${item.type}-${item.label}`"
                 type="button"
-                class="ai-task-btn"
-                @click="$emit('run-action', item)"
+                class="ai-feedback-btn"
+                :class="{ active: feedbackState(feedbackKey(msg, idx)) === 'up' }"
+                title="有帮助"
+                aria-label="有帮助"
+                :aria-pressed="feedbackState(feedbackKey(msg, idx)) === 'up'"
+                @click="setFeedback(msg, idx, 'up')"
               >
-                {{ item.label }}
+                <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.3v8.2"/><path d="M3.5 8.8h3v7.4h-3a1 1 0 0 1-1-1V9.8a1 1 0 0 1 1-1Z"/><path d="M6.5 9 10 3.8c.5-.7 1.6-.4 1.6.5v3h3.2a1.6 1.6 0 0 1 1.6 1.9l-1 5.5a2 2 0 0 1-2 1.6H6.5"/></svg>
+              </button>
+              <button
+                type="button"
+                class="ai-feedback-btn"
+                :class="{ active: feedbackState(feedbackKey(msg, idx)) === 'down' }"
+                title="没帮助"
+                aria-label="没帮助"
+                :aria-pressed="feedbackState(feedbackKey(msg, idx)) === 'down'"
+                @click="setFeedback(msg, idx, 'down')"
+              >
+                <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 11.7V3.5"/><path d="M16.5 11.2h-3V3.8h3a1 1 0 0 1 1 1v5.4a1 1 0 0 1-1 1Z"/><path d="M13.5 11 10 16.2c-.5.7-1.6.4-1.6-.5v-3H5.2a1.6 1.6 0 0 1-1.6-1.9l1-5.5a2 2 0 0 1 2-1.6h6.9"/></svg>
               </button>
             </div>
+            <time class="time ai-message-time" :datetime="messageTime(msg).datetime">
+              {{ messageTime(msg).label }}
+            </time>
           </div>
-          <div v-if="shouldShowFeedback(msg, idx)" class="ai-reply-feedback" aria-label="回答反馈">
-            <button
-              type="button"
-              class="ai-feedback-btn"
-              :class="{ active: feedbackState(feedbackKey(msg, idx)) === 'up' }"
-              title="有帮助"
-              aria-label="有帮助"
-              :aria-pressed="feedbackState(feedbackKey(msg, idx)) === 'up'"
-              @click="setFeedback(msg, idx, 'up')"
-            >
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 8.3v8.2"/><path d="M3.5 8.8h3v7.4h-3a1 1 0 0 1-1-1V9.8a1 1 0 0 1 1-1Z"/><path d="M6.5 9 10 3.8c.5-.7 1.6-.4 1.6.5v3h3.2a1.6 1.6 0 0 1 1.6 1.9l-1 5.5a2 2 0 0 1-2 1.6H6.5"/></svg>
-            </button>
-            <button
-              type="button"
-              class="ai-feedback-btn"
-              :class="{ active: feedbackState(feedbackKey(msg, idx)) === 'down' }"
-              title="没帮助"
-              aria-label="没帮助"
-              :aria-pressed="feedbackState(feedbackKey(msg, idx)) === 'down'"
-              @click="setFeedback(msg, idx, 'down')"
-            >
-              <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 11.7V3.5"/><path d="M16.5 11.2h-3V3.8h3a1 1 0 0 1 1 1v5.4a1 1 0 0 1-1 1Z"/><path d="M13.5 11 10 16.2c-.5.7-1.6.4-1.6-.5v-3H5.2a1.6 1.6 0 0 1-1.6-1.9l1-5.5a2 2 0 0 1 2-1.6h6.9"/></svg>
-            </button>
-          </div>
-          <time class="time ai-message-time" :datetime="messageTime(msg).datetime">
-            {{ messageTime(msg).label }}
-          </time>
         </div>
       </div>
     </template>
+
+    <div v-if="liveWithoutReply" class="ai-msg assistant ai-state-row">
+      <AgentConversationStates
+        presentation="cards" :items="activityItems"
+        :cards-expanded="processExpanded[liveProcessKey] ?? false" :card-expanded="processCardsExpanded[liveProcessKey] || {}"
+        @update:cards-expanded="processExpanded[liveProcessKey] = $event" @update:card-expanded="processCardsExpanded[liveProcessKey] = $event"
+      />
+    </div>
 
     <div v-if="shouldShowLatestTodo" class="ai-msg assistant ai-todo-bubble-row">
       <div class="ai-todo-list-block" :class="{ 'is-complete': isTodoComplete }">
@@ -160,15 +168,10 @@
       </div>
     </div>
 
-    <div v-if="loading && !activityItems.length" class="ai-msg assistant ai-typing-row">
-      <div class="bubble ai-typing-bubble" role="status" aria-live="polite">
-        <span class="ai-typing-orb" aria-hidden="true"></span>
-        <span class="ai-typing-label">正在整理上下文</span>
-        <span class="ai-typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-      </div>
-    </div>
-    <div v-if="loading && activityItems.length" class="ai-msg assistant ai-state-row">
-      <AgentConversationStates :items="activityItems" />
+    <div v-if="currentExecution" class="ai-execution-row" role="status" aria-live="polite" aria-atomic="true">
+      <AgentActivityIcon :name="currentExecution.icon" />
+      <span class="ai-current-execution-text">{{ currentExecution.label }}</span>
+      <span class="ai-execution-dots" aria-hidden="true"><i></i><i></i><i></i></span>
     </div>
   </div>
 </template>
@@ -176,6 +179,8 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import AgentConversationStates from '@/components/agent/AgentConversationStates.vue'
+import AgentActivityIcon from '@/components/agent/AgentActivityIcon.vue'
+import { groupAgentReplies, collectAgentProcessItems, currentAgentExecutionState, currentAgentTaskExecutionState } from '@/utils/agentProcess'
 import AgentTaskCard from '@/components/agent/AgentTaskCard.vue'
 import { AI_REPORT_ARTIFACTS } from '@/stores/ai'
 import { getPageLabel } from '@/stores/app'
@@ -198,6 +203,48 @@ function forwardTaskDecision(decision) {
 }
 
 const messagesEl = ref(null)
+const followLatest = ref(true)
+const processExpanded = reactive({})
+const processCardsExpanded = reactive({})
+const messageGroups = computed(() => groupAgentReplies(props.messages))
+const liveProcessKey = computed(() => {
+  const index = props.messages.findLastIndex(message => message.role === 'user')
+  return props.messages[index]?.id || `user-${index}`
+})
+const liveReplyGroup = computed(() => {
+  const group = messageGroups.value.at(-1)
+  return group?.role === 'assistant' ? group : null
+})
+const liveWithoutReply = computed(() => props.loading && props.activityItems.length && !liveReplyGroup.value)
+function processKey(group) { return group.turn || group.key }
+function groupProcessItems(group) {
+  if (group.role !== 'assistant') return []
+  return collectAgentProcessItems(group.parts, props.loading && group === liveReplyGroup.value ? props.activityItems : [])
+}
+function onMessagesScroll() {
+  const el = messagesEl.value
+  if (el) followLatest.value = el.scrollHeight - el.scrollTop - el.clientHeight < 48
+}
+const executionClock = ref(Date.now())
+let executionTimer
+const currentExecution = computed(() => {
+  if (props.loading) return currentAgentExecutionState(props.activityItems, true)
+  const latest = props.messages.at(-1)
+  const taskState = currentAgentTaskExecutionState(latest?.task, executionClock.value)
+  if (taskState) return taskState
+  if (latest && isTypewriterMessage(latest) && !isTypewriterDone(latest, props.messages.length - 1)) return { label: '正在输出回答', icon: 'write' }
+  return null
+})
+watch(() => props.messages.at(-1)?.task, task => {
+  clearInterval(executionTimer)
+  executionClock.value = Date.now()
+  if (typeof window !== 'undefined' && task?.expiresAt > executionClock.value && task.requests?.some(request => ['running', 'approved'].includes(request.status))) {
+    executionTimer = setInterval(() => {
+      executionClock.value = Date.now()
+      if (executionClock.value >= task.expiresAt) clearInterval(executionTimer)
+    }, 1000)
+  }
+}, { deep: true, immediate: true })
 const typewriterText = reactive({})
 const typewriterDone = reactive({})
 const messageFeedback = reactive({})
@@ -222,7 +269,7 @@ const isTodoComplete = computed(() => Boolean(latestTodoList.value && latestTodo
 function scrollToBottom() {
   nextTick(() => {
     const el = messagesEl.value
-    if (!el) return
+    if (!el || !followLatest.value) return
     const latestIndex = props.messages.length - 1
     const task = props.messages[latestIndex]?.task
     if (task?.expiresAt > Date.now() && task.requests?.some(request => request.status === 'pending')) {
@@ -243,6 +290,7 @@ function scrollToBottom() {
 
 watch(() => props.messages, scrollToBottom, { deep: true })
 watch(() => props.loading, scrollToBottom)
+watch(liveProcessKey, () => { followLatest.value = true; scrollToBottom() })
 watch(() => props.messages, syncTypewriterMessages, { deep: true, immediate: true })
 watch(() => props.messages, (next, previous) => {
   if (next !== previous && !next.length) welcomeAt.value = new Date().toISOString()
@@ -250,6 +298,7 @@ watch(() => props.messages, (next, previous) => {
 watch(isTodoComplete, complete => { todoExpanded.value = !complete }, { immediate: true })
 
 onBeforeUnmount(() => {
+  clearInterval(executionTimer)
   typewriterTimers.forEach(timer => clearInterval(timer))
   typewriterTimers.clear()
 })
@@ -261,10 +310,6 @@ function renderMsg(msg, idx) {
   const visibleText = stripSeedDebugBlocks(text)
   if (msg.role === 'assistant') return renderMarkdown(visibleText)
   return escapeHtml(stripSeedDebugBlocks(msg.text))
-}
-
-function hasExternalState(msg) {
-  return Boolean(!msg?.task && !msg?.authRequest && msg?.activityItems?.length)
 }
 
 function isTypewriterMessage(msg) {
@@ -481,17 +526,28 @@ function renderMarkdownTable(lines, startIndex) {
 </script>
 
 <style lang="scss" scoped>
+.ai-execution-row { display: flex; align-items: center; gap: var(--space-2, 8px); margin-top: var(--space-1, 4px); padding-block: var(--space-2, 8px); padding-inline: 0; min-width: 0; color: color-mix(in srgb, var(--color-text-secondary) 70%, var(--color-text-tertiary)); font-size: var(--text-md, 14px); font-weight: 400; line-height: var(--line-height-sm, 20px); }
+.ai-current-execution-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ai-execution-row :deep(.agent-activity-icon) { width: var(--icon-sm, 16px); height: var(--icon-sm, 16px); flex: 0 0 var(--icon-sm, 16px); }
+@media (forced-colors: active) {
+  .ai-execution-row { color: CanvasText; }
+}
+.ai-messages { --agent-message-space-1: 1px; --agent-message-space-2: 2px; --agent-message-space-6: 6px; --agent-message-space-9: 9px; --agent-message-space-10: 10px; }
+
+
 .ai-message-bubble {
   position: relative;
   margin-bottom: 20px;
 }
+.ai-merged-reply > .bubble { width: 100%; max-width: 100% !important; }
+.ai-answer-part + .ai-answer-part { margin-top: var(--space-3, 12px); padding-top: var(--space-3, 12px); border-top: 1px solid var(--color-border-subtle); }
 
 .ai-message-time {
   position: absolute;
   top: 100%;
   margin-top: 4px;
-  color: var(--text-tertiary, #8f959e);
-  font-size: 10px;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption, 11px);
   font-variant-numeric: tabular-nums;
   line-height: 16px;
   white-space: nowrap;
@@ -508,49 +564,29 @@ function renderMarkdownTable(lines, startIndex) {
 }
 
 .ai-todo-card {
-  border: 1px solid rgba(31, 35, 41, .1);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 8px;
-  background: #fff;
-  color: var(--color-text, #1f2329);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .ai-msg > .conversation-states {
-  max-width: min(92%, 340px);
-  margin: 0 0 6px;
-}
-
-.ai-msg.ai-has-external-state {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-}
-
-.ai-msg.ai-has-external-state > .conversation-states {
-  width: 100%;
   max-width: 100%;
-  margin-bottom: 8px;
+  margin: 0 0 var(--agent-message-space-6);
 }
 
-.ai-msg.assistant.ai-has-external-state > .bubble {
-  width: 100%;
-  max-width: 100% !important;
-}
 
-.ai-msg.assistant.ai-has-external-state > .conversation-states {
-  margin-left: 0;
-}
 
-.ai-msg.user.ai-has-external-state > .conversation-states {
-  margin-left: auto;
-}
+
+
 
 :deep(.ai-markdown-table-wrap) {
   width: 100%;
-  margin: 10px 0;
+  margin: var(--agent-message-space-10) 0;
   overflow-x: auto;
-  border: 1px solid var(--color-border, #e5e8ef);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--color-surface, #fff);
+  background: var(--color-surface);
   scrollbar-width: thin;
 }
 
@@ -558,16 +594,16 @@ function renderMarkdownTable(lines, startIndex) {
   width: 100%;
   min-width: 420px;
   border-collapse: collapse;
-  color: var(--color-text, #1f2329);
+  color: var(--color-text);
   font-size: 12px;
   line-height: 1.5;
 }
 
 :deep(.ai-markdown-table th),
 :deep(.ai-markdown-table td) {
-  padding: 8px 10px;
-  border-right: 1px solid var(--color-border, #e5e8ef);
-  border-bottom: 1px solid var(--color-border, #e5e8ef);
+  padding: 8px var(--agent-message-space-10);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
@@ -575,21 +611,21 @@ function renderMarkdownTable(lines, startIndex) {
 }
 
 :deep(.ai-markdown-table th) {
-  background: var(--color-bg-muted, #f5f7fa);
-  color: var(--color-text-secondary, #4e5969);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
   font-weight: 650;
 }
 
 :deep(.ai-markdown-table td) {
-  color: var(--color-text, #1f2329);
+  color: var(--color-text);
 }
 
 :deep(.ai-markdown-table tbody tr:nth-child(even) td) {
-  background: rgba(31, 35, 41, .018);
+  background: color-mix(in srgb, var(--color-text) 1.8%, transparent);
 }
 
 :deep(.ai-markdown-table tbody tr:hover td) {
-  background: rgba(51, 112, 255, .055);
+  background: color-mix(in srgb, var(--color-primary) 5.5%, transparent);
 }
 
 :deep(.ai-markdown-table th:last-child),
@@ -605,17 +641,17 @@ function renderMarkdownTable(lines, startIndex) {
 :deep(.ai-markdown-table .is-right) { text-align: right; }
 
 :global(body.dark-mode) :deep(.ai-markdown-table-wrap) {
-  border-color: var(--color-border-subtle, #3a3d45);
-  background: var(--color-surface, #25272d);
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface);
 }
 
 :global(body.dark-mode) :deep(.ai-markdown-table th) {
-  background: var(--color-bg-muted, #2d3037);
-  color: var(--color-text-secondary, #b8bdc7);
+  background: var(--color-surface-subtle);
+  color: var(--color-text-secondary);
 }
 
 :global(body.dark-mode) :deep(.ai-markdown-table td) {
-  color: var(--color-text, #f2f3f5);
+  color: var(--color-text);
 }
 
 .ai-todo-card {
@@ -625,7 +661,7 @@ function renderMarkdownTable(lines, startIndex) {
 .ai-todo-list-block {
   width: 100%;
   margin-top: 8px;
-  padding: 2px 2px 0;
+  padding: var(--agent-message-space-2) var(--agent-message-space-2) 0;
   animation: ai-card-soft-enter .22s ease both;
 }
 
@@ -636,7 +672,7 @@ function renderMarkdownTable(lines, startIndex) {
 }
 
 .ai-todo-list-block.is-complete {
-  color: var(--color-primary, #3370ff);
+  color: var(--color-primary);
 }
 
 .ai-todo-head {
@@ -646,7 +682,7 @@ function renderMarkdownTable(lines, startIndex) {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 10px;
+  padding-bottom: var(--agent-message-space-10);
   border-bottom: 1px solid rgba(31, 35, 41, .08);
   border-top: 0;
   border-right: 0;
@@ -657,11 +693,11 @@ function renderMarkdownTable(lines, startIndex) {
   cursor: pointer;
 }
 
-.ai-todo-summary { display: inline-flex; align-items: center; gap: 6px; }
+.ai-todo-summary { display: inline-flex; align-items: center; gap: var(--agent-message-space-6); }
 .ai-todo-toggle-icon { transition: transform .16s ease; }
 .ai-todo-toggle-icon.is-collapsed { transform: rotate(180deg); }
-.ai-todo-list-block.is-complete .ai-todo-orb { position: relative; border-color: var(--color-primary, #3370ff); background: var(--color-primary, #3370ff); }
-.ai-todo-list-block.is-complete .ai-todo-orb::after { content: ''; position: absolute; left: 4px; top: 2px; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.ai-todo-list-block.is-complete .ai-todo-orb { position: relative; border-color: var(--color-primary); background: var(--color-primary); }
+.ai-todo-list-block.is-complete .ai-todo-orb::after { content: ''; position: absolute; left: 4px; top: 2px; width: 4px; height: 8px; border: solid var(--color-surface); border-width: 0 2px 2px 0; transform: rotate(45deg); }
 
 .ai-todo-title {
   min-width: 0;
@@ -682,21 +718,21 @@ function renderMarkdownTable(lines, startIndex) {
   height: 16px;
   flex: 0 0 auto;
   border: 3px solid rgba(51, 112, 255, .18);
-  border-top-color: var(--color-primary, #3370ff);
-  border-radius: 999px;
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-pill, 9999px);
 }
 
 .ai-todo-progress {
   flex: 0 0 auto;
-  color: var(--color-text-secondary, #646a73);
+  color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.4;
 }
 
 .ai-todo-list {
   display: grid;
-  gap: 9px;
-  padding-top: 10px;
+  gap: var(--agent-message-space-9);
+  padding-top: var(--agent-message-space-10);
 }
 
 .ai-todo-item {
@@ -705,7 +741,7 @@ function renderMarkdownTable(lines, startIndex) {
   grid-template-columns: 18px minmax(0, 1fr);
   align-items: start;
   gap: 8px;
-  color: var(--color-text-secondary, #646a73);
+  color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -718,31 +754,31 @@ function renderMarkdownTable(lines, startIndex) {
 .todo-status {
   width: 16px;
   height: 16px;
-  margin-top: 1px;
+  margin-top: var(--agent-message-space-1);
   border: 2px solid rgba(31, 35, 41, .22);
-  border-radius: 999px;
-  background: #fff;
+  border-radius: var(--radius-pill, 9999px);
+  background: var(--color-surface);
 }
 
 .ai-todo-item.is-done {
-  color: var(--color-text, #1f2329);
+  color: var(--color-text);
 }
 
 .ai-todo-item.is-done .todo-status {
-  border-color: var(--color-primary, #3370ff);
+  border-color: var(--color-primary);
   background:
-    linear-gradient(45deg, transparent 48%, #fff 49% 56%, transparent 57%) 5px 7px / 8px 5px no-repeat,
-    var(--color-primary, #3370ff);
+    linear-gradient(45deg, transparent 48%, var(--color-surface) 49% 56%, transparent 57%) 5px 7px / 8px 5px no-repeat,
+    var(--color-primary);
 }
 
 .ai-todo-item.is-running {
-  color: var(--color-text, #1f2329);
+  color: var(--color-text);
 }
 
 .ai-todo-item.is-running .todo-status {
-  border-color: rgba(51, 112, 255, .22);
-  box-shadow: inset 0 0 0 3px #fff;
-  background: var(--color-primary, #3370ff);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  box-shadow: inset 0 0 0 3px var(--color-surface);
+  background: var(--color-primary);
 }
 
 .ai-legacy-authorization { min-width: 0; margin-top: 12px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text); }
@@ -757,7 +793,7 @@ function renderMarkdownTable(lines, startIndex) {
 .ai-reply-feedback {
   display: flex;
   gap: 4px;
-  margin-top: 10px;
+  margin-top: var(--agent-message-space-10);
 }
 
 .ai-feedback-btn {
@@ -767,32 +803,32 @@ function renderMarkdownTable(lines, startIndex) {
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-md, 8px);
   background: transparent;
-  color: var(--color-text-tertiary, #8f959e);
+  color: var(--color-text-tertiary);
   cursor: pointer;
 }
 
 .ai-feedback-btn:hover,
 .ai-feedback-btn.active {
-  border-color: rgba(51, 112, 255, .22);
-  background: rgba(51, 112, 255, .08);
-  color: var(--color-primary, #3370ff);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
 }
 
-.ai-typewriter-msg .bubble > div:first-child::after {
+.ai-typewriter-msg > .ai-answer-body::after {
   content: '';
   display: inline-block;
   width: 6px;
   height: 1em;
-  margin-left: 2px;
+  margin-left: var(--agent-message-space-2);
   vertical-align: -2px;
-  border-radius: 2px;
+  border-radius: var(--agent-message-space-2);
   background: currentColor;
   animation: ai-typewriter-cursor .9s steps(2, jump-none) infinite;
 }
 
-.ai-typewriter-done .bubble > div:first-child::after {
+.ai-typewriter-done > .ai-answer-body::after {
   content: none;
 }
 
@@ -819,4 +855,14 @@ function renderMarkdownTable(lines, startIndex) {
     transform: translateY(0);
   }
 }
+
+.ai-merged-reply > .ai-message-bubble { min-width: 0; box-sizing: border-box; }
+.ai-answer-part, .ai-answer-body { min-width: 0; overflow-wrap: anywhere; }
+.ai-merged-reply .ai-message-time { position: static; display: block; margin-top: var(--space-1, 4px); text-align: right; }
+.ai-execution-dots { display: inline-flex; gap: var(--space-1, 4px); flex: 0 0 auto; }
+.ai-execution-dots i { width: var(--space-1, 4px); height: var(--space-1, 4px); border-radius: var(--radius-pill, 9999px); background: currentColor; animation: ai-execution-pulse 1s ease-in-out infinite; }
+.ai-execution-dots i:nth-child(2) { animation-delay: .14s; }
+.ai-execution-dots i:nth-child(3) { animation-delay: .28s; }
+@keyframes ai-execution-pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .ai-execution-dots i, .ai-typewriter-msg > .ai-answer-body::after { animation: none; } }
 </style>
