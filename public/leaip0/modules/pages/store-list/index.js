@@ -2,11 +2,27 @@
 if (!window.__p0Modules.installed["pages/store-list"]) {
 window.__p0Modules.installed["pages/store-list"]=true;
 
+/* store-business-status-v72-20261015 */
+window.__p0StoreBusinessState = function (hours) {
+  var match = String(hours || "").match(/(\d{1,2}):(\d{2})\s*[-–—~至]\s*(\d{1,2}):(\d{2})/);
+  if (!match) return { open: true, label: "营业中" };
+  var parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+  var minute = Number(parts.find(function (part) { return part.type === "hour"; }).value) * 60 + Number(parts.find(function (part) { return part.type === "minute"; }).value);
+  var start = Number(match[1]) * 60 + Number(match[2]);
+  var end = Number(match[3]) * 60 + Number(match[4]);
+  var open = start <= end ? minute >= start && minute < end : minute >= start || minute < end;
+  return { open: open, label: open ? "营业中" : "已打烊" };
+};
+window.__p0StoreBusinessBadge = function (hours) {
+  var state = window.__p0StoreBusinessState(hours);
+  return '<span class="lx-store-status ' + (state.open ? 'is-open' : 'is-closed') + '">' + state.label + '</span>';
+};
+
 /* Business: storeListItem */
 window.__p0Modules.factories["pages/store-list#storeListItem:6c9eb8de266f0472d3514f34"]=function(__p0Scope){"use strict";return (function storeListItem(store, activeId, displayIndex) {
           return '<button class="lx-store-list-item' + (store.id === activeId ? ' is-active' : '') + '" type="button" data-store-id="' + store.id + '" aria-pressed="' + (store.id === activeId) + '">' +
             '<span class="lx-store-list-name"><span class="lx-store-list-index">' + (displayIndex || store.id) + '</span><b>' + store.name + '</b><span class="lx-store-distance">' + store.distance + '</span></span>' +
-            '<span class="lx-store-list-meta"><span class="lx-store-open">营业中</span><span>' + store.hours + '</span><span class="lx-store-type-badge">' + store.type + '</span><span class="lx-store-badge">' + store.tag + '</span></span>' +
+            '<span class="lx-store-list-meta">' + window.__p0StoreBusinessBadge(store.hours) + '<span>' + store.hours + '</span><span class="lx-store-type-badge">' + store.type + '</span><span class="lx-store-badge">' + store.tag + '</span></span>' +
           '</button>';
         }); };
 

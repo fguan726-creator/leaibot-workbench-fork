@@ -1077,7 +1077,13 @@ body.lx-template-file .lxfd-nav-cluster:not(.open) {
         font-weight: 600;
       }
     </style>
-  </head>
+<style id="store-business-status-v72-20261015">
+.lx-store-skin .hours .lx-store-status{display:inline-flex;align-items:center;gap:5px;flex:none;padding:2px 7px;border:0;border-radius:999px;background:#faf8fc;font-size:12px;font-weight:500;line-height:18px;white-space:nowrap;vertical-align:middle}
+.lx-store-skin .hours .lx-store-status::before{content:"";width:5px;height:5px;flex:none;border-radius:50%;background:currentColor}
+.lx-store-skin .hours .lx-store-status.is-open{color:#18be65}
+.lx-store-skin .hours .lx-store-status.is-closed{color:#5b1452}
+</style>
+</head>
   <body data-page="personal" data-state="default">
     <script>
       if (document.documentElement.classList.contains("lx-root-lxfd-prepaint")) {
@@ -10461,7 +10467,7 @@ async function openEduZone() {
         function lxFallbackStores() {
           return [
             { name: "联想体验店(北京市房山区良乡苏庄店)", address: "北京市房山区苏庄大街建鑫园三里", distance: 8700, hours: "10:00–20:00", tel: "15313378937", tags: ["优先体验", "贴膜安装", "以旧换新"], lat: 39.724, lng: 116.139 },
-            { name: "联想3C服务中心(良乡店)", address: "北京市房山区苏庄北路苏庄东街小区", distance: 9300, hours: "10:00–20:00", tel: "(010)89374140", tags: ["优先体验", "贴膜安装", "以旧换新"], lat: 39.727, lng: 116.135 },
+            { name: "联想3C服务中心(良乡店)", address: "北京市房山区苏庄北路苏庄东街小区", distance: 9300, hours: "00:00–00:01", tel: "(010)89374140", tags: ["优先体验", "贴膜安装", "以旧换新"], lat: 39.727, lng: 116.135 },
             { name: "联想体验店(房山熙悦天街店)", address: "北京市房山区良乡东路与长于大街交汇处北侧首开龙湖北京熙悦天街A馆B1", distance: 12800, hours: "10:00–20:00", tel: "18519195202", tags: ["优先体验", "贴膜安装", "以旧换新"], lat: 39.743, lng: 116.175 },
           ];
         }
@@ -10474,9 +10480,11 @@ async function openEduZone() {
         function lxStoreOpenState(store) {
           const m = String(lxStoreHours(store)).match(/(\d{1,2}):(\d{2})\s*[-–—~至]\s*(\d{1,2}):(\d{2})/);
           if (!m) return { open: true, label: "营业中" };
-          const now = new Date();
-          const cur = now.getHours() * 60 + now.getMinutes();
-          const open = cur >= (+m[1]) * 60 + (+m[2]) && cur < (+m[3]) * 60 + (+m[4]);
+          const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date());
+          const cur = Number(parts.find(part => part.type === "hour").value) * 60 + Number(parts.find(part => part.type === "minute").value);
+          const start = (+m[1]) * 60 + (+m[2]);
+          const end = (+m[3]) * 60 + (+m[4]);
+          const open = start <= end ? cur >= start && cur < end : cur >= start || cur < end;
           return { open, label: open ? "营业中" : "已打烊" };
         }
         function lxStoreDistance(store) {
@@ -10501,7 +10509,7 @@ async function openEduZone() {
             <div class="head"><span class="nm">${esc(name)}</span>${dist ? `<span class="dist">${esc(dist)}</span>` : ""}</div>
             <div class="meta">
               <div class="addr">${esc(addr)}</div>
-              <div class="hours">${(() => { const st = lxStoreOpenState(store); return `<span class="od${st.open ? "" : " closed"}">${st.label}</span>`; })()}<span>${esc(lxStoreHours(store))}</span>${tel ? `<span class="tel">${esc(tel)}</span>` : ""}</div>
+              <div class="hours">${(() => { const st = lxStoreOpenState(store); return `<span class="od lx-store-status ${st.open ? "is-open" : "is-closed"}">${st.label}</span>`; })()}<span>${esc(lxStoreHours(store))}</span>${tel ? `<span class="tel">${esc(tel)}</span>` : ""}</div>
             </div>
             <div class="acts">
               <button class="btn ghost store-ghost" type="button" data-store-nav="${esc(lat + "," + lng)}" data-store-name="${esc(name)}" data-store-addr="${esc(addr)}" data-store-tel="${esc(tel)}">${lxStoreIcon("nav")}导航</button>

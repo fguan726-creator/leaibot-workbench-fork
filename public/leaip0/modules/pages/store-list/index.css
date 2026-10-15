@@ -623,6 +623,11 @@
       .lx-store-list-item p { margin: 0 0 9px; color: #979797; font-size: 11px; line-height: 1.55; }
       .lx-store-list-meta { display: flex; align-items: center; gap: 8px; color: #625b68; font-size: 11px; }
       .lx-store-open { color: #5b1452; font-weight: 600; }
+      /* store-business-status-v72-20261015 */
+      .lx-store-status { display:inline-flex;align-items:center;gap:5px;flex:none;padding:2px 7px;border:0;border-radius:999px;background:#faf8fc;font-size:12px;font-weight:500;line-height:18px;white-space:nowrap;vertical-align:middle; }
+      .lx-store-status::before { content:"";width:5px;height:5px;flex:none;border-radius:50%;background:currentColor; }
+      .lx-store-status.is-open { color:#18be65; }
+      .lx-store-status.is-closed { color:#5b1452; }
 }
 @media (-p0-part: p7b4e616413a243f27edc) {
       .lx-store-list-meta .lx-store-type-badge { max-width: 92px; margin-left: auto; padding: 3px 6px; font-size: 9px; }

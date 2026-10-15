@@ -136,6 +136,8 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
           { id: "8", name: "联想智选店（国贸商城店）", address: "北京市朝阳区建国门外大街1号国贸商城", hours: "10:00–21:30", phone: "010 6505 7788", distance: "7.7km", coupon: "以旧换新", couponTitle: "旧机回收额外补贴200元", tag: "销售门店", type: "智商务融合店", district: "朝阳区", categories: ["商用产品及方案", "Think产品"], businessScope: ["商用设备销售", "企业数字化方案", "Think产品体验", "批量采购与交付"], photos: storePhotos, sales: true, productName: "ThinkPad T14p / YOGA Air 14" }
         ];
 
+        // store-business-status-v72-20261015: short overnight test opening hours.
+        stores[1].hours = "00:00–00:01";
         var storeCoordinates = {
           "1": [116.379617, 39.917462],
           "2": [116.380832, 39.918273],
@@ -178,7 +180,7 @@ window.__p0Modules.sources["uee40d2b3eeb47a8e"]=function(){
 
         function cardMarkup(store) {
           return '<div class="lx-map-card-top"><div><div class="lx-map-card-heading"><h2>' + store.name + '</h2><span class="lx-store-type-badge">' + store.type + '</span><span class="lx-store-badge">' + store.tag + '</span></div><p class="lx-map-card-address">' + store.address + '</p></div><div class="lx-map-card-tools"><button class="lx-map-card-close" type="button" aria-label="关闭门店卡片" data-close-store-card>×</button></div></div>' +
-            '<div class="lx-map-card-meta"><span><b>营业中</b> ' + store.hours + '</span><span>电话 <b>' + store.phone + '</b></span></div>' +
+            '<div class="lx-map-card-meta"><span>营业时间 ' + store.hours + ' ' + window.__p0StoreBusinessBadge(store.hours) + '</span><span>电话 <b>' + store.phone + '</b></span></div>' +
             '<div class="lx-map-card-business"><b>业务</b>' + businessTagsMarkup(store, "lx-business-tag") + '</div>' +
             '<div class="lx-map-card-actions"><span class="lx-map-card-distance">距离 ' + store.distance + '</span></div>' +
             '<div class="lx-store-benefits-preview" aria-label="门店权益及商品，点击查看门店详情"><span class="lx-store-benefits-label">门店权益及商品</span>' +
@@ -1630,6 +1632,8 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
           { id: "8", name: "联想智选店（国贸商城店）", address: "北京市朝阳区建国门外大街1号国贸商城", hours: "10:00–21:30", phone: "010 6505 7788", distance: "7.7km", coupon: "以旧换新", couponTitle: "旧机回收额外补贴200元", tag: "销售门店", type: "智商务融合店", district: "朝阳区", categories: ["商用产品及方案", "Think产品"], businessScope: ["商用设备销售", "企业数字化方案", "Think产品体验", "批量采购与交付"], photos: storePhotos, sales: true, productName: "ThinkPad T14p / YOGA Air 14" }
         ];
 
+        // store-business-status-v72-20261015: short overnight test opening hours.
+        stores[1].hours = "00:00–00:01";
         var storeCoordinates = {
           "1": [116.379617, 39.917462],
           "2": [116.380832, 39.918273],
@@ -1672,7 +1676,7 @@ window.__p0Modules.sources["u40a2a59bfe5a4c6a"]=function(){
 
         function cardMarkup(store) {
           return '<div class="lx-map-card-top"><div><div class="lx-map-card-heading"><h2>' + store.name + '</h2><span class="lx-store-type-badge">' + store.type + '</span><span class="lx-store-badge">' + store.tag + '</span></div><p class="lx-map-card-address">' + store.address + '</p></div><div class="lx-map-card-tools"><button class="lx-map-card-close" type="button" aria-label="关闭门店卡片" data-close-store-card>×</button></div></div>' +
-            '<div class="lx-map-card-meta"><span><b>营业中</b> ' + store.hours + '</span><span>电话 <b>' + store.phone + '</b></span></div>' +
+            '<div class="lx-map-card-meta"><span>营业时间 ' + store.hours + ' ' + window.__p0StoreBusinessBadge(store.hours) + '</span><span>电话 <b>' + store.phone + '</b></span></div>' +
             '<div class="lx-map-card-business"><b>业务</b>' + businessTagsMarkup(store, "lx-business-tag") + '</div>' +
             '<div class="lx-map-card-actions"><span class="lx-map-card-distance">距离 ' + store.distance + '</span></div>' +
             '<div class="lx-store-benefits-preview" aria-label="门店权益及商品，点击查看门店详情"><span class="lx-store-benefits-label">门店权益及商品</span>' +
