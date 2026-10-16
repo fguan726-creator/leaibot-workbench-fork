@@ -8684,8 +8684,8 @@ html.lx-root-lxfd-prepaint body{overflow:hidden!important;background:#fcfaff}
 }
 
 /* Homepage legal notice stays in document flow; short windows can scroll to it. */
-html.lx-root-lxfd-prepaint body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home,
-body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home {
+html.lx-root-lxfd-prepaint body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home:not(.is-chatting),
+body.assistant-fullscreen .lxfd-stage.lxfd-gallery-home:not(.is-chatting) {
   height:auto!important;
   min-height:100vh!important;
   overflow:visible!important;
