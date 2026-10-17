@@ -82,3 +82,4 @@ public/leaip0/brand/index.html|brand-summary-v1.js|P0品牌卡片乐享摘要(�
 public/leaip0/assets/frontend/js/pages/brand/brand-summary-v1.js|__lxBrandSummaryLoaded|P0品牌卡片乐享摘要(脚本)
 public/js/app-mobile.js|window.__lxSheet|移动端底部浮层脚本
 public/index.html|app-mobile.js?v=|移动端脚本引用
+public/leaip0/modules/shared/agent-content/index.js|openReferencesDialog(trigger)|P0最新新闻参考资料统一弹窗
