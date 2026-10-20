@@ -1,6 +1,16 @@
 <template>
-  <div class="permission-page-vue">
+  <div class="permission-page-vue" :class="{ 'standalone-approval-page': standaloneApproval }">
+    <header v-if="standaloneApproval" class="standalone-approval-header">
+      <h1>邮件审批</h1>
+      <p>无需工作台账号，仅处理此链接对应的审批。POC 演示数据仅在当前浏览器保存，链接有效期 7 天。</p>
+    </header>
+    <section v-if="standaloneApproval && guestApproval.error" class="standalone-approval-error" role="alert">
+      <h2>暂时无法查看申请</h2>
+      <p>{{ guestApproval.error }}</p>
+      <button type="button" class="ghost-btn" @click="refreshGuestApproval">重新检查</button>
+    </section>
     <ContentPageHeader
+      v-if="!standaloneApproval"
       title="权限管理"
       description="按原型链路整理权限申请、审批、角色、用户、组织、数据源、功能和删除备份能力，供 POC 演示真实串联。"
     >
@@ -24,7 +34,7 @@
       </template>
     </ContentPageHeader>
 
-    <div class="permission-layout">
+    <div v-if="!standaloneApproval" class="permission-layout">
       <aside class="permission-module-rail" aria-label="权限管理菜单">
         <div class="permission-module-rail-head">
           <div class="permission-module-summary">
@@ -1412,9 +1422,9 @@
       </div>
     </div>
 
-    <div v-if="approvalWorkspace.visible && activeApproval" class="permission-modal" @click.self="closeApprovalWorkspace">
+    <div v-if="approvalWorkspace.visible && activeApproval" :class="standaloneApproval ? 'standalone-approval-content' : 'permission-modal'" @click.self="closeApprovalWorkspace">
       <div v-modal-overflow-state class="modal-panel approval-workspace-modal">
-        <button type="button" class="modal-close" @click="closeApprovalWorkspace">×</button>
+        <button v-if="!standaloneApproval" type="button" class="modal-close" @click="closeApprovalWorkspace">×</button>
         <div class="approval-workspace-head">
           <div>
             <h3>{{ approvalWorkspace.title }}</h3>
@@ -1424,31 +1434,11 @@
         </div>
 
         <div class="approval-workspace-body" data-modal-scroll-region>
-          <section v-if="activeApprovalBusinessTasks.length" class="approval-readonly-panel business-progress-panel">
-            <div class="scope-panel-head">
-              <div>
-                <b>业务负责人审批进度</b>
-                <small>{{ businessApprovalProgressText }}</small>
-              </div>
-            </div>
-            <div class="business-task-list">
-              <article v-for="task in activeApprovalBusinessTasks" :key="task.approver" :class="['business-task-card', task.status]">
-                <div>
-                  <b>{{ task.approverName || task.approver }}</b>
-                  <p>{{ task.roleNames.join('、') || '未关联角色' }}</p>
-                  <small v-if="task.organizations?.length">所属组织：{{ task.organizations.join('、') }}</small>
-                  <small v-else>所属组织待填写</small>
-                </div>
-                <span :class="['table-status', task.status === 'approved' ? 'done' : task.status === 'rejected' ? 'rejected' : 'pending']">{{ businessTaskStatusLabel(task) }}</span>
-              </article>
-            </div>
-          </section>
-
           <section class="approval-readonly-panel">
             <div class="scope-panel-head">
               <div>
                 <b>完整审批链路</b>
-                <small>侧栏只展示当前节点附近步骤，完整流转在这里查看。</small>
+                <small>{{ standaloneApproval ? '以下展示申请的完整审批流程与当前节点。' : '侧栏只展示当前节点附近步骤，完整流转在这里查看。' }}</small>
               </div>
             </div>
             <ol class="approval-full-route-list">
@@ -1520,7 +1510,7 @@
             </div>
           </section>
 
-          <section class="approval-readonly-panel approval-permission-scope-panel">
+          <section v-if="!standaloneApproval" class="approval-readonly-panel approval-permission-scope-panel">
             <div class="scope-panel-head">
               <div>
                 <b>完整权限范围</b>
@@ -1618,6 +1608,17 @@
             </div>
           </section>
 
+          <section v-if="standaloneApproval" class="approval-readonly-panel">
+            <b>处理记录</b>
+            <ol class="guest-approval-history">
+              <li v-for="(log, index) in activeApproval.approvalLogs" :key="index">
+                <b>{{ log.node }} · {{ log.operator }}</b>
+                <p>{{ approvalResultLabel(log.action) }} · {{ log.opinion }}</p>
+                <small>{{ log.time }}</small>
+              </li>
+            </ol>
+            <p v-if="!activeApproval.approvalLogs.length">暂无处理记录</p>
+          </section>
           <section v-if="approvalWorkspace.mode === 'approve'" class="approval-decision-panel">
             <div class="scope-panel-head">
               <div>
@@ -1647,9 +1648,11 @@
         </div>
 
         <div class="modal-actions sticky-actions">
-          <span v-if="approvalWorkspace.notice" class="approval-feedback">{{ approvalWorkspace.notice }}</span>
-          <button type="button" class="ghost-btn" @click="closeApprovalWorkspace">{{ approvalWorkspace.mode === 'view' ? '关闭' : '取消' }}</button>
-          <button v-if="approvalWorkspace.mode === 'approve'" type="button" class="primary-btn" @click="submitApprovalDecision">提交审批</button>
+          <span v-if="approvalWorkspace.notice" class="approval-feedback" :class="{ 'approval-feedback-error': approvalSubmitError }" :role="approvalSubmitError ? 'alert' : 'status'">{{ approvalWorkspace.notice }}</span>
+          <button v-if="!standaloneApproval && allowPreviewAuth" type="button" class="ghost-btn" @click="openApprovalMailMockTabs(activeApproval)">审批邮件演示</button>
+          <button v-if="standaloneApproval" type="button" class="ghost-btn" @click="refreshGuestApproval">刷新状态</button>
+          <button v-else type="button" class="ghost-btn" @click="closeApprovalWorkspace">{{ approvalWorkspace.mode === 'view' ? '关闭' : '取消' }}</button>
+          <button v-if="approvalWorkspace.mode === 'approve'" type="button" class="primary-btn" :disabled="approvalSubmitting" @click="submitApprovalDecision">{{ approvalSubmitting ? '提交中…' : '提交审批' }}</button>
         </div>
       </div>
     </div>
@@ -1665,8 +1668,10 @@
           </h3>
           <p>点击表单号码可查询审核状态。同时审核结果查询链接已发送至您的邮箱，请注意查收。</p>
           <p>如有疑问，请联系：<b>wusq16@lenovo.com</b>。</p>
+          <p v-if="approvalNotificationModal.notice" role="status">{{ approvalNotificationModal.notice }}</p>
         </div>
         <div class="modal-actions simple-notice-actions">
+          <button v-if="allowPreviewAuth" type="button" class="ghost-btn" @click="openApprovalMailMockTabs(submittedApproval)">审批邮件演示</button>
           <button type="button" class="ghost-btn" @click="closeApprovalNotificationModal">关闭</button>
         </div>
       </div>
@@ -2273,6 +2278,13 @@ import PermissionRolePickerModal from '@/components/permissions/PermissionRolePi
 import { createPermissionDemoRouteItems } from '@/utils/permissionDemoRoute.js'
 import { customRulesSignature, normalizeCustomDataRules, validateCustomTableRules } from '@/components/permissions/customTableAuthorization.js'
 import { detectCustomDataRoleConflicts } from '@/components/permissions/customDataRoleConflict.js'
+import { allowPreviewAuth } from '@/config/runtimeMode'
+import { APPROVAL_MAIL_ROWS_KEY, checkMailReviewAccess, ensureMailReviewGrant, readApprovalMailRows, saveApprovalMailRow } from '@/services/approvalMailReview'
+
+const props = defineProps({ standaloneApproval: { type: Boolean, default: false } })
+const approvalSubmitting = ref(false)
+const approvalSubmitError = ref(false)
+const guestApproval = reactive({ error: '', state: 'invalid' })
 
 const router = useRouter()
 
@@ -4249,11 +4261,12 @@ const approvalVisibleFilters = computed(() => approvalFilters)
 const filteredApprovals = computed(() => {
   const approverKeyword = approvalSearch.approverItcode.trim().toLowerCase()
   return approvals.value.filter((row) => {
+    const mailTicketMatched = approvalDeepLinkTicket.value === row.id && !!approvalMailRoleContext.value && approvalRowVisibleInMailContext(row)
     const statusMatched = approvalSearch.status === '全部' || approvalDisplayStatus(row) === approvalSearch.status
     const handledByApprover = (row.approvalLogs || []).some((log) => samePrincipal(log.operator, approverKeyword))
-    const approverMatched = !approverKeyword || row.approverItcode.toLowerCase().includes(approverKeyword) || handledByApprover
+    const approverMatched = mailTicketMatched || !approverKeyword || row.approverItcode.toLowerCase().includes(approverKeyword) || handledByApprover
     const handlersMatched = !approvalSearch.handlers.length || approvalSearch.handlers.some((handler) => row.handlers.some((item) => item.toLowerCase().includes(handler.toLowerCase())))
-    const demoNodeMatched = !currentDemoIdentity.value.nodeTypes.length || currentDemoIdentity.value.nodeTypes.includes(row.nodeType)
+    const demoNodeMatched = mailTicketMatched || !currentDemoIdentity.value.nodeTypes.length || currentDemoIdentity.value.nodeTypes.includes(row.nodeType)
     const mailRoleMatched = approvalRowVisibleInMailContext(row)
     return statusMatched && approverMatched && handlersMatched && demoNodeMatched && mailRoleMatched
   })
@@ -4317,7 +4330,7 @@ const activeApprovalBasicFields = computed(() => {
     ...targetFields,
     { label: '人员类型', value: row.personType === 'external' ? '外部人员' : '内部人员' },
     ...identityFields,
-    { label: '当前审批人', value: pendingBusinessApprovers(row).length ? pendingBusinessApprovers(row).join('、') : row.approverItcode },
+    { label: '当前审批人', value: row.nodeType === 'business' && pendingBusinessApprovers(row).length ? pendingBusinessApprovers(row).join('、') : row.approverItcode },
     { label: '处理人', value: row.handlers.join('、') },
     { label: '申请原因', value: row.reason || '未填写' }
   ]
@@ -4326,16 +4339,8 @@ const activeApprovalBasicFields = computed(() => {
   if (normalizeTenantList(row.businessInfo?.tenant).length) fields.push({ label: '所属租户', value: tenantListText(row.businessInfo.tenant) })
   return fields
 })
-const canEditApprovalPermission = computed(() => approvalWorkspace.mode === 'approve' && ['applicant-manager', 'target-manager'].includes(approvalWorkspace.nodeType))
+const canEditApprovalPermission = computed(() => !props.standaloneApproval && approvalWorkspace.mode === 'approve' && ['applicant-manager', 'target-manager'].includes(approvalWorkspace.nodeType))
 const canEditBusinessOwnership = computed(() => approvalWorkspace.mode === 'approve' && approvalWorkspace.nodeType === 'business')
-const activeApprovalBusinessTasks = computed(() => activeApproval.value?.businessApprovalTasks || [])
-const businessApprovalProgressText = computed(() => {
-  const tasks = activeApprovalBusinessTasks.value
-  if (!tasks.length) return '本单暂未生成业务负责人审批任务。'
-  const approved = tasks.filter((task) => task.status === 'approved').length
-  const pending = tasks.filter((task) => task.status === 'pending').map((task) => task.approver).join('、') || '无'
-  return '已通过 ' + approved + ' 人，待审批 ' + (tasks.length - approved) + ' 人：' + pending
-})
 const activeApprovalChangeSummary = computed(() => activeApproval.value?.permissionSnapshot?.changeSummary || [])
 const activeApprovalHasPermission = computed(() => activeApprovalChangeSummary.value.length > 0)
 const activeApprovalPermissionSummary = computed(() => activeApprovalChangeSummary.value.length ? activeApprovalChangeSummary.value.length + ' 类权限变更' : '未检测到权限变更内容')
@@ -6473,12 +6478,6 @@ function pendingBusinessApprovers(row) {
   return pendingBusinessTasks(row).map((task) => task.approver)
 }
 
-function businessTaskStatusLabel(task) {
-  if (task.status === 'approved') return '已通过'
-  if (task.status === 'rejected') return '已驳回'
-  return '待审批'
-}
-
 function businessOrganizationsUnion(row) {
   return [...new Set((row?.businessApprovalTasks || [])
     .filter((task) => task.status === 'approved')
@@ -6577,6 +6576,8 @@ function createApprovalRow(payload) {
   const permissionSnapshot = payload.permissionSnapshot || emptyPermissionSnapshot()
   return {
     id: payload.id,
+    approvalRevision: payload.approvalRevision || 0,
+    guestApprovalLinks: payload.guestApprovalLinks || {},
     source: payload.source || '',
     targetUserAccount: payload.targetUserAccount || '',
     proposedUserPermission: payload.proposedUserPermission ? userPermissionState(payload.proposedUserPermission) : null,
@@ -6800,11 +6801,13 @@ function resetApprovalFilters() {
 }
 
 function openApprovalWorkspace(row, mode) {
+  approvalSubmitError.value = false
   applyPermissionSnapshotToEditor(row.permissionSnapshot)
   approvalWorkspace.visible = true
   approvalWorkspace.mode = mode
   approvalWorkspace.rowId = row.id
   approvalWorkspace.nodeType = row.nodeType
+  approvalWorkspace.openedRevision = row.approvalRevision || 0
   approvalWorkspace.title = mode === 'view' ? '申请详情' : approvalDecisionTitleByNode(row.nodeType)
   approvalWorkspace.result = ''
   approvalWorkspace.opinion = ''
@@ -6826,6 +6829,7 @@ function approvalDecisionTitleByNode(nodeType) {
 }
 
 function closeApprovalWorkspace() {
+  if (props.standaloneApproval) return
   approvalWorkspace.visible = false
 }
 
@@ -6861,7 +6865,99 @@ function validateApprovalDecision() {
   return !Object.values(approvalWorkspace.errors).some(Boolean)
 }
 
-function submitApprovalDecision() {
+function guestApprovalQuery() {
+  return Object.fromEntries(['ticket', 'identity', 'approver', 'token'].map(key => [key, typeof route.query[key] === 'string' ? route.query[key] : '']))
+}
+
+function refreshGuestApproval() {
+  if (!props.standaloneApproval) return
+  try {
+    const query = guestApprovalQuery()
+    const stored = allowPreviewAuth ? readApprovalMailRows(window.localStorage).find(row => row.id === query.ticket) : undefined
+    const state = checkMailReviewAccess(stored, query, allowPreviewAuth)
+    guestApproval.state = state
+    if (state === 'invalid' || state === 'expired') {
+      approvalWorkspace.visible = false
+      guestApproval.error = state === 'expired' ? '审批链接已过期，请联系申请人重新获取。' : '链接无效、记录不存在或当前环境不支持 POC 邮件审批。请在生成邮件的同一浏览器中打开有效链接。'
+      return
+    }
+    guestApproval.error = ''
+    const existing = approvals.value.find(row => row.id === stored.id)
+    const unchanged = approvalWorkspace.visible && approvalWorkspace.rowId === stored.id && approvalWorkspace.openedRevision === (stored.approvalRevision || 0) && approvalWorkspace.mode === (state === 'ready' ? 'approve' : 'view')
+    if (unchanged) return
+    const row = createApprovalRow(stored)
+    if (existing) Object.assign(existing, row)
+    else approvals.value.unshift(row)
+    applyApprovalMailContext(query.identity, query.ticket)
+    openApprovalWorkspace(existing || row, state === 'ready' ? 'approve' : 'view')
+    approvalWorkspace.notice = state === 'ready' ? '请核对申请信息并提交审批；此入口不能修改申请权限。' : '当前节点无需您处理（尚未流转至您、已处理或申请已结束），以下信息仅供查看。'
+  } catch {
+    approvalWorkspace.visible = false
+    guestApproval.error = '审批演示记录读取失败。请恢复浏览器存储访问后重试，不会提交任何审批。'
+  }
+}
+
+function withApprovalStorageLock(operation) {
+  if (navigator.locks?.request) return navigator.locks.request('permission-approval-submit', operation)
+  // Keep the original account-based POC usable on non-secure/older browsers.
+  // Independent approval is not offered on those browsers and fails closed.
+  if (props.standaloneApproval) throw new Error('请使用本机 localhost 或 HTTPS 地址的新版浏览器进行独立审批。')
+  return operation()
+}
+
+async function submitApprovalDecision() {
+  if (approvalSubmitting.value || !activeApproval.value || approvalWorkspace.mode !== 'approve') return
+  approvalSubmitting.value = true
+  approvalSubmitError.value = false
+  try {
+    await withApprovalStorageLock(() => {
+      const row = activeApproval.value
+      const stored = readApprovalMailRows(window.localStorage).find(item => item.id === row.id)
+      if (!stored && approvalWorkspace.openedRevision > 0) throw new Error('演示记录已移除，请重新进入审批页面。')
+      if (stored && (stored.approvalRevision || 0) !== approvalWorkspace.openedRevision) {
+        Object.assign(row, createApprovalRow(stored))
+        openApprovalWorkspace(row, 'view')
+        approvalWorkspace.notice = '申请已在其他页面更新，请关闭后重新进入审批。'
+        if (props.standaloneApproval) refreshGuestApproval()
+        return
+      }
+      if (props.standaloneApproval && checkMailReviewAccess(stored, guestApprovalQuery(), allowPreviewAuth) !== 'ready') {
+        refreshGuestApproval()
+        return
+      }
+      if (row.statusKey !== 'pending' || row.nodeType !== approvalWorkspace.nodeType || (!props.standaloneApproval && !canApproveRow(row))) {
+        openApprovalWorkspace(row, 'view')
+        approvalWorkspace.notice = '当前审批节点已变化或您无权处理，请刷新状态。'
+        return
+      }
+      // Fail before mutating the workflow if browser storage is unavailable/full.
+      window.localStorage.setItem(APPROVAL_MAIL_ROWS_KEY, JSON.stringify(readApprovalMailRows(window.localStorage)))
+      const before = JSON.parse(JSON.stringify(row))
+      const beforeUsers = JSON.parse(JSON.stringify(users))
+      const beforeRecords = [...records.value]
+      try {
+        if (!commitApprovalDecision()) return
+        persistApprovalMockRow(row)
+      } catch (error) {
+        Object.assign(row, before)
+        users.splice(0, users.length, ...beforeUsers)
+        records.value = beforeRecords
+        throw error
+      }
+      if (props.standaloneApproval) {
+        refreshGuestApproval()
+        approvalWorkspace.notice = '审批已提交，当前节点处理完成。您可以关闭此页面。'
+      } else closeApprovalWorkspace()
+    })
+  } catch (error) {
+    approvalSubmitError.value = true
+    approvalWorkspace.notice = error instanceof Error ? error.message : '提交失败，请稍后重试。'
+  } finally {
+    approvalSubmitting.value = false
+  }
+}
+
+function commitApprovalDecision() {
   if (!activeApproval.value || !validateApprovalDecision()) return
   if (approvalWorkspace.result === 'agree' && canEditApprovalPermission.value && allSelectedRoleConflicts.value.length) {
     approvalWorkspace.notice = roleConflictMessage(allSelectedRoleConflicts.value)
@@ -6940,7 +7036,7 @@ function submitApprovalDecision() {
     status: 'POC 记录'
   })
   approvalWorkspace.notice = '已提交审批，列表状态已更新。'
-  closeApprovalWorkspace()
+  return true
 }
 
 function updateApprovalNode(row, nodeType, overrides = {}) {
@@ -6999,7 +7095,7 @@ function applyApprovalMailContext(role, ticket = '') {
   approvalDeepLinkTicket.value = ticket
   approvalSearch.viewer = readonlyViewer ? normalizedRole : identity.viewer
   approvalSearch.approverItcode = readonlyViewer ? '' : (ticket ? approverItcodeForMailRole(row, rawRole || normalizedRole) : identity.approverItcode)
-  approvalSearch.status = identity.key === 'requester' ? '全部' : '审批中'
+  approvalSearch.status = ticket || identity.key === 'requester' ? '全部' : '审批中'
   return true
 }
 
@@ -7229,7 +7325,8 @@ function escapeMailHtml(value) {
 }
 
 function approvalMailMockContent(mail, row) {
-  const actions = mail.actions.length
+  const guestLink = approvalGuestReviewLink(row, mail.role)
+  const actions = !guestLink && mail.actions.length
     ? `<div class="mail-actions">${mail.actions.map((action) => `<a class="${action.value === 'approve' ? 'agree' : 'reject'}" href="${escapeMailHtml(action.link)}">${escapeMailHtml(action.label)}</a>`).join('')}</div>`
     : ''
   return `<section class="mail-pane" data-mail-role="${escapeMailHtml(mail.role)}">
@@ -7249,9 +7346,10 @@ function approvalMailMockContent(mail, row) {
         <div>被申请人：${escapeMailHtml(row.target)}（${escapeMailHtml(row.targetItcode)}）</div>
       </div>
       <a class="progress-link" href="${escapeMailHtml(mail.link)}">${escapeMailHtml(mail.linkLabel || '打开链接')}</a>
+      ${guestLink ? `<div class="mail-actions"><a href="${escapeMailHtml(mail.link)}" target="_blank" rel="noopener">有账号审批</a><a href="${escapeMailHtml(guestLink)}" target="_blank" rel="noopener">无账号审批</a></div><p>演示请选择上述入口：有账号保留系统内审批；无账号进入独立页面，不修改申请权限。</p>` : ''}
       ${actions}
     </section>
-    <section class="mail-foot">这是一封 POC mock 邮件，不会真实发送。同意/驳回按钮会进入邮件审批确认页，确认后同步审批列表。</section>
+    <section class="mail-foot">这是一封 POC mock 邮件，不会真实发送。${guestLink ? '请选择有账号或无账号入口查看申请并审批；同一节点只能处理一次。' : '同意/驳回按钮会进入邮件审批确认页，确认后同步审批列表。'}</section>
   </section>`
 }
 
@@ -7314,20 +7412,43 @@ function approvalMailMockInboxHtml(row) {
 }
 function persistApprovalMockRow(row) {
   if (typeof window === 'undefined') return
-  try {
-    const key = 'leaibot-approval-mail-mock-rows'
-    const existing = JSON.parse(window.localStorage.getItem(key) || '[]').filter((item) => item.id !== row.id)
-    existing.unshift(row)
-    window.localStorage.setItem(key, JSON.stringify(existing.slice(0, 10)))
-  } catch {}
+  saveApprovalMailRow(window.localStorage, row)
 }
 
-function openApprovalMailMockTabs(row) {
+function approvalGuestReviewLink(row, role) {
+  if (!allowPreviewAuth || !navigator.locks?.request || !crypto.randomUUID) return ''
+  const grant = ensureMailReviewGrant(row, role, approverItcodeForMailRole(row, role))
+  if (!grant) return ''
+  const query = new URLSearchParams({ ticket: row.id, identity: role, approver: grant.approver, token: grant.token })
+  return `${approvalAppBaseUrl('/mail-approval/review')}?${query}`
+}
+
+async function openApprovalMailMockTabs(row) {
   if (typeof window === 'undefined') return
-  persistApprovalMockRow(row)
-  const url = window.URL.createObjectURL(new Blob([approvalMailMockInboxHtml(row)], { type: 'text/html;charset=utf-8' }))
-  window.open(url, 'approval-mail-inbox-' + row.id)
-  window.setTimeout(() => window.URL.revokeObjectURL(url), 60000)
+  let opened
+  try {
+    opened = window.open('', 'approval-mail-inbox-' + row.id)
+    if (!opened) throw new Error('浏览器已拦截模拟邮件，请允许弹出窗口后重试。')
+    await withApprovalStorageLock(() => {
+      const stored = readApprovalMailRows(window.localStorage).find(item => item.id === row.id)
+      if (stored && (stored.approvalRevision || 0) > (row.approvalRevision || 0)) {
+        Object.assign(row, createApprovalRow(stored))
+        if (approvalWorkspace.visible && approvalWorkspace.rowId === row.id) openApprovalWorkspace(row, 'view')
+      }
+      row.notificationLogs = createApprovalNotificationLogs(row)
+      const html = approvalMailMockInboxHtml(row)
+      persistApprovalMockRow(row)
+      if (approvalWorkspace.rowId === row.id) approvalWorkspace.openedRevision = row.approvalRevision
+      const url = window.URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
+      opened.location.replace(url)
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 60000)
+    })
+  } catch (error) {
+    if (opened && !opened.closed && opened.location.href === 'about:blank') opened.close()
+    approvalSubmitError.value = true
+    approvalWorkspace.notice = `模拟邮件打开失败：${error instanceof Error ? error.message : '请稍后重试'}`
+    approvalNotificationModal.notice = approvalWorkspace.notice
+  }
 }
 function closeApprovalNotificationModal() {
   approvalNotificationModal.visible = false
@@ -7467,10 +7588,27 @@ function applyMailApprovalActionToRow(row, actionRecord) {
 function syncStoredApprovalRows() {
   if (typeof window === 'undefined') return
   try {
-    const stored = JSON.parse(window.localStorage.getItem('leaibot-approval-mail-mock-rows') || '[]')
+    const stored = readApprovalMailRows(window.localStorage)
     stored.forEach((item) => {
-      if (!approvals.value.some((row) => row.id === item.id)) {
-        approvals.value.unshift(createApprovalRow(item))
+      const existing = approvals.value.find(row => row.id === item.id)
+      if (existing && (item.approvalRevision || 0) > (existing.approvalRevision || 0)) {
+        const locallyApplied = existing.userManagementApplied
+        Object.assign(existing, createApprovalRow(item))
+        if (!locallyApplied && existing.statusKey === 'done') {
+          existing.userManagementApplied = false
+          applyApprovedUserPermissionChange(existing, existing.time)
+        }
+        if (approvalWorkspace.visible && approvalWorkspace.rowId === item.id) {
+          openApprovalWorkspace(existing, 'view')
+          approvalWorkspace.notice = '申请已在其他页面更新，请关闭后重新进入审批。'
+        }
+      } else if (!existing) {
+        const row = createApprovalRow(item)
+        if (row.statusKey === 'done') {
+          row.userManagementApplied = false
+          applyApprovedUserPermissionChange(row, row.time)
+        }
+        approvals.value.unshift(row)
       }
     })
   } catch {}
@@ -7541,6 +7679,7 @@ function syncRegisterApprovalRows() {
 }
 
 function syncMailApprovalActions() {
+  if (props.standaloneApproval) return refreshGuestApproval()
   if (typeof window === 'undefined') return
   syncStoredApprovalRows()
   syncFirstAccessApprovalRows()
@@ -7567,7 +7706,7 @@ function syncMailApprovalActions() {
 }
 
 function handleMailApprovalStorage(event) {
-  if (event.key === 'leaibot-mail-approval-actions' || event.key === 'leaibot-account-request-status-rows') syncMailApprovalActions()
+  if (event.key === null || event.key === APPROVAL_MAIL_ROWS_KEY || event.key === 'leaibot-mail-approval-actions' || event.key === 'leaibot-account-request-status-rows') syncMailApprovalActions()
 }
 function approvalResultLabel(value) {
   const option = approvalResultOptions.value.find((item) => item.value === value)
@@ -8721,11 +8860,17 @@ function restorePermissionDeepLink() {
 }
 
 onMounted(() => {
-  document.title = '权限管理 - 乐享 AI 工作台'
-  loadPocReleaseLedger().then((ledger) => { permissionReleaseLedger.value = ledger })
-  runAdminPermissionAutomation()
-  syncMailApprovalActions()
-  restorePermissionDeepLink()
+  document.title = props.standaloneApproval ? '邮件审批 - 乐享 AI 工作台' : '权限管理 - 乐享 AI 工作台'
+  if (props.standaloneApproval) {
+    document.documentElement.classList.add('guest-approval-route')
+    document.body.classList.add('guest-approval-route')
+    refreshGuestApproval()
+  } else {
+    loadPocReleaseLedger().then((ledger) => { permissionReleaseLedger.value = ledger })
+    runAdminPermissionAutomation()
+    syncMailApprovalActions()
+    restorePermissionDeepLink()
+  }
   if (typeof window !== 'undefined') {
     window.addEventListener('storage', handleMailApprovalStorage)
     window.addEventListener('focus', syncMailApprovalActions)
@@ -8733,6 +8878,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (props.standaloneApproval) {
+    document.documentElement.classList.remove('guest-approval-route')
+    document.body.classList.remove('guest-approval-route')
+  }
   if (typeof window !== 'undefined') {
     window.removeEventListener('storage', handleMailApprovalStorage)
     window.removeEventListener('focus', syncMailApprovalActions)
@@ -8741,9 +8890,78 @@ onUnmounted(() => {
   clearDataSourceNoticeTimer()
   clearFunctionNoticeTimer()
 })
+watch(() => route.fullPath, () => {
+  if (props.standaloneApproval) {
+    approvalWorkspace.visible = false
+    refreshGuestApproval()
+  }
+})
 </script>
 
 <style scoped>
+:global(html.guest-approval-route),
+:global(html.guest-approval-route body.guest-approval-route) { min-width: 0; overflow: hidden; }
+:global(body.guest-approval-route) { display: block; }
+:global(body.guest-approval-route #app) { display: block; width: 100%; min-width: 0; }
+.permission-page-vue.standalone-approval-page {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1088px;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0 auto;
+  padding: 24px;
+}
+.standalone-approval-header h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+.standalone-approval-header p {
+  margin: 8px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+.standalone-approval-content { display: flex; flex: 1 1 auto; min-width: 0; min-height: 0; }
+.standalone-approval-content .approval-workspace-modal {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  box-shadow: none;
+}
+.standalone-approval-content .approval-workspace-head { padding: 20px 24px; }
+.standalone-approval-content .approval-workspace-body { overflow: auto; }
+.standalone-approval-content .table-status { flex: 0 0 auto; white-space: nowrap; }
+.standalone-approval-content .modal-actions {
+  position: sticky;
+  bottom: 0;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+}
+.standalone-approval-content .approval-feedback { flex: 1 1 240px; }
+.permission-page-vue .approval-feedback-error { color: var(--color-danger); }
+.standalone-approval-content dd,
+.standalone-approval-content p { overflow-wrap: anywhere; }
+.standalone-approval-error {
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.guest-approval-history { padding-left: 20px; }
+.guest-approval-history li + li { margin-top: 16px; }
+.guest-approval-history p { margin: 8px 0; }
+.guest-approval-history small { color: var(--color-text-tertiary); }
+@media (max-width: 720px) {
+  .permission-page-vue.standalone-approval-page { padding: 12px; }
+  .standalone-approval-content .approval-workspace-head { padding: 16px; }
+  .standalone-approval-content .approval-workspace-body { padding: 12px; }
+  .standalone-approval-content .approval-detail-grid { grid-template-columns: 1fr; gap: 8px; }
+  .standalone-approval-content .approval-detail-grid dd { margin: 0 0 8px; }
+  .standalone-approval-content .approval-full-route-list { grid-template-columns: 1fr; }
+}
 .permission-page-vue {
   display: flex;
   flex-direction: column;
@@ -11273,49 +11491,6 @@ onUnmounted(() => {
 
 .approval-business-form {
   margin-top: 0;
-}
-
-.business-task-list {
-  display: grid;
-  gap: 12px;
-}
-
-.business-task-card {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--color-bg-subtle);
-}
-
-.business-task-card.approved {
-  border-color: var(--color-success);
-  background: var(--color-success-subtle);
-}
-
-.business-task-card.rejected {
-  border-color: var(--color-danger);
-  background: var(--color-danger-subtle);
-}
-
-.business-task-card b,
-.business-task-card p,
-.business-task-card small {
-  display: block;
-}
-
-.business-task-card p {
-  margin: 4px 0;
-  color: var(--color-text-secondary);
-  font-size: 13px;
-}
-
-.business-task-card small {
-  color: var(--color-text-tertiary);
-  font-size: 12px;
 }
 
 .organization-picker {

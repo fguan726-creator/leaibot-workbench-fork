@@ -15,6 +15,8 @@
     "test:design-skill-guard": "node --test scripts/design-skill-guard.test.mjs",
     "test:scenario-skill-packages": "node --test scripts/scenario-skill-packages.test.mjs scripts/scenario-skill-package-graph.test.mjs",
     "test:application-info": "node scripts/test-application-info.mjs",
+    "test:approval-mail-review": "node --test scripts/approval-mail-review.test.mjs",
+    "test:approval-mail-review:browser": "node scripts/verify-approval-mail-review-browser.mjs",
     "test:account-enable": "node scripts/test-account-enable-request.mjs",
     "test:poc-login": "node scripts/test-poc-external-login.mjs && node --test scripts/poc-enable-state-regression.test.mjs",
     "test:poc-enable-state:browser": "node scripts/verify-poc-enable-state-browser.mjs",

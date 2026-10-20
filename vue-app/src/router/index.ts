@@ -73,6 +73,11 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true }
   },
   {
+    path: '/mail-approval/review',
+    component: () => import('@/views/MailApprovalReviewView.vue'),
+    meta: { public: true }
+  },
+  {
     path: '/',
     component: AppLayout,
     // 所有业务路由都需要登录（在 beforeEach 中统一拦截）
